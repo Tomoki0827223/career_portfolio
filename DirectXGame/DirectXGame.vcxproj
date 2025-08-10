@@ -154,7 +154,15 @@
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="affine.cpp" />
+    <ClCompile Include="BIt_Map_Font.cpp" />
+    <ClCompile Include="GameScene.cpp" />
+    <ClCompile Include="Graph.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Player.cpp" />
+    <ClCompile Include="Stage.cpp" />
+    <ClCompile Include="TitleScnce.cpp" />
+    <ClCompile Include="WorldTransformEx.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Resources\shaders\TerrainPS.hlsl">
@@ -252,6 +260,15 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\shaders\Sprite.hlsli" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="affine.h" />
+    <ClInclude Include="BIt_Map_Font.h" />
+    <ClInclude Include="GameScene.h" />
+    <ClInclude Include="Graph.h" />
+    <ClInclude Include="Player.h" />
+    <ClInclude Include="Stage.h" />
+    <ClInclude Include="TitleScnce.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

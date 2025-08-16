@@ -11,6 +11,7 @@ GameScene::~GameScene() {
 
 void GameScene::Initialize() {
 
+
 	graph_ = new Graph();
 	graph_->Initialize();
 

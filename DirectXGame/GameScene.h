@@ -5,6 +5,10 @@
 #include "Player.h"
 #include "Stage.h"
 
+#include "Experience.h"
+#include <vector>
+#include <random>
+
 using namespace KamataEngine;
 
 class GameScene {
@@ -39,4 +43,7 @@ private:
 
 	BIt_Map_Font* font_ = nullptr;
 	int score_ = 0;
+
+	Sprite* exp_ = nullptr;
+	uint32_t expTextureHandle_ = 0;
 };

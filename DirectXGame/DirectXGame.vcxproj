@@ -156,6 +156,7 @@
   <ItemGroup>
     <ClCompile Include="affine.cpp" />
     <ClCompile Include="BIt_Map_Font.cpp" />
+    <ClCompile Include="Experience.cpp" />
     <ClCompile Include="GameScene.cpp" />
     <ClCompile Include="Graph.cpp" />
     <ClCompile Include="main.cpp" />
@@ -264,6 +265,7 @@
   <ItemGroup>
     <ClInclude Include="affine.h" />
     <ClInclude Include="BIt_Map_Font.h" />
+    <ClInclude Include="Experience.h" />
     <ClInclude Include="GameScene.h" />
     <ClInclude Include="Graph.h" />
     <ClInclude Include="Player.h" />

@@ -12,17 +12,16 @@ public:
 
 	void Update();
 
-	void Draw();
+	// 描画には外部からカメラを渡す
+	void Draw(Camera& camera);
 
-	// void ParticleBorn(Vector3 position);
+	Vector3 GetPosition() const { return worldTransform.translation_; }
 
 private:
-	// パーティクル3Dモデルデータ
 	Model* modelPlayer_ = nullptr;
-
 	Input* input_ = nullptr;
 
-	Camera camera_;
+	// Camera camera_; // この行を削除
 
 	WorldTransform worldTransform;
 };

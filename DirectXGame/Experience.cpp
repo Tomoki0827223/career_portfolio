@@ -9,36 +9,40 @@ void Experience::Update() {
 	// 必要ならアニメーションなど
 }
 
-void Experience::Draw() {
+void Experience::Draw2D() {
 	if (!collected_) {
-		sprite_->Draw(); // 2Dスプライト
+		sprite_->Draw(); // 2Dスプライトの描画のみ
+	}
+}
 
+void Experience::Draw3D(const Camera& camera) {
+	if (!collected_) {
 		if (model_) {
-			// 3Dモデルの描画
 			WorldTransform wt;
-			wt.translation_ = {position_.x, position_.y, 0.0f}; // 2D座標を3Dに
-			wt.scale_ = {0.5f, 0.5f, 0.5f};                     // 必要に応じて調整
+			wt.translation_ = {position_.x, position_.y, 0.0f};
+			wt.scale_ = {0.5f, 0.5f, 0.5f};
 			wt.rotation_ = {0.0f, 0.0f, 0.0f};
 			wt.UpdateMatarix();
-
-			// カメラはGameSceneのcamera_を渡す
-			extern Camera camera_; // もしくはGameSceneから参照
-			model_->Draw(wt, camera_);
+			model_->Draw(wt, camera); // 3Dモデルの描画のみ
 		}
 	}
 }
 
-Vector3 Experience::GetPosition() const { return position_; }
+Vector3 Experience::GetPosition() const { // 修正: 戻り値をVector3に
+	return {position_.x, position_.y, 0.0f};
+}
 
-bool Experience::IsCollected(const Vector3& playerPos, float collectRadius) {
+bool Experience::IsCollected(const Vector3& playerPos, float collectRadius) { // 修正: 引数をVector3に
 	if (collected_)
 		return false;
 	float dx = playerPos.x - position_.x;
 	float dy = playerPos.y - position_.y;
-	float distSq = dx * dx + dy * dy;
-	if (distSq < collectRadius * collectRadius) {
+	float distance = std::sqrt(dx * dx + dy * dy);
+
+	if (distance < collectRadius) {
 		collected_ = true;
 		return true;
 	}
+
 	return false;
 }

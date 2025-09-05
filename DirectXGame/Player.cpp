@@ -5,7 +5,6 @@
 using namespace KamataEngine;
 
 Player::~Player() {
-
 	delete modelPlayer_;
 	modelPlayer_ = nullptr;
 }
@@ -16,8 +15,8 @@ void Player::Initialize() {
 
 	input_ = KamataEngine::Input::GetInstance();
 
-	// カメラの初期化
-	camera_.Initialize();
+	// カメラの初期化 // この部分を削除
+	// camera_.Initialize();
 
 	worldTransform.Initialize();
 }
@@ -44,13 +43,13 @@ void Player::Update() {
 	worldTransform.UpdateMatarix();
 }
 
-void Player::Draw() {
+void Player::Draw(Camera& camera) {
+	// 描画の前準備と後処理はGameScene::Draw()で行うので削除
+	// DirectXCommon* dxCommon = DirectXCommon::GetInstance();
+	// dxCommon->ClearDepthBuffer();
+	// Model::PreDraw();
 
-	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
-	dxCommon->ClearDepthBuffer();
-	Model::PreDraw();
+	modelPlayer_->Draw(worldTransform, camera);
 
-	modelPlayer_->Draw(worldTransform, camera_);
-
-	Model::PostDraw();
+	// Model::PostDraw();
 }

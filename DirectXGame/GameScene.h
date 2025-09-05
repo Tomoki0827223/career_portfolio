@@ -6,8 +6,8 @@
 #include "Stage.h"
 
 #include "Experience.h"
-#include <vector>
 #include <random>
+#include <vector>
 
 using namespace KamataEngine;
 
@@ -39,6 +39,8 @@ private:
 
 	Model* playerModel_ = nullptr;
 
+	Model* expModel_ = nullptr; // 追加: 経験値用のモデル
+
 	Graph* graph_ = nullptr;
 
 	BIt_Map_Font* font_ = nullptr;
@@ -46,4 +48,12 @@ private:
 
 	Sprite* exp_ = nullptr;
 	uint32_t expTextureHandle_ = 0;
+
+	// プレイヤー位置を引数に追加
+	void UpdateExperiences(const Vector3& playerPos);
+	void DrawExperiences3D();
+	void DrawExperiences2D();
+	void SpawnExperiences(int count, int textureHandle, Model* model);
 };
+
+// Extern宣言は削除、カメラはDraw関数に引数で渡すように変更

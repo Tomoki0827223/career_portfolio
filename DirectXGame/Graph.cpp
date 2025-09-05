@@ -39,12 +39,12 @@ void Graph::Update() {
 }
 
 void Graph::Draw() {
-	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
-
-	Sprite::PreDraw(dxCommon->GetCommandList());
+	// 描画の前準備と後処理はGameScene::Draw()で行うので削除
+	// DirectXCommon* dxCommon = DirectXCommon::GetInstance();
+	// Sprite::PreDraw(dxCommon->GetCommandList());
 
 	sprite_->Draw();
 	sprite2_->Draw();
 
-	Sprite::PostDraw();
+	// Sprite::PostDraw();
 }

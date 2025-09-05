@@ -39,13 +39,18 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 		dxCommon->PreDraw();
 
-		// シーンごとに処理を分岐
 		if (scene == Scene::Title) {
 			titleScnce->Update();
 			titleScnce->Draw();
+			
 			if (titleScnce->IsSelectFinished()) {
 				scene = Scene::Game;
+				delete titleScnce; // タイトルシーンを終了
+				titleScnce = nullptr;
+				gameScnce = new GameScene(); // ゲームシーンをここで初期化
+				gameScnce->Initialize();
 			}
+		
 		} else if (scene == Scene::Game) {
 			gameScnce->Update();
 			gameScnce->Draw();

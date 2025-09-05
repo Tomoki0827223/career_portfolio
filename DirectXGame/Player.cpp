@@ -4,6 +4,7 @@
 
 using namespace KamataEngine;
 
+
 Player::~Player() {
 
 	delete modelPlayer_;
@@ -25,7 +26,6 @@ void Player::Initialize() {
 void Player::Update() {
 	const float speed = 0.5f;
 
-	// 入力取得
 	if (input_->PushKey(DIK_W)) {
 		worldTransform.translation_.y += speed;
 	}
@@ -44,13 +44,27 @@ void Player::Update() {
 	worldTransform.UpdateMatarix();
 }
 
-void Player::Draw() {
+KamataEngine::Vector3 Player::GetPosition() const { return worldTransform.translation_; }
 
-	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
-	dxCommon->ClearDepthBuffer();
-	Model::PreDraw();
+void Player::AddExperience(int exp) {
+	experience_ += exp;
+	if (experience_ >= experienceToNextLevel_) {
+		level_++;
+		experience_ -= experienceToNextLevel_;
+		experienceToNextLevel_ = static_cast<int>(experienceToNextLevel_ * 1.5); // 次のレベルまでの必要経験値を増やす
+	}
+}
+
+int Player::GetLevel() const { return level_; }
+
+int Player::GetExperience() const { return experience_; }
+
+void Player::Draw() {
+	// DirectXCommon* dxCommon = DirectXCommon::GetInstance(); // 削除
+	// dxCommon->ClearDepthBuffer();                           // 削除
+	// Model::PreDraw();                                       // 削除
 
 	modelPlayer_->Draw(worldTransform, camera_);
 
-	Model::PostDraw();
+	// Model::PostDraw();                                      // 削除
 }

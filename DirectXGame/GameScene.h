@@ -4,6 +4,8 @@
 #include "KamataEngine.h"
 #include "Player.h"
 #include "Stage.h"
+#include "ExperienceOrb.h" // 追加
+#include <list>           // 追加
 
 using namespace KamataEngine;
 
@@ -39,4 +41,7 @@ private:
 
 	BIt_Map_Font* font_ = nullptr;
 	int score_ = 0;
+
+	std::list<ExperienceOrb*> experienceOrbs_; // 経験値アイテムのリスト
+	float expSpawnTimer_ = 0.0f;               // 経験値アイテムのスポーンタイマー
 };

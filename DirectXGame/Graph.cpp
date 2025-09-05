@@ -39,12 +39,9 @@ void Graph::Update() {
 }
 
 void Graph::Draw() {
-	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
-
-	Sprite::PreDraw(dxCommon->GetCommandList());
+	// 削除
+	// DirectXCommon* dxCommon = DirectXCommon::GetInstance();
 
 	sprite_->Draw();
 	sprite2_->Draw();
-
-	Sprite::PostDraw();
 }

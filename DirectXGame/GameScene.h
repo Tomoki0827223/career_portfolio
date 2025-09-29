@@ -4,6 +4,7 @@
 #include "KamataEngine.h"
 #include "Player.h"
 #include "Stage.h"
+#include "ExperienceItem.h"
 
 using namespace KamataEngine;
 
@@ -39,4 +40,7 @@ private:
 
 	BIt_Map_Font* font_ = nullptr;
 	int score_ = 0;
+
+	// 経験値アイテムのリストを追加
+	std::list<ExperienceItem*> experienceItems_;
 };

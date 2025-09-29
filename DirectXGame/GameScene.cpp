@@ -41,29 +41,28 @@ void GameScene::Initialize() {
 
 	font_->Initialize();
 
-	// --- 経験値アイテムのランダム配置 ---
-	const int kNumItems = 50;
+	// --- 経験値アイテムのランダム配置 (X/Yランダム, Z固定) ---
+	const int kNumItems = 200;
 	std::random_device seed_gen;
 	std::mt19937_64 engine(seed_gen());
 
-	// ステージ範囲の仮設定
-	std::uniform_real_distribution<float> distPos(-20.0f, 20.0f);
-	// ★ サイズ係数のランダム生成を追加
-	//   例: 0.5f から 2.0f の間でランダムなサイズにする
-	std::uniform_real_distribution<float> distSize(0.5f, 2.0f);
+	// ★ XとY座標の範囲を設定
+	std::uniform_real_distribution<float> distPosX(-50.0f, 50.0f); // X軸の範囲
+	std::uniform_real_distribution<float> distPosY(-30.0f, 30.0f); // Y軸の範囲
 
-	float itemHeight = 0.5f;
+	// ★ Z座標を固定値に設定
+	const float fixedZ = 0.0f;
+
+	// ★ サイズ係数のランダム生成は不要なので削除
 
 	for (int i = 0; i < kNumItems; ++i) {
 		ExperienceItem* item = new ExperienceItem();
 
-		Vector3 randomPosition = {distPos(engine), itemHeight, distPos(engine)};
+		// ★ Z軸を固定し、Y座標にはランダムな値を設定
+		Vector3 randomPosition = {distPosX(engine), distPosY(engine), fixedZ};
 
-		// ★ ランダムなサイズ係数を決定
-		float sizeFactor = distSize(engine);
-
-		// ★ Initializeに位置とサイズ係数を渡す
-		item->Initialize(randomPosition, sizeFactor);
+		// ★ Initializeに位置のみを渡す
+		item->Initialize(randomPosition);
 		experienceItems_.push_back(item);
 	}
 	// --- 経験値アイテムのランダム配置 終了 ---
@@ -74,9 +73,33 @@ void GameScene::Update() {
 
 	player_->Update();
 
-	// --- 修正箇所: プレイヤーの位置をここで一度だけ取得する ---
+	// プレイヤーの位置を取得
 	const Vector3& playerPos = player_->GetPosition();
-	// --------------------------------------------------------
+
+    // ----------------------------------------------------
+    // ★ カメラ追従ロジックの修正
+    // ----------------------------------------------------
+    
+    // 1. カメラの注視点(ターゲット)をプレイヤーの位置に設定
+	cameraTarget_ = playerPos; 
+
+    // 2. カメラの位置を計算 (プレイヤー位置 + オフセット)
+    //    *注: カメラを常にプレイヤーの後方上空に固定するシンプルな追従
+	Vector3 newCameraPos = Subtract(playerPos, cameraOffset_);
+    
+    // 3. カメラオブジェクトの translation_ を更新し、行列を再計算
+    //    - translation_ を直接更新します。
+    //    - LookAt行列を再計算するために UpdateViewMatrix() を呼び出します。
+
+    camera_.translation_ = newCameraPos;
+    
+    // カメラのtranslation_が更新されたので、ビュー行列を更新
+    // Camera.hで確認されたメンバー関数を使用
+    camera_.UpdateViewMatrix(); 
+    camera_.UpdateMatrix(); // Matrix4x4を定数バッファに転送する前の最終更新 (Camera.hに存在)
+    
+    // ----------------------------------------------------
+
 
 	// アイテムの更新と衝突判定
 	for (ExperienceItem* item : experienceItems_) {

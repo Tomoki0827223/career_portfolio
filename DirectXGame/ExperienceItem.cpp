@@ -1,24 +1,23 @@
 #include "ExperienceItem.h"
 #include "affine.h"
 
-// sizeFactor を受け取るように変更
-void ExperienceItem::Initialize(const KamataEngine::Vector3& position, float sizeFactor) {
+void ExperienceItem::Initialize(const KamataEngine::Vector3& position) {
 	// モデルの生成 (例: 小さな球や別のブロック)
 	model_ = Model::CreateFromOBJ("block_4");
 
 	worldTransform.Initialize();
 	worldTransform.translation_ = position;
 
-	// ★ 大きさ（スケール）を設定
-	// sizeFactorが1.0fで標準サイズ、2.0fで2倍の大きさになる
-	worldTransform.scale_ = {0.2f * sizeFactor, 0.2f * sizeFactor, 0.2f * sizeFactor};
+	// ★ 大きさ（スケール）を固定値に設定 (例: 標準サイズ 1.0f)
+	const float fixedScale = 1.0f;
+	worldTransform.scale_ = {0.2f * fixedScale, 0.2f * fixedScale, 0.2f * fixedScale};
 
-	// ★ 半径と吸引距離を設定
-	// 半径はスケールに連動させる (例: 1.0f * sizeFactor)
-	radius_ = 0.5f * sizeFactor;
+	// ★ 半径と吸引距離を固定値に設定
+	const float fixedRadius = 0.5f * fixedScale;          // 例: 0.5f
+	const float fixedAttractionRange = 5.0f * fixedScale; // 例: 5.0f
 
-	// ★ 吸引距離は大きさに比例させる (例: 吸引の基準距離 5.0f * sizeFactor)
-	attractionRange_ = 5.0f * sizeFactor;
+	radius_ = fixedRadius;
+	attractionRange_ = fixedAttractionRange;
 
 	worldTransform.TransferMatrix();
 	worldTransform.UpdateMatarix();

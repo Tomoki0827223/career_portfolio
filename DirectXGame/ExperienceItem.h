@@ -10,7 +10,7 @@ public:
 	~ExperienceItem() = default;
 
 	// アイテムの初期化に「サイズ係数」を追加
-	void Initialize(const Vector3& position, float sizeFactor);
+	void Initialize(const KamataEngine::Vector3& position);
 
 	// 更新処理
 	void Update(const Vector3& playerPosition);

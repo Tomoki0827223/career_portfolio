@@ -68,9 +68,6 @@ void GameScene::Initialize() {
 		// ★ Z軸を固定し、Y座標にはランダムな値を設定
 		Vector3 randomPosition = {distPosX(engine), distPosY(engine), fixedZ};
 
-		// ★ 追加: 経験値アイテムにモデルを設定する
-		item->SetModel(experienceItemModel_);
-
 		// ★ Initializeに位置のみを渡す
 		item->Initialize(randomPosition);
 		experienceItems_.push_back(item);
@@ -85,6 +82,30 @@ void GameScene::Update() {
 
 	// プレイヤーの位置を取得
 	const Vector3& playerPos = player_->GetPosition();
+
+    // ----------------------------------------------------
+    // ★ カメラ追従ロジックの修正
+    // ----------------------------------------------------
+    
+    // 1. カメラの注視点(ターゲット)をプレイヤーの位置に設定
+	cameraTarget_ = playerPos; 
+
+    // 2. カメラの位置を計算 (プレイヤー位置 + オフセット)
+    //    *注: カメラを常にプレイヤーの後方上空に固定するシンプルな追従
+	Vector3 newCameraPos = Subtract(playerPos, cameraOffset_);
+    
+    // 3. カメラオブジェクトの translation_ を更新し、行列を再計算
+    //    - translation_ を直接更新します。
+    //    - LookAt行列を再計算するために UpdateViewMatrix() を呼び出します。
+
+    camera_.translation_ = newCameraPos;
+    
+    // カメラのtranslation_が更新されたので、ビュー行列を更新
+    // Camera.hで確認されたメンバー関数を使用
+    camera_.UpdateViewMatrix(); 
+    camera_.UpdateMatrix(); // Matrix4x4を定数バッファに転送する前の最終更新 (Camera.hに存在)
+    
+    // ----------------------------------------------------
 
 
 	// アイテムの更新と衝突判定

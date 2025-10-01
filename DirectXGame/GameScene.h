@@ -4,6 +4,10 @@
 #include "KamataEngine.h"
 #include "Player.h"
 #include "Stage.h"
+#include "Experience.h" // 追加
+#include <vector>       // 追加
+#include <random>       // 追加
+#include <algorithm>
 
 using namespace KamataEngine;
 
@@ -39,4 +43,9 @@ private:
 
 	BIt_Map_Font* font_ = nullptr;
 	int score_ = 0;
+
+	// 経験値アイテムを格納するベクトル (追加)
+	std::vector<Experience*> experiences_;
+	// 吸引範囲 (例: 10.0f)
+	const float ATTRACTION_RADIUS = 10.0f;
 };

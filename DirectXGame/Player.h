@@ -15,6 +15,8 @@ public:
 	void Draw();
 
 	// void ParticleBorn(Vector3 position);
+	// プレイヤーの位置を取得するためのgetter (追加)
+	Vector3 GetPosition() const { return worldTransform.translation_; } 
 
 private:
 	// パーティクル3Dモデルデータ

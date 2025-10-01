@@ -38,8 +38,15 @@ void Experience::Update() {
 	worldTransform.UpdateMatarix();
 }
 
-void Experience::Draw(const Camera& camera) {
+void Experience::Draw(const Camera& camera) { // 【修正】引数としてカメラを受け取る
+
+	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
+	dxCommon->ClearDepthBuffer();
+	Model::PreDraw();
 
 	// Model::PreDraw() / PostDraw() は GameSceneでまとめて行う想定
+	// 【修正】引数で受け取ったカメラを使用する
 	model_->Draw(worldTransform, camera);
+
+	Model::PostDraw();
 }

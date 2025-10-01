@@ -12,8 +12,8 @@ public:
 
 	void Initialize();
 	void Update();
-	void Draw(const Camera& camera); // カメラを引数で受け取る
-
+	void Draw(const Camera& camera);
+	
 	// アイテムの位置を取得するgetter（衝突判定などに使う）
 	Vector3 GetPosition() const { return worldTransform.translation_; }
 
@@ -33,6 +33,7 @@ private:
 
 	Model* model_ = nullptr;
 	WorldTransform worldTransform;
+
 	// 必要に応じて経験値の量などのメンバを追加
 
 	// 状態管理用

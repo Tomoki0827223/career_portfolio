@@ -119,7 +119,7 @@ void GameScene::Draw() {
 
 	// 経験値アイテムの描画 (追加)
 	for (Experience* exp : experiences_) {
-		// GameSceneのカメラを渡す
+		// GameSceneのカメラを渡す (この呼び出しがExperience.hの修正により正しくなる)
 		exp->Draw(camera_);
 	}
 

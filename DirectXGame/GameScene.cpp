@@ -4,12 +4,12 @@
 #include <random>
 
 GameScene::~GameScene() {
+
 	delete stage_;
 	delete player_;
-	delete playerModel_;
+	delete playerModel_;         // ★ 修正: GameSceneで解放する
+	delete experienceItemModel_; // ★ 追加: 経験値アイテムモデルを解放する
 	delete model_;
-	delete graph_;
-	delete font_;
 
 	// 経験値アイテムの削除処理を追加
 	for (ExperienceItem* item : experienceItems_) {
@@ -29,41 +29,50 @@ void GameScene::Initialize() {
 	stage_->Update();
 
 	// カメラの初期化
-	camera_.Initialize();
+	// camera_.Initialize(); // ★ 修正: camera_ が実体になったためドット演算子を使用
+	camera_.Initialize(); // C2228エラーの解消
 
 	worldTransform.Initialize();
 
 	player_ = new Player();
 	player_->Initialize();
-	playerModel_ = Model::CreateFromOBJ("block_4");
+
+	// ★ 修正: ここでモデルをロードし、Playerに設定する
+	playerModel_ = Model::CreateFromOBJ("cube");
+	player_->SetModel(playerModel_);
+
+	// ★ 追加: 経験値アイテム用のモデルをロードする
+	experienceItemModel_ = Model::CreateFromOBJ("cube"); // 同じモデルを使用
 
 	font_ = new BIt_Map_Font();
 
 	font_->Initialize();
 
-	// --- 経験値アイテムのランダム配置 ---
-	const int kNumItems = 50;
+	// --- 経験値アイテムのランダム配置 (X/Yランダム, Z固定) ---
+	const int kNumItems = 200;
 	std::random_device seed_gen;
 	std::mt19937_64 engine(seed_gen());
 
-	// ステージ範囲の仮設定
-	std::uniform_real_distribution<float> distPos(-20.0f, 20.0f);
-	// ★ サイズ係数のランダム生成を追加
-	//   例: 0.5f から 2.0f の間でランダムなサイズにする
-	std::uniform_real_distribution<float> distSize(0.5f, 2.0f);
+	// ★ XとY座標の範囲を設定
+	std::uniform_real_distribution<float> distPosX(-50.0f, 50.0f); // X軸の範囲
+	std::uniform_real_distribution<float> distPosY(-30.0f, 30.0f); // Y軸の範囲
 
-	float itemHeight = 0.5f;
+	// ★ Z座標を固定値に設定
+	const float fixedZ = 0.0f;
+
+	// ★ サイズ係数のランダム生成は不要なので削除
 
 	for (int i = 0; i < kNumItems; ++i) {
 		ExperienceItem* item = new ExperienceItem();
 
-		Vector3 randomPosition = {distPos(engine), itemHeight, distPos(engine)};
+		// ★ Z軸を固定し、Y座標にはランダムな値を設定
+		Vector3 randomPosition = {distPosX(engine), distPosY(engine), fixedZ};
 
-		// ★ ランダムなサイズ係数を決定
-		float sizeFactor = distSize(engine);
+		// ★ 追加: 経験値アイテムにモデルを設定する
+		item->SetModel(experienceItemModel_);
 
-		// ★ Initializeに位置とサイズ係数を渡す
-		item->Initialize(randomPosition, sizeFactor);
+		// ★ Initializeに位置のみを渡す
+		item->Initialize(randomPosition);
 		experienceItems_.push_back(item);
 	}
 	// --- 経験値アイテムのランダム配置 終了 ---
@@ -74,9 +83,9 @@ void GameScene::Update() {
 
 	player_->Update();
 
-	// --- 修正箇所: プレイヤーの位置をここで一度だけ取得する ---
+	// プレイヤーの位置を取得
 	const Vector3& playerPos = player_->GetPosition();
-	// --------------------------------------------------------
+
 
 	// アイテムの更新と衝突判定
 	for (ExperienceItem* item : experienceItems_) {
@@ -125,15 +134,15 @@ void GameScene::Draw() {
 	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
 
 	Sprite::PreDraw(dxCommon->GetCommandList());
-	Model::PreDraw();
+	Model::PreDraw(); // ★ モデル描画開始
 
 	stage_->Draw();
 
-	player_->Draw();
+	player_->Draw(camera_); // ★ プレイヤー描画
 
 	// 経験値アイテムの描画
 	for (ExperienceItem* item : experienceItems_) {
-		item->Draw(camera_);
+		item->Draw(camera_); // ★ 経験値アイテム描画
 	}
 
 	graph_->Draw();

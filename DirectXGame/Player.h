@@ -10,9 +10,12 @@ public:
 
 	void Initialize();
 
+	void SetModel(Model* model) { modelPlayer_ = model; }
+
 	void Update();
 
-	void Draw();
+	// ★ 修正: カメラを引数で受け取るように変更
+	void Draw(const Camera& camera);
 
 	// void ParticleBorn(Vector3 position);
 
@@ -27,8 +30,6 @@ private:
 	Model* modelPlayer_ = nullptr;
 
 	Input* input_ = nullptr;
-
-	Camera camera_;
 
 	WorldTransform worldTransform;
 	float radius_ = 1.0f; // プレイヤーの半径 (適当な値)

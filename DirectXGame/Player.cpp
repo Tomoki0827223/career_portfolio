@@ -6,21 +6,17 @@ using namespace KamataEngine;
 
 Player::~Player() {
 
-	delete modelPlayer_;
-	modelPlayer_ = nullptr;
 }
 
 void Player::Initialize() {
 	// 3Dモデルデータの生成
-	modelPlayer_ = Model::CreateFromOBJ("block_4");
+	// modelPlayer_ = Model::CreateFromOBJ("block_4"); // ★ 削除: GameSceneでロードするため
 
 	input_ = KamataEngine::Input::GetInstance();
 
-	// カメラの初期化
-	camera_.Initialize();
-
 	worldTransform.Initialize();
 }
+
 
 void Player::Update() {
 	const float speed = 0.5f;
@@ -44,13 +40,12 @@ void Player::Update() {
 	worldTransform.UpdateMatarix();
 }
 
-void Player::Draw() {
+void Player::Draw(const Camera& camera) {
 
-	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
-	dxCommon->ClearDepthBuffer();
-	Model::PreDraw();
+	// Nullチェック (モデルが GameScene から設定されているか確認)
+	if (modelPlayer_ == nullptr) {
+		return;
+	}
 
-	modelPlayer_->Draw(worldTransform, camera_);
-
-	Model::PostDraw();
+	modelPlayer_->Draw(worldTransform, camera);
 }

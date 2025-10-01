@@ -34,7 +34,8 @@ private:
 
 	Player* player_ = nullptr;
 
-	Model* playerModel_ = nullptr;
+	Model* playerModel_ = nullptr;         // プレイヤーモデル
+	Model* experienceItemModel_ = nullptr; // 経験値アイテムモデル
 
 	Graph* graph_ = nullptr;
 

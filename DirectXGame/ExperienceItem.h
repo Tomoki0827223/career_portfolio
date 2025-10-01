@@ -10,7 +10,8 @@ public:
 	~ExperienceItem() = default;
 
 	// アイテムの初期化に「サイズ係数」を追加
-	void Initialize(const Vector3& position, float sizeFactor);
+	void Initialize(const Vector3& position);
+	void SetModel(Model* model) { model_ = model; }
 
 	// 更新処理
 	void Update(const Vector3& playerPosition);

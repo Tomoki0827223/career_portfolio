@@ -8,7 +8,7 @@ using namespace KamataEngine;
 // ファイル先頭付近に追加
 enum class Scene { Title, Game };
 
-Scene scene = Scene::Title;
+Scene scene = Scene::Game;
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {

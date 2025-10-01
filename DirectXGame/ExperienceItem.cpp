@@ -1,24 +1,23 @@
 #include "ExperienceItem.h"
 #include "affine.h"
 
-// sizeFactor を受け取るように変更
-void ExperienceItem::Initialize(const KamataEngine::Vector3& position, float sizeFactor) {
-	// モデルの生成 (例: 小さな球や別のブロック)
-	model_ = Model::CreateFromOBJ("block_4");
+void ExperienceItem::Initialize(const Vector3& position) {
 
 	worldTransform.Initialize();
 	worldTransform.translation_ = position;
 
-	// ★ 大きさ（スケール）を設定
-	// sizeFactorが1.0fで標準サイズ、2.0fで2倍の大きさになる
-	worldTransform.scale_ = {0.2f * sizeFactor, 0.2f * sizeFactor, 0.2f * sizeFactor};
+	// ★ 大きさ（スケール）を固定値に設定 (例: 標準サイズ 1.0f)
+	const float fixedScale = 1.0f;
+	// スケールを少し大きくする
+	worldTransform.scale_ = {0.5f * fixedScale, 0.5f * fixedScale, 0.5f * fixedScale};
 
-	// ★ 半径と吸引距離を設定
-	// 半径はスケールに連動させる (例: 1.0f * sizeFactor)
-	radius_ = 0.5f * sizeFactor;
+	// ★ 半径と吸引距離を固定値に設定
+	// プレイヤーの半径が 1.0f なので、アイテムの半径も大きくする
+	const float fixedRadius = 0.5f * fixedScale;
+	const float fixedAttractionRange = 10.0f * fixedScale; // 吸引距離を広げる
 
-	// ★ 吸引距離は大きさに比例させる (例: 吸引の基準距離 5.0f * sizeFactor)
-	attractionRange_ = 5.0f * sizeFactor;
+	radius_ = fixedRadius;
+	attractionRange_ = fixedAttractionRange;
 
 	worldTransform.TransferMatrix();
 	worldTransform.UpdateMatarix();
@@ -47,13 +46,14 @@ void ExperienceItem::Update(const KamataEngine::Vector3& playerPosition) {
 	worldTransform.UpdateMatarix();
 }
 
-
 void ExperienceItem::Draw(const Camera& camera) {
 
 	if (!isCollected_) {
-		Model::PreDraw();
-		model_->Draw(worldTransform, camera);
-		Model::PostDraw();
-	}
+		// Nullチェック
+		if (model_ == nullptr) {
+			return;
+		}
 
+		model_->Draw(worldTransform, camera);
+	}
 }

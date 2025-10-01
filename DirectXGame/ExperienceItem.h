@@ -9,8 +9,11 @@ public:
 	ExperienceItem() = default;
 	~ExperienceItem() = default;
 
-	// アイテムの初期化に「サイズ係数」を追加
-	void Initialize(const KamataEngine::Vector3& position);
+	// アイテムの初期化
+	void Initialize(const Vector3& position);
+
+	// ★ 追加: GameSceneからモデルを設定するためのセッター
+	void SetModel(Model* model) { model_ = model; }
 
 	// 更新処理
 	void Update(const Vector3& playerPosition);
@@ -31,7 +34,7 @@ public:
 private:
 	WorldTransform worldTransform;
 	Model* model_ = nullptr;
-	// ★ 以下の変数は固定値ではなく、初期化時に設定されるようにする
+
 	float radius_ = 0.0f;          // 衝突判定用の半径
 	float attractionRange_ = 0.0f; // プレイヤーが吸い寄せを開始する距離
 

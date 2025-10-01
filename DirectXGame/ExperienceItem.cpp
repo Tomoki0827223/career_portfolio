@@ -1,21 +1,20 @@
 #include "ExperienceItem.h"
 #include "affine.h"
 
-void ExperienceItem::Initialize(const KamataEngine::Vector3& position) {
-	// モデルの生成 (例: 小さな球や別のブロック)
-	model_ = Model::CreateFromOBJ("block_4");
-	model_ = Model::CreateFromOBJ("block_4");
+void ExperienceItem::Initialize(const Vector3& position) {
+
+	// モデルのロードはGameSceneに移動済み
 
 	worldTransform.Initialize();
 	worldTransform.translation_ = position;
-	// ★ 大きさ（スケール）を固定値に設定 (例: 標準サイズ 1.0f)
+
+	// ★ 修正: sizeFactorを削除し、固定スケールを使用
 	const float fixedScale = 1.0f;
 	worldTransform.scale_ = {0.2f * fixedScale, 0.2f * fixedScale, 0.2f * fixedScale};
-	worldTransform.scale_ = {0.2f * sizeFactor, 0.2f * sizeFactor, 0.2f * sizeFactor};
-	// ★ 半径と吸引距離を固定値に設定
-	const float fixedRadius = 0.5f * fixedScale;          // 例: 0.5f
-	const float fixedAttractionRange = 5.0f * fixedScale; // 例: 5.0f
-	radius_ = 0.5f * sizeFactor;
+
+	// ★ 修正: 半径と吸引距離を固定値に設定
+	const float fixedRadius = 0.5f * fixedScale;           // 例: 0.5f
+	const float fixedAttractionRange = 10.0f * fixedScale; // 例: 10.0f（吸引距離を広げた）
 
 	radius_ = fixedRadius;
 	attractionRange_ = fixedAttractionRange;
@@ -25,7 +24,10 @@ void ExperienceItem::Initialize(const KamataEngine::Vector3& position) {
 }
 
 void ExperienceItem::Update(const KamataEngine::Vector3& playerPosition) {
-	// ... (以下のロジックは変更なし)
+	if (isCollected_) {
+		return;
+	}
+
 	// プレイヤーとの距離を計算
 	Vector3 toPlayer = Subtract(playerPosition, worldTransform.translation_);
 	float distanceSquared = toPlayer.x * toPlayer.x + toPlayer.y * toPlayer.y + toPlayer.z * toPlayer.z;
@@ -49,7 +51,11 @@ void ExperienceItem::Update(const KamataEngine::Vector3& playerPosition) {
 
 void ExperienceItem::Draw(const Camera& camera) {
 
-		Model::PreDraw();
+	if (!isCollected_) {
+		// Nullチェック
+		if (model_ == nullptr) {
+			return;
+		}
 
 		model_->Draw(worldTransform, camera);
 	}

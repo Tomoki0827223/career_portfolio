@@ -42,4 +42,9 @@ private:
 	bool isDead_ = false;         // 取得されたか
 
 	const float ATTRACTION_SPEED = 0.5f; // 吸引速度
+
+	// 【修正2】演出用の定数をExperienceクラスのメンバにする
+	const float MAX_SCALE = 2.0f;
+	const float MIN_SCALE = 1.0f;
+	const float SCALE_SPEED = 0.05f;
 };

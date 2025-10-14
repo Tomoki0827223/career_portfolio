@@ -7,6 +7,13 @@
 #include <KamataEngine.h>
 #include <audio/Audio.h>
 
+// --- イージング関数のインライン定義 ---
+inline float EaseOutQuint(float t) {
+	// t は 0.0f から 1.0f
+	return 1.0f - powf(1.0f - t, 5.0f);
+}
+// ------------------------------------
+
 /// <summary>
 /// タイトルシーン
 /// </summary>
@@ -41,6 +48,20 @@ public:
 	void InitializeSprites();
 
 private:
+
+	// ★追加: シーンの実行状態
+	enum class State {
+		TitleScreen, // タイトル表示中
+		Transition,  // 移行演出中 (ゲーム説明へ)
+		Finished     // 移行完了
+	};
+
+	State state_ = State::TitleScreen; // 初期状態
+
+	// 演出時間（フレーム数）
+	static inline const float kTransitionDuration = 60.0f;
+	float transitionTimer_ = 0.0f; // 演出タイマー
+
 	// 最初の角度[度]
 	static inline const float kWalkMotionAngleStart = 5.0f;
 	// 最後の角度[度]

@@ -53,27 +53,66 @@ void TitleScnce::InitializeSprites() {
 	sprites.push_back(sprite4_);
 }
 
+
 void TitleScnce::Update() {
 	Timer_ += 1.0f; // フレームごとに加算
 
-	// Enterキーでタイトル終了
-	if (input_->TriggerKey(DIK_RETURN) || input_->TriggerKey(DIK_RETURN)) {
-		// audio_->PlayWave(TitleSEHandle3_, false); // スタートSE
-		isFinished_ = true;
-	}
-
-	// 降下アニメーション
-	if (sprite2_) {
-		auto pos = sprite2_->GetPosition();
-		float targetY = 0.0f; // 目的のY座標
-		float speed = 20.0f;  // 降りてくる速さ（調整可）
-
-		if (pos.y < targetY) {
-			pos.y += speed;
-			if (pos.y > targetY)
-				pos.y = targetY; // 行き過ぎ防止
-			sprite2_->SetPosition(pos);
+	switch (state_) {
+	case State::TitleScreen:
+		// Enterキーで演出開始 (Transition状態へ移行)
+		if (input_->TriggerKey(DIK_RETURN)) {
+			// audio_->PlayWave(TitleSEHandle3_, false); // スタートSE
+			state_ = State::Transition;
+			transitionTimer_ = 0.0f; // タイマーリセット
 		}
+
+		// 降下アニメーション (TitleScreen状態でのみ継続)
+		if (sprite2_) {
+			auto pos = sprite2_->GetPosition();
+			float targetY = 0.0f;
+			float speed = 20.0f;
+			if (pos.y < targetY) {
+				pos.y += speed;
+				if (pos.y > targetY)
+					pos.y = targetY;
+				sprite2_->SetPosition(pos);
+			}
+		}
+		break;
+
+	case State::Transition:
+		// 移行演出の更新
+		transitionTimer_ += 1.0f;
+
+		if (transitionTimer_ < kTransitionDuration) {
+			// 進行度 (0.0fから1.0f)
+			float t = transitionTimer_ / kTransitionDuration;
+			// ★ イージングを適用 (t_eased: 0.0 -> 1.0へ滑らかに変化)
+			float t_eased = EaseOutQuint(t);
+
+			// タイトルロゴ(sprite2)を上にスライドアウトさせる演出
+			if (sprite2_) {
+				float startY = 0.0f;
+				float endY = -static_cast<float>(720); // 画面外のY座標
+				// イージングでY座標を補間 (Lerp)
+				float currentY = startY * (1.0f - t_eased) + endY * t_eased;
+				sprite2_->SetPosition({sprite2_->GetPosition().x, currentY});
+			}
+
+			// "Hit Enter" (sprite3) をフェードアウト
+			if (sprite3_) {
+				sprite3_->SetColor({1.0f, 1.0f, 1.0f, 1.0f - t});
+			}
+
+		} else {
+			// 演出完了
+			state_ = State::Finished;
+			isFinished_ = true; // 次のシーン (Tutorial) へ移行するためのフラグ
+		}
+		break;
+
+	case State::Finished:
+		break;
 	}
 }
 
@@ -91,15 +130,27 @@ void TitleScnce::Draw() {
 	// 例: 1280x720の青色背景
 	// KamataEngine::Sprite::DrawRect({0, 0}, {1280, 720}, {0.4f, 0.6f, 0.9f, 1.0f}); // RGBA
 
-	// タイトル画像（降下アニメーション位置で表示）
+	sprite_->SetPosition({0, 0});
+	sprite_->Draw();
+
+	// タイトル画像
 	if (sprite2_) {
 		sprite2_->Draw();
 	}
 
-	// 「Hit Enter」点滅（30フレームごとにON/OFF）
-	if (sprite3_ && static_cast<int>(Timer_) % 60 < 30) {
-		sprite3_->SetPosition({0, 0});
-		sprite3_->Draw();
+	// 「Hit Enter」
+	if (state_ == State::TitleScreen) {
+		// TitleScreen時は点滅制御
+		if (sprite3_ && static_cast<int>(Timer_) % 60 < 30) {
+			sprite3_->SetPosition({0, 0});
+			sprite3_->Draw();
+		}
+	} else if (state_ == State::Transition) {
+		// Transition時はUpdateで設定された透明度で常に描画 (フェードアウト演出)
+		if (sprite3_) {
+			sprite3_->SetPosition({0, 0});
+			sprite3_->Draw();
+		}
 	}
 
 	KamataEngine::Sprite::PostDraw();

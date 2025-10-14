@@ -32,11 +32,15 @@ public:
 	// シーンが終了したか (ゲームシーンへ移行する準備ができたか)
 	bool IsFinished() const { return isFinished_; }
 
+	// ★追加: タイトルシーンへ戻るフラグ
+	bool IsBackToTitle() const { return isBackToTitle_; }
+
 private:
 	KamataEngine::DirectXCommon* dxCommon_ = nullptr;
 	KamataEngine::Input* input_ = nullptr;
 
 	bool isFinished_ = false;
+	bool isBackToTitle_ = false; // ★追加: タイトルシーンへ戻る
 
 	// ゲーム説明用のスプライト
 	uint32_t textureHandle_ = 0;

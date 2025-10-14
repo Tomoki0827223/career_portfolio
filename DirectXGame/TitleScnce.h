@@ -59,6 +59,7 @@ private:
 	State state_ = State::TitleScreen; // 初期状態
 
 	// 演出時間（フレーム数）
+	// 演出時間（フレーム数）
 	static inline const float kTransitionDuration = 60.0f;
 	float transitionTimer_ = 0.0f; // 演出タイマー
 
@@ -100,4 +101,17 @@ private:
 	uint32_t TitleSEHandle3_ = 0;
 	uint32_t voiceHandle_ = 0;
 	uint32_t voiceHandle2_ = 0;
+
+	// ★追加: スライドアウト演出用
+	static inline const int kSlideCount = 5; // スライド画像の枚数
+	// 1枚のスライドが中央に停止するまでの時間
+	// static inline const float kSlideDuration = 10.0f; // ★元の値
+	static inline const float kSlideDuration = 30.0f; // ★修正: 30Fに延長（停止アニメーションとして適切）
+    
+    
+
+	// ★追加: スライド画像用のテクスチャハンドルとスプライト
+	// TitleScnce.hの既存のsprite_*変数とは別に、スライド専用のものを用意する
+	uint32_t slideTextureHandle_[kSlideCount];
+	KamataEngine::Sprite* slideSprites_[kSlideCount];
 };

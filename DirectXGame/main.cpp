@@ -17,7 +17,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// 初期化処理
 	//  // エンジンの初期化
 
-	KamataEngine::Initialize(L"LE3C_26_ムラタ_トモキ");
+	KamataEngine::Initialize(L"Bike_Savaiver");
 
 	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
 
@@ -47,7 +47,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 		dxCommon->PreDraw();
 
-				// シーンごとに処理を分岐
+		// シーンごとに処理を分岐
 		if (scene == Scene::Title) {
 			titleScnce->Update();
 			titleScnce->Draw();
@@ -55,13 +55,21 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 				// タイトル演出完了後、Tutorialシーンへ移行
 				scene = Scene::Tutorial;
 			}
-		} else if (scene == Scene::Tutorial) { // ★ Tutorialシーンの処理
+		} else if (scene == Scene::Tutorial) {
 			tutorialScnce->Update();
 			tutorialScnce->Draw();
-			if (tutorialScnce->IsFinished()) {
-				// チュートリアル終了後、Gameへ移行
+
+			if (tutorialScnce->IsBackToTitle()) {
+				scene = Scene::Title;
+				// ★TitleScnceを再初期化 (Initialize内でisFinished_がリセットされる)
+				titleScnce->Initialize();
+
+				// ★追加: チュートリアルシーンも再初期化し、次のゲーム開始に備える
+				tutorialScnce->Initialize(); // isFinished_とisBackToTitle_をリセット
+			} else if (tutorialScnce->IsFinished()) {
 				scene = Scene::Game;
 			}
+
 		} else if (scene == Scene::Game) {
 			gameScnce->Update();
 			gameScnce->Draw();

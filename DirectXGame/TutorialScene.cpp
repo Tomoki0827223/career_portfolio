@@ -21,10 +21,11 @@ void TutorialScene::Initialize() {
 	tutorialSprite_ = KamataEngine::Sprite::Create(textureHandle_, {0, 0});
 
 	isFinished_ = false;
+	isBackToTitle_ = false; // ★重要: 戻るフラグを確実にリセット
 	timer_ = 0.0f;
 
 	// 初期状態設定
-	state_ = State::FadeIn; // 明示的に初期状態を設定
+	state_ = State::FadeIn;
 	fadeInTimer_ = 0.0f;
 }
 
@@ -43,13 +44,17 @@ void TutorialScene::Update() {
 		break;
 
 	case State::Active:
+		// ★スペースキーでタイトルへ戻る
+		if (input_->TriggerKey(DIK_SPACE)) {
+			isBackToTitle_ = true;
+		}
+
 		// ★ ゲームシーンへ移行する条件
-		// Enterキーが押されたら終了フラグを立てる (Transition状態をスキップ)
+		// Enterキーが押されたら終了フラグを立てる
 		if (input_->TriggerKey(DIK_RETURN)) {
 			isFinished_ = true;
 		}
 		// TODO: 必要に応じて、説明スプライトのアニメーションや点滅などをここに追加
-		// 既存の「Press Enter to Start」点滅表示もActive状態でのみ動作させることが推奨されます。
 		break;
 
 	case State::Transition:

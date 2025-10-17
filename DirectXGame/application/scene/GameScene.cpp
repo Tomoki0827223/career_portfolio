@@ -15,6 +15,7 @@ GameScene::~GameScene() {
 	experiences_.clear();
 }
 
+
 void GameScene::Initialize() {
 
 	graph_ = new Graph();

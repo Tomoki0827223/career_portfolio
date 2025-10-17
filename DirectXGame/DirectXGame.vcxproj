@@ -84,7 +84,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINDOWS;_DEBUG;USE_IMGUI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)application\ui;$(ProjectDir)application\scene;$(ProjectDir)application\math;$(ProjectDir)application\3d;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
@@ -107,7 +107,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)application\ui;$(ProjectDir)application\scene;$(ProjectDir)application\math;$(ProjectDir)application\3d;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <Optimization>MinSpace</Optimization>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -134,7 +134,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINDOWS;NDEBUG;USE_IMGUI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)application\ui;$(ProjectDir)application\scene;$(ProjectDir)application\math;$(ProjectDir)application\3d;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <Optimization>Disabled</Optimization>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -154,17 +154,17 @@
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="affine.cpp" />
-    <ClCompile Include="BIt_Map_Font.cpp" />
-    <ClCompile Include="Experience.cpp" />
-    <ClCompile Include="GameScene.cpp" />
-    <ClCompile Include="Graph.cpp" />
+    <ClCompile Include="application\math\affine.cpp" />
+    <ClCompile Include="application\math\WorldTransformEx.cpp" />
+    <ClCompile Include="application\ui\BIt_Map_Font.cpp" />
+    <ClCompile Include="application\3d\Experience.cpp" />
+    <ClCompile Include="application\scene\GameScene.cpp" />
+    <ClCompile Include="application\ui\Graph.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Player.cpp" />
-    <ClCompile Include="Stage.cpp" />
-    <ClCompile Include="TitleScnce.cpp" />
-    <ClCompile Include="TutorialScene.cpp" />
-    <ClCompile Include="WorldTransformEx.cpp" />
+    <ClCompile Include="application\3d\Player.cpp" />
+    <ClCompile Include="application\3d\Stage.cpp" />
+    <ClCompile Include="application\scene\TitleScnce.cpp" />
+    <ClCompile Include="application\scene\TutorialScene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Resources\shaders\TerrainPS.hlsl">
@@ -264,15 +264,15 @@
     <None Include="Resources\shaders\Sprite.hlsli" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="affine.h" />
-    <ClInclude Include="BIt_Map_Font.h" />
-    <ClInclude Include="Experience.h" />
-    <ClInclude Include="GameScene.h" />
-    <ClInclude Include="Graph.h" />
-    <ClInclude Include="Player.h" />
-    <ClInclude Include="Stage.h" />
-    <ClInclude Include="TitleScnce.h" />
-    <ClInclude Include="TutorialScene.h" />
+    <ClInclude Include="application\math\affine.h" />
+    <ClInclude Include="application\ui\BIt_Map_Font.h" />
+    <ClInclude Include="application\3d\Experience.h" />
+    <ClInclude Include="application\scene\GameScene.h" />
+    <ClInclude Include="application\ui\Graph.h" />
+    <ClInclude Include="application\3d\Player.h" />
+    <ClInclude Include="application\3d\Stage.h" />
+    <ClInclude Include="application\scene\TitleScnce.h" />
+    <ClInclude Include="application\scene\TutorialScene.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

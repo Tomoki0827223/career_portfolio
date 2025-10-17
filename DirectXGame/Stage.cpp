@@ -9,6 +9,7 @@ Stage::~Stage() {
 	delete sprite2_;
 }
 
+
 void Stage::Initialize() {
 
 	input_ = KamataEngine::Input::GetInstance();

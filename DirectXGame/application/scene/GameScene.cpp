@@ -55,16 +55,6 @@ void GameScene::Initialize() {
 	font_ = new BIt_Map_Font();
 	font_->Initialize();
 
-	// 経験値アイテムのランダム配置 (既存のロジックを残す)
-	const int ITEM_COUNT = 200;
-
-	for (int i = 0; i < ITEM_COUNT; ++i) {
-		Vector3 randomPos = {dist(engine), dist(engine), 0.0f};
-		Experience* newExp = new Experience(randomPos);
-		newExp->Initialize();
-		experiences_.push_back(newExp);
-	}
-
 	// HPバーの初期化 (追加)
 	// ユーザーがアップロードしたファイルを基にテクスチャをロード
 	hpBarBaseTexture_ = KamataEngine::TextureManager::Load("HP.png");
@@ -154,7 +144,29 @@ void GameScene::CheckAllCollisions() {
 			// ダメージを一度与えたら、敵をプレイヤーから少し遠ざけるなどの処理を追加しても良い
 		}
 	}
-}
+
+	// ------------------------------------
+	// 3. プレイヤー vs 経験値アイテム (吸引開始の判定)
+	// ------------------------------------
+	// GameScene.hに定義されている吸引範囲 ATTRACTION_RADIUS (10.0f) を使用
+	for (Experience* exp : experiences_) {
+		if (exp->IsAttracted()) {
+			// 吸引中であれば、常にプレイヤーの位置をターゲットとして更新する
+			exp->SetTarget(playerPos);
+			continue;
+		}
+
+		Vector3 expPos = exp->GetPosition();
+		Vector3 diff = expPos - playerPos;
+		float distance = Math::Length(diff);
+
+		// プレイヤーの周囲の吸引範囲に入ったら、吸引を開始する
+		// 【修正】Experience::ATTRACTION_RADIUSを使用するように変更
+		if (distance <= Experience::ATTRACTION_RADIUS) {
+			exp->SetTarget(playerPos); // SetTarget内部でisAttracted_がtrueになる
+		}
+	}
+} // ★ここにあった余分な '}' を削除★
 
 void GameScene::Update() {
 	if (isGameOver_) {
@@ -193,12 +205,12 @@ void GameScene::Update() {
 	CheckAllCollisions();
 
 	// ------------------------------------
-	// 経験値アイテムの更新・削除 (既存のロジックを残す)
+	// 経験値アイテムの更新・削除
 	// ------------------------------------
-	// ... (経験値アイテムの更新ロジックは変更なし) ...
+	// 【修正】Update時にプレイヤーの位置を渡す
+	Vector3 playerPosForExp = player_->GetPosition();
 	for (Experience* exp : experiences_) {
-		// ...
-		exp->Update();
+		exp->Update(playerPosForExp);
 	}
 
 	// --- アイテムの削除処理 (取得/死亡判定) ---
@@ -219,10 +231,23 @@ void GameScene::Update() {
 	// ------------------------------------
 	// 敵の削除処理 (死亡判定)
 	// ------------------------------------
-	// 後方からループで処理することで、イテレータの無効化を避ける
+	// 乱数生成をループの外に移動し、10〜15個ドロップさせる
+	std::uniform_int_distribution<int> distCount(10, 15);
+
 	for (auto it = enemies_.rbegin(); it != enemies_.rend();) {
 		Enemy* enemy = *it;
 		if (enemy->IsDead()) {
+			// **【修正】敵の死亡時に経験値を10-15個生成する**
+			Vector3 dropPosition = enemy->GetPosition();
+			int dropCount = distCount(engine); // 10〜15個の乱数
+
+			for (int i = 0; i < dropCount; ++i) {
+				Experience* newExp = new Experience(dropPosition);
+				newExp->Initialize();
+				experiences_.push_back(newExp);
+			}
+			// ----------------------------------------
+
 			delete enemy; // メモリを解放
 			// リバースイテレータを順方向イテレータに変換して削除
 			it = std::vector<Enemy*>::reverse_iterator(enemies_.erase(std::next(it).base()));
@@ -239,7 +264,7 @@ void GameScene::Update() {
 
 	if (currentHp <= 0) {
 		isGameOver_ = true; // ゲームオーバーフラグを立てる
-		// **TODO**: ここでゲームオーバーシーンへの遷移処理を実装してください。
+		                    // **TODO**: ここでゲームオーバーシーンへの遷移処理を実装してください。
 	}
 
 	// HPバーのサイズを更新

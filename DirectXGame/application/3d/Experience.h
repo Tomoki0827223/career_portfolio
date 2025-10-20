@@ -6,14 +6,19 @@ using namespace KamataEngine;
 
 class Experience {
 public:
-	// コンストラクタで位置を設定できるようにする
+	// 【修正】GameSceneから参照するための静的定数をpublic宣言
+	static const float ATTRACTION_RADIUS;      // 吸引開始半径
+	static const float ATTRACTION_SPEED;       // 吸引速度
+	static const float INITIAL_VELOCITY_SCALE; // 初速の最大スケール
+
 	Experience(const Vector3& initialPos);
 	~Experience();
 
 	void Initialize();
-	void Update();
+	// 【修正】Update関数にプレイヤーの位置を引数として追加
+	void Update(const Vector3& playerPos);
 	void Draw(const Camera& camera);
-	
+
 	// アイテムの位置を取得するgetter（衝突判定などに使う）
 	Vector3 GetPosition() const { return worldTransform.translation_; }
 
@@ -23,28 +28,26 @@ public:
 		isAttracted_ = true; // 吸引状態に切り替える
 	}
 
+	// 【追加】GameSceneから吸引状態に切り替えるためのセッター
+	void SetIsAttracted(bool isAttracted) { isAttracted_ = isAttracted; }
+
 	// 取得されたかどうかのフラグ
 	bool IsDead() const { return isDead_; }
 
-	// 吸引されているかどうかのフラグを取得するGetter (追加)
+	// 吸引されているかどうかのフラグを取得するGetter
 	bool IsAttracted() const { return isAttracted_; }
 
 private:
-
 	Model* model_ = nullptr;
 	WorldTransform worldTransform;
-
-	// 必要に応じて経験値の量などのメンバを追加
 
 	// 状態管理用
 	Vector3 targetPosition_ = {}; // プレイヤーの位置
 	bool isAttracted_ = false;    // 吸引されているか
 	bool isDead_ = false;         // 取得されたか
 
-	const float ATTRACTION_SPEED = 0.5f; // 吸引速度
-
-	// 【修正2】演出用の定数をExperienceクラスのメンバにする
-	const float MAX_SCALE = 2.0f;
-	const float MIN_SCALE = 1.0f;
-	const float SCALE_SPEED = 0.05f;
+	// 【追加】散らばり処理用メンバ
+	Vector3 scatterVelocity_ = {};
+	int scatterTimer_ = 0;
+	const int SCATTER_TIME = 15; // 散らばりモーションの継続フレーム数
 };

@@ -30,6 +30,12 @@ GameScene::~GameScene() {
 		delete enemy;
 	}
 	enemies_.clear();
+	
+	// ★ Enemy2の解放を追加 ★
+	for (Enemy2* enemy2 : enemies2_) {
+		delete enemy2;
+	}
+	enemies2_.clear();
 }
 
 void GameScene::Initialize() {
@@ -73,7 +79,9 @@ void GameScene::Initialize() {
 
 // 敵のランダム生成関数 (実装)
 void GameScene::SpawnEnemy() {
-	if (enemies_.size() >= kMaxEnemies) {
+
+	// ★ Enemy1とEnemy2の総数で制限 ★
+	if (enemies_.size() + enemies2_.size() >= kMaxEnemies + kMaxEnemies2) {
 		return;
 	}
 
@@ -83,21 +91,29 @@ void GameScene::SpawnEnemy() {
 	Vector3 randomPos;
 	float distance = 0.0f;
 
+
 	do {
 		// x, yをランダムに生成し、zは0.0f（固定）に設定
 		randomPos = {dist(engine), dist(engine), 0.0f};
 		distance = Math::Length(randomPos - playerPos);
 	} while (distance < kMinSpawnDistance);
 
-	Enemy* newEnemy = new Enemy(randomPos);
-	newEnemy->Initialize();
-	enemies_.push_back(newEnemy);
+	// ★ 敵の種類をランダムに決定 (Enemy2を低確率で出現させる) ★
+	std::uniform_int_distribution<int> distType(0, 3); // 0: Enemy2, 1-3: Enemy1 (4分の1の確率でEnemy2)
+	if (enemies2_.size() < kMaxEnemies2 && distType(engine) == 0) {
+		Enemy2* newEnemy2 = new Enemy2(randomPos);
+		newEnemy2->Initialize();
+		enemies2_.push_back(newEnemy2);
+	} else if (enemies_.size() < kMaxEnemies) {
+		Enemy* newEnemy = new Enemy(randomPos);
+		newEnemy->Initialize();
+		enemies_.push_back(newEnemy);
+	}
 }
 
-// 衝突判定関数 (実装)
 void GameScene::CheckAllCollisions() {
 	Vector3 playerPos = player_->GetPosition();
-	//float playerBodyRadius = 0.5f; // プレイヤー本体の半径 (仮)
+	// float playerBodyRadius = 0.5f; // プレイヤー本体の半径 (仮)
 
 	// ------------------------------------
 	// 1. プレイヤーの攻撃 vs 敵 (近接攻撃判定)
@@ -105,6 +121,7 @@ void GameScene::CheckAllCollisions() {
 	if (player_->IsAttacking()) {
 		float attackRadius = player_->GetAttackRadius();
 
+		// --- Enemy1への攻撃判定 ---
 		for (Enemy* enemy : enemies_) {
 			if (enemy->IsDead())
 				continue;
@@ -121,12 +138,30 @@ void GameScene::CheckAllCollisions() {
 				enemy->TakeDamage(1);
 			}
 		}
+
+		// --- Enemy2への攻撃判定 (★追加★) ---
+		for (Enemy2* enemy2 : enemies2_) {
+			if (enemy2->IsDead())
+				continue;
+
+			Vector3 enemyPos = enemy2->GetPosition();
+			float enemyRadius = enemy2->GetRadius();
+
+			Vector3 diff = enemyPos - playerPos;
+			float distance = Math::Length(diff);
+
+			// 攻撃判定
+			if (distance <= attackRadius + enemyRadius) {
+				// 敵にダメージを与える
+				enemy2->TakeDamage(1);
+			}
+		}
 	}
 
 	// ------------------------------------
 	// 2. 敵 vs プレイヤー (敵からの接触ダメージ)
 	// ------------------------------------
-	//for (Enemy* enemy : enemies_) {
+	// for (Enemy* enemy : enemies_) {
 	//	// 死亡した敵や、すでにHPが0のプレイヤーにはダメージを与えない
 	//	if (enemy->IsDead() || player_->GetCurrentHp() <= 0)
 	//		continue;
@@ -146,7 +181,6 @@ void GameScene::CheckAllCollisions() {
 	//}
 }
 
-
 void GameScene::Update() {
 	if (isGameOver_) {
 		// ゲームオーバーシーンへの**遷移**ロジックをここに記述
@@ -156,7 +190,7 @@ void GameScene::Update() {
 
 	stage_->Update();
 	player_->Update();
-	//graph_->Update();
+	// graph_->Update();
 
 	// スコア表示の更新
 	font_->Set(score_);
@@ -165,7 +199,8 @@ void GameScene::Update() {
 	// 敵の生成
 	// ------------------------------------
 	enemySpawnTimer_++;
-	if (enemies_.size() < kMaxEnemies && enemySpawnTimer_ >= kEnemySpawnInterval) {
+	// ★ 敵の総数で制限するように変更 ★
+	if (enemies_.size() + enemies2_.size() < kMaxEnemies + kMaxEnemies2 && enemySpawnTimer_ >= kEnemySpawnInterval) {
 		SpawnEnemy();
 		enemySpawnTimer_ = 0; // タイマーリセット
 	}
@@ -176,6 +211,10 @@ void GameScene::Update() {
 	Vector3 playerPos = player_->GetPosition();
 	for (Enemy* enemy : enemies_) {
 		enemy->Update(playerPos);
+	}
+	// ★ Enemy2の更新を追加 ★
+	for (Enemy2* enemy2 : enemies2_) {
+		enemy2->Update(playerPos);
 	}
 
 	// ------------------------------------
@@ -210,15 +249,18 @@ void GameScene::Update() {
 	// ------------------------------------
 	// 敵の削除処理 (死亡判定)
 	// ------------------------------------
-	// 乱数生成をループの外に移動し、10〜15個ドロップさせる
-	std::uniform_int_distribution<int> distCount(10, 15);
+	// 乱数生成をループの外に移動し、10〜15個ドロップさせる (Enemy1用)
+	std::uniform_int_distribution<int> distCount1(10, 15);
+	// ★ Enemy2用: 30個ドロップに固定 ★
+	const int kEnemy2DropCount = 30;
 
+	// --- Enemy1の削除 ---
 	for (auto it = enemies_.rbegin(); it != enemies_.rend();) {
 		Enemy* enemy = *it;
 		if (enemy->IsDead()) {
 			// **【修正】敵の死亡時に経験値を10-15個生成する**
 			Vector3 dropPosition = enemy->GetPosition();
-			int dropCount = distCount(engine); // 10〜15個の乱数
+			int dropCount = distCount1(engine); // 10〜15個の乱数
 
 			for (int i = 0; i < dropCount; ++i) {
 				Experience* newExp = new Experience(dropPosition);
@@ -230,6 +272,27 @@ void GameScene::Update() {
 			delete enemy; // メモリを解放
 			// リバースイテレータを順方向イテレータに変換して削除
 			it = std::vector<Enemy*>::reverse_iterator(enemies_.erase(std::next(it).base()));
+		} else {
+			++it;
+		}
+	}
+
+	// --- Enemy2の削除 (★追加★) ---
+	for (auto it = enemies2_.rbegin(); it != enemies2_.rend();) {
+		Enemy2* enemy2 = *it;
+		if (enemy2->IsDead()) {
+			// **【Enemy2の経験値生成】敵の死亡時に経験値を30個生成する**
+			Vector3 dropPosition = enemy2->GetPosition();
+			int dropCount = kEnemy2DropCount; // 30個ドロップ
+
+			for (int i = 0; i < dropCount; ++i) {
+				Experience* newExp = new Experience(dropPosition);
+				newExp->Initialize();
+				experiences_.push_back(newExp);
+			}
+
+			delete enemy2; // メモリを解放
+			it = std::vector<Enemy2*>::reverse_iterator(enemies2_.erase(std::next(it).base()));
 		} else {
 			++it;
 		}
@@ -254,6 +317,7 @@ void GameScene::Update() {
 	// HPバーの幅のみをHPの比率に合わせて変更する
 	hpBar_->SetSize({newWidth, currentSize.y});
 }
+
 
 /**
  * @brief HPバーの描画処理
@@ -284,6 +348,10 @@ void GameScene::Draw() {
 	for (Enemy* enemy : enemies_) {
 		enemy->Draw(camera_);
 	}
+	// ★ Enemy2の描画を追加 ★
+	for (Enemy2* enemy2 : enemies2_) {
+		enemy2->Draw(camera_);
+	}
 
 	// 3. 3D描画の終了
 	Model::PostDraw(); // ★ Sprite描画の前にModelの描画を一旦区切る ★
@@ -296,7 +364,7 @@ void GameScene::Draw() {
 	// 5. 2Dオブジェクトの描画
 	DrawHPBar(); // HPバーの描画
 
-	//graph_->Draw(); // 既存のUI
+	// graph_->Draw(); // 既存のUI
 	font_->Draw();
 
 	// 6. 2D描画の終了

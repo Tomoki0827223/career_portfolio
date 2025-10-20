@@ -6,6 +6,7 @@
 #include "Stage.h"
 #include "Experience.h" 
 #include "Enemy.h"       // 追記
+#include "Enemy2.h"
 #include <vector>       
 #include <random>       
 #include <algorithm>
@@ -53,12 +54,15 @@ private:
 	// 吸引範囲 (例: 10.0f)
 	const float ATTRACTION_RADIUS = 10.0f;
 
-	// 敵を格納するベクトル (追加)
+
+	// 敵の管理
 	std::vector<Enemy*> enemies_;
-	// 敵の生成間隔タイマーと最大数 (追加)
+	const int kMaxEnemies = 20;
 	int enemySpawnTimer_ = 0;
-	const int kEnemySpawnInterval = 120; // 120フレーム(2秒)に1回
-	const int kMaxEnemies = 30;          // 最大敵数
+	const int kEnemySpawnInterval = 120; // 120フレームごとに生成 (2秒)
+
+	std::vector<Enemy2*> enemies2_; // ★ Enemy2のリストを追加 ★
+	const int kMaxEnemies2 = 5;     // ★ Enemy2の最大数を設定 (出現数を制限) ★
 
 	// HPバー用のスプライト (追加)
 	KamataEngine::Sprite* hpBarBase_ = nullptr;

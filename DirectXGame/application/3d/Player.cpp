@@ -52,7 +52,35 @@ void Player::Update() {
 		attackTimer_--;
 		if (attackTimer_ <= 0) {
 			isAttacking_ = false;
+			// 攻撃終了時にスケールをリセット
+			worldTransform.scale_ = {2.0f, 2.0f, 2.0f}; // ★ 攻撃終了時のリセット ★
 		}
+
+		// ★ プレイヤー攻撃時の視覚的フィードバック: スケールアニメーション ★
+		// 攻撃フレーム数が 10 のため、前半 5f で拡大、後半 5f で縮小
+		const float kDefaultScale = 2.0f;
+		const float kMaxScale = 3.0f;              // より目立つように 3.0f に拡大
+		const int kHalfTime = kMaxAttackTime_ / 2; // 5フレーム
+
+		float currentScale = kDefaultScale;
+
+		if (attackTimer_ >= kHalfTime) {
+			// 攻撃前半 (10 -> 6): 2.0f -> 3.0f に拡大
+			// t_expand: 0.0f (attackTimer_=10) -> 1.0f (attackTimer_=6)
+			float t_expand = 1.0f - (float)(attackTimer_ - kHalfTime) / kHalfTime;
+			currentScale = kDefaultScale + (kMaxScale - kDefaultScale) * t_expand;
+		} else {
+			// 攻撃後半 (5 -> 1): 3.0f -> 2.0f に縮小
+			// t_shrink: 1.0f (attackTimer_=5) -> 0.0f (attackTimer_=1)
+			float t_shrink = (float)attackTimer_ / kHalfTime;
+			currentScale = kDefaultScale + (kMaxScale - kDefaultScale) * t_shrink;
+		}
+
+		worldTransform.scale_ = {currentScale, currentScale, currentScale};
+
+	} else {
+		// 攻撃中でない場合はデフォルトのスケールを維持 (初期化時の 2.0f に戻す)
+		worldTransform.scale_ = {2.0f, 2.0f, 2.0f};
 	}
 
 	// 移動を反映

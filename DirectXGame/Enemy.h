@@ -29,7 +29,7 @@ private:
     // 敵のステータス
     const float kMoveSpeed = 0.1f;
     const float radius_ = 1.0f;
-    const int kMaxHp = 3;
+    const int kMaxHp = 10;
     int currentHp_ = kMaxHp;
 
     // モデルとワールド変換

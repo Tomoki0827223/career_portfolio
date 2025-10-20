@@ -29,7 +29,7 @@ private:
 	// 敵のステータス
 	const float kMoveSpeed = 0.1f;
 	const float radius_ = 1.0f;
-	const int kMaxHp = 4; // ★ HPを4に変更 (4回攻撃で倒せるように)
+	const int kMaxHp = 20; // ★ HPを4に変更 (4回攻撃で倒せるように)
 	int currentHp_ = kMaxHp;
 
 	// モデルとワールド変換

@@ -20,6 +20,7 @@ void Player::Initialize() {
 	camera_.Initialize();
 
 	worldTransform.Initialize();
+	worldTransform.scale_ = {2.0f, 2.0f, 2.0f}; // ★ プレイヤーのサイズを2倍に ★
 }
 
 void Player::Update() {

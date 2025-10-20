@@ -14,7 +14,7 @@ GameScene::~GameScene() {
 	delete player_;
 	delete playerModel_;
 	delete model_;
-	delete graph_;
+	//delete graph_;
 	delete font_;
 	delete hpBarBase_; // 追加
 	delete hpBar_;     // 追加
@@ -34,8 +34,8 @@ GameScene::~GameScene() {
 
 void GameScene::Initialize() {
 
-	graph_ = new Graph();
-	graph_->Initialize();
+	//graph_ = new Graph();
+	//graph_->Initialize();
 
 	stage_ = new Stage();
 	stage_->Initialize();
@@ -156,7 +156,7 @@ void GameScene::Update() {
 
 	stage_->Update();
 	player_->Update();
-	graph_->Update();
+	//graph_->Update();
 
 	// スコア表示の更新
 	font_->Set(score_);
@@ -296,7 +296,7 @@ void GameScene::Draw() {
 	// 5. 2Dオブジェクトの描画
 	DrawHPBar(); // HPバーの描画
 
-	graph_->Draw(); // 既存のUI
+	//graph_->Draw(); // 既存のUI
 	font_->Draw();
 
 	// 6. 2D描画の終了

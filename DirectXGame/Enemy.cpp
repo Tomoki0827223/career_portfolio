@@ -9,7 +9,8 @@ void Enemy::Initialize() {
 	model_ = Model::CreateFromOBJ("enemy");
 
 	worldTransform.Initialize();
-	worldTransform.scale_ = {1.0f, 1.0f, 1.0f};
+	worldTransform.scale_ = {2.0f, 2.0f, 2.0f}; // ★ 敵のサイズを2倍に ★
+
 	worldTransform.translation_.z = 0.0f; // Z座標を固定
 	worldTransform.UpdateMatarix();
 }

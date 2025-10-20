@@ -97,7 +97,7 @@ void GameScene::SpawnEnemy() {
 // 衝突判定関数 (実装)
 void GameScene::CheckAllCollisions() {
 	Vector3 playerPos = player_->GetPosition();
-	float playerBodyRadius = 0.5f; // プレイヤー本体の半径 (仮)
+	//float playerBodyRadius = 0.5f; // プレイヤー本体の半径 (仮)
 
 	// ------------------------------------
 	// 1. プレイヤーの攻撃 vs 敵 (近接攻撃判定)
@@ -126,47 +126,26 @@ void GameScene::CheckAllCollisions() {
 	// ------------------------------------
 	// 2. 敵 vs プレイヤー (敵からの接触ダメージ)
 	// ------------------------------------
-	for (Enemy* enemy : enemies_) {
-		// 死亡した敵や、すでにHPが0のプレイヤーにはダメージを与えない
-		if (enemy->IsDead() || player_->GetCurrentHp() <= 0)
-			continue;
+	//for (Enemy* enemy : enemies_) {
+	//	// 死亡した敵や、すでにHPが0のプレイヤーにはダメージを与えない
+	//	if (enemy->IsDead() || player_->GetCurrentHp() <= 0)
+	//		continue;
 
-		Vector3 enemyPos = enemy->GetPosition();
-		float enemyRadius = enemy->GetRadius();
+	//	Vector3 enemyPos = enemy->GetPosition();
+	//	float enemyRadius = enemy->GetRadius();
 
-		Vector3 diff = enemyPos - playerPos;
-		float distance = Math::Length(diff);
+	//	Vector3 diff = enemyPos - playerPos;
+	//	float distance = Math::Length(diff);
 
-		// 接触判定
-		if (distance <= playerBodyRadius + enemyRadius) {
-			// プレイヤーにダメージを与える (ここでは接触1回で1ダメージと仮定)
-			player_->TakeDamage(1);
-			// ダメージを一度与えたら、敵をプレイヤーから少し遠ざけるなどの処理を追加しても良い
-		}
-	}
+	//	// 接触判定
+	//	if (distance <= playerBodyRadius + enemyRadius) {
+	//		// プレイヤーにダメージを与える (ここでは接触1回で1ダメージと仮定)
+	//		player_->TakeDamage(1);
+	//		// ダメージを一度与えたら、敵をプレイヤーから少し遠ざけるなどの処理を追加しても良い
+	//	}
+	//}
+}
 
-	// ------------------------------------
-	// 3. プレイヤー vs 経験値アイテム (吸引開始の判定)
-	// ------------------------------------
-	// GameScene.hに定義されている吸引範囲 ATTRACTION_RADIUS (10.0f) を使用
-	for (Experience* exp : experiences_) {
-		if (exp->IsAttracted()) {
-			// 吸引中であれば、常にプレイヤーの位置をターゲットとして更新する
-			exp->SetTarget(playerPos);
-			continue;
-		}
-
-		Vector3 expPos = exp->GetPosition();
-		Vector3 diff = expPos - playerPos;
-		float distance = Math::Length(diff);
-
-		// プレイヤーの周囲の吸引範囲に入ったら、吸引を開始する
-		// 【修正】Experience::ATTRACTION_RADIUSを使用するように変更
-		if (distance <= Experience::ATTRACTION_RADIUS) {
-			exp->SetTarget(playerPos); // SetTarget内部でisAttracted_がtrueになる
-		}
-	}
-} // ★ここにあった余分な '}' を削除★
 
 void GameScene::Update() {
 	if (isGameOver_) {
@@ -207,7 +186,7 @@ void GameScene::Update() {
 	// ------------------------------------
 	// 経験値アイテムの更新・削除
 	// ------------------------------------
-	// 【修正】Update時にプレイヤーの位置を渡す
+	// Update時にプレイヤーの位置を渡す
 	Vector3 playerPosForExp = player_->GetPosition();
 	for (Experience* exp : experiences_) {
 		exp->Update(playerPosForExp);

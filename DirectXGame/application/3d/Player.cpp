@@ -25,7 +25,7 @@ void Player::Initialize() {
 void Player::Update() {
 	const float speed = 0.5f;
 
-	// 入力取得
+	// 入力取得 (移動処理)
 	if (input_->PushKey(DIK_W)) {
 		worldTransform.translation_.y += speed;
 	}
@@ -39,9 +39,28 @@ void Player::Update() {
 		worldTransform.translation_.x += speed;
 	}
 
+	// 攻撃入力 (追加)
+	// スペースキーで攻撃開始
+	if (input_->TriggerKey(DIK_SPACE) && !isAttacking_) {
+		isAttacking_ = true;
+		attackTimer_ = kMaxAttackTime_; // 10フレームの間、攻撃判定を有効にする
+	}
+
+	// 攻撃処理 (追加)
+	if (isAttacking_) {
+		attackTimer_--;
+		if (attackTimer_ <= 0) {
+			isAttacking_ = false;
+		}
+	}
+
 	// 移動を反映
 	worldTransform.TransferMatrix();
 	worldTransform.UpdateMatarix();
+
+	if (currentHp_ < 0) {
+		currentHp_ = 0;
+	}
 }
 
 void Player::Draw() {

@@ -160,6 +160,7 @@
     <ClCompile Include="application\3d\Experience.cpp" />
     <ClCompile Include="application\scene\GameScene.cpp" />
     <ClCompile Include="application\ui\Graph.cpp" />
+    <ClCompile Include="Enemy.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="application\3d\Player.cpp" />
     <ClCompile Include="application\3d\Stage.cpp" />
@@ -273,6 +274,7 @@
     <ClInclude Include="application\3d\Stage.h" />
     <ClInclude Include="application\scene\TitleScnce.h" />
     <ClInclude Include="application\scene\TutorialScene.h" />
+    <ClInclude Include="Enemy.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

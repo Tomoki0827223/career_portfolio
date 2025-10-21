@@ -9,6 +9,7 @@ const float MAP_HALF_RANGE = 50.0f;
 std::uniform_real_distribution<float> dist(-MAP_HALF_RANGE, MAP_HALF_RANGE);
 } // namespace
 
+
 GameScene::~GameScene() {
 	delete stage_;
 	delete player_;

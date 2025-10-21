@@ -1,9 +1,12 @@
 #include "TutorialScene.h"
+#include <algorithm> // std::min
+#include <cmath>     // ★追加: ロード画面の点滅演出に std::sin を使用するため
 
 TutorialScene::~TutorialScene() {
 	delete tutorialSprite_;
 	delete backgroundSprite_; // ★追加: 背景スプライトの解放
 	delete fadeOutSprite_;    // ★追加: 暗転用スプライトの解放
+	delete loadingSprite_;    // ★追加: ロードスプライトの解放
 }
 
 void TutorialScene::Initialize() {
@@ -31,6 +34,17 @@ void TutorialScene::Initialize() {
 	// 色を黒(R=0, G=0, B=0)に設定し、透明度(A=0.0f)で初期化
 	fadeOutSprite_->SetColor({0.0f, 0.0f, 0.0f, 0.0f});
 
+	// ★追加: ロード画面用スプライトの初期化
+	// 画像ファイル名は適宜変更してください (例: Transition/Loading.png)
+	loadingTextureHandle_ = KamataEngine::TextureManager::Load("Tutorial/Loading.png");
+	// 画面中央({640, 360})に表示し、アンカーポイントを中央({0.5, 0.5})に設定
+	loadingSprite_ = KamataEngine::Sprite::Create(
+	    loadingTextureHandle_, {640.0f, 360.0f}, // 座標を画面中央に設定 (1280x720の半分)
+	    {0.5f, 0.5f}                             // アンカーポイントを中央に設定
+	);
+	// 初期状態は透明にしておく (描画しない)
+	loadingSprite_->SetColor({1.0f, 1.0f, 1.0f, 0.0f});
+
 	isFinished_ = false;
 	isBackToTitle_ = false; // ★重要: 戻るフラグを確実にリセット
 	timer_ = 0.0f;
@@ -38,6 +52,9 @@ void TutorialScene::Initialize() {
 	// 初期状態設定
 	state_ = State::FadeIn;
 	fadeInTimer_ = 0.0f;
+	// ★追加: ロードタイマーのリセット
+	fadeOutTimer_ = 0.0f;
+	loadingTimer_ = 0.0f;
 }
 
 void TutorialScene::Update() {
@@ -65,18 +82,25 @@ void TutorialScene::Update() {
 		if (input_->TriggerKey(DIK_RETURN)) {
 			state_ = State::Transition; // ★修正: 移行演出へ
 			fadeOutTimer_ = 0.0f;       // ★追加: タイマーリセット
+			loadingTimer_ = 0.0f;       // ★追加: ロードタイマーリセット
 		}
 		// TODO: 必要に応じて、説明スプライトのアニメーションや点滅などをここに追加
 		break;
 
 	case State::Transition:
-		// 移行演出の更新 (フェードアウト)
-		fadeOutTimer_ += 1.0f;
+		// 移行演出の更新 (フェードアウト + ロード演出)
+		if (fadeOutTimer_ < kFadeOutDuration) {
+			// フェードアウト中
+			fadeOutTimer_ += 1.0f;
+		} else {
+			// フェードアウト完了後 (画面は完全に黒)
+			loadingTimer_ += 1.0f;
 
-		if (fadeOutTimer_ >= kFadeOutDuration) {
-			// フェードアウト完了 -> Finished状態へ移行し、次のシーンへ
-			state_ = State::Finished; // ★修正: Finished状態へ
-			isFinished_ = true;       // ★修正: ここでフラグを立てる
+			if (loadingTimer_ >= kLoadingHoldDuration) {
+				// ロード演出完了 -> Finished状態へ移行し、次のシーンへ
+				state_ = State::Finished; // Finished状態へ
+				isFinished_ = true;       // ここでフラグを立てる
+			}
 		}
 		break;
 
@@ -98,12 +122,12 @@ void TutorialScene::Draw() {
 		// 進行度 (0.0fから1.0f)
 		float t = fadeInTimer_ / kFadeInDuration;
 		// イージングを適用
+		// ※ EaseOutQuintはユーザーが別途定義している関数と仮定します
 		float t_eased = EaseOutQuint(t);
 
 		// 透明度を 0.0 (透明) から 1.0 (不透明) へ変化させる
 		alpha = t_eased;
 	}
-
 
 	// --- 背景スプライトの描画 ---
 	if (backgroundSprite_) {
@@ -121,15 +145,30 @@ void TutorialScene::Draw() {
 	if (state_ == State::Transition) {
 		if (fadeOutSprite_) {
 			// 進行度 (0.0fから1.0f)
-			float t = (std::min)(fadeOutTimer_ / kFadeOutDuration, 1.0f);
+			float t_fade = (std::min)(fadeOutTimer_ / kFadeOutDuration, 1.0f);
 
 			// イージングを適用 (ここでは既存のEaseOutQuintを使用)
-			float t_eased = EaseOutQuint(t);
+			float t_eased_fade = EaseOutQuint(t_fade);
 
 			// 暗転スプライトの透明度を 0.0 (透明) から 1.0 (不透明) へ変化させる
 			// 色はInitializeで黒({0,0,0})に設定済み
-			fadeOutSprite_->SetColor({0.0f, 0.0f, 0.0f, t_eased});
+			fadeOutSprite_->SetColor({0.0f, 0.0f, 0.0f, t_eased_fade});
 			fadeOutSprite_->Draw();
+
+			// ★追加: ロード画面の描画 (画面が完全に黒になった後)
+			if (t_fade >= 1.0f && loadingSprite_) {
+				// ロード演出の進捗 (0.0fから1.0f)
+				// float t_load = (std::min)(loadingTimer_ / kLoadingHoldDuration, 1.0f);
+
+				// タイマーが進んでいれば描画する
+				if (loadingTimer_ > 0.0f) {
+					// 例: loadingTimer_による点滅演出 (0.5 ~ 1.0 の間で点滅)
+					// 点滅の周期を調整したい場合は '0.1f' の値を変更してください
+					float blink = std::abs(std::sin(loadingTimer_ * 0.1f)) * 0.5f + 0.5f;
+					loadingSprite_->SetColor({1.0f, 1.0f, 1.0f, blink});
+					loadingSprite_->Draw();
+				}
+			}
 		}
 	} else if (state_ == State::Finished) {
 		// 演出完了後は画面を完全に黒で覆ったままにする

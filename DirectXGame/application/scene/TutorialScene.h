@@ -1,10 +1,10 @@
 #pragma once
+#include "TitleScnce.h"
 #include "input/Input.h"
 #include <2d/Sprite.h>
 #include <3d/Camera.h>
 #include <3d/WorldTransform.h>
 #include <KamataEngine.h>
-#include "TitleScnce.h"
 
 /// <summary>
 /// ゲーム説明 (チュートリアル) シーン
@@ -36,7 +36,6 @@ public:
 	bool IsBackToTitle() const { return isBackToTitle_; }
 
 private:
-
 	KamataEngine::DirectXCommon* dxCommon_ = nullptr;
 	KamataEngine::Input* input_ = nullptr;
 
@@ -55,6 +54,10 @@ private:
 	uint32_t fadeTextureHandle_ = 0;
 	KamataEngine::Sprite* fadeOutSprite_ = nullptr; // ★追加: 暗転用スプライト
 
+	// ★追加: ロード画面用のテクスチャハンドルとスプライト
+	uint32_t loadingTextureHandle_ = 0;
+	KamataEngine::Sprite* loadingSprite_ = nullptr;
+
 	// ★追加: シーンの実行状態
 	enum class State {
 		FadeIn,     // フェードイン演出中
@@ -72,6 +75,10 @@ private:
 	static inline const float kFadeOutDuration = 30.0f; // ★追加: フェードアウト時間（フレーム数、例: 0.5秒）
 	float fadeOutTimer_ = 0.0f;                         // ★追加: フェードアウトタイマー
 
-	float timer_ = 0.0f;
+	// ★追加: ロード画面の演出時間 (黒画面維持時間)
+	static inline const float kLoadingHoldDuration = 120.0f; // 例: 1秒間を2秒間 (120フレーム) に変更
+	float loadingTimer_ = 0.0f;                              // ロードタイマー
 
+	float timer_ = 0.0f;
 };
+// 最後にあった余分な '}' は削除しました

@@ -94,6 +94,14 @@ private:
 	std::vector<SkillType> currentSkillOptions_; // 現在のスキル選択肢 (3つ)
 	// ------------------------------------
 
+	// ★ スキル選択画面用スプライト (追加) ★
+	KamataEngine::Sprite* skillScreenBackground_ = nullptr; // 半透明の背景
+	KamataEngine::Sprite* skillOptionSprites_[3] = {};      // 3つの選択肢の背景
+	KamataEngine::Sprite* skillCursorSprite_ = nullptr;     // 選択カーソル
+
+	uint32_t whiteTextureHandle_ = 0; // スプライトの色付けに使う1x1の白テクスチャ
+	// ----------------------------------------
+
 	// 衝突判定関数 (追加)
 	void CheckAllCollisions();
 

@@ -77,6 +77,91 @@ void GameScene::Initialize() {
 
 	hpBar_ = KamataEngine::Sprite::Create(hpBarTexture_, kHpBarPos);
 	hpBar_->SetSize(kHpBarSize); // HP減少でサイズを変更するため、初期は最大サイズ
+
+	// ★ レベルアップシステム関連の初期化 (追加) ★
+	level_ = 1;
+	currentExp_ = 0;
+	requiredExp_ = kExpBase; // 10
+	isLevelUpPending_ = false;
+	selectedSkillIndex_ = 0;
+}
+
+void GameScene::StartLevelUp() {
+	level_++;
+	// 次のレベルの経験値バーに超過分を回す
+	currentExp_ -= requiredExp_;
+
+	// 次の必要経験値を計算 (例: 10 * 1.2^(level-1))
+	// 経験値はintで計算し、小数点以下は切り捨てる（または四捨五入する）
+	requiredExp_ = static_cast<int>(kExpBase * std::pow(kExpScale, level_ - 1));
+
+	isLevelUpPending_ = true;
+	selectedSkillIndex_ = 0; // 選択インデックスをリセット
+
+	// スキル選択肢をランダムに3つ生成
+	std::random_device seed_gen;
+	std::mt19937 engine(seed_gen());
+	// SkillType::kSkillCountはenumの要素数として使用
+	std::uniform_int_distribution<int> distType(0, static_cast<int>(SkillType::kSkillCount) - 1);
+
+	currentSkillOptions_.clear();
+	while (currentSkillOptions_.size() < 3) {
+		SkillType newSkill = static_cast<SkillType>(distType(engine));
+
+		// 重複チェック
+		bool alreadyExists = false;
+		for (SkillType skill : currentSkillOptions_) {
+			if (skill == newSkill) {
+				alreadyExists = true;
+				break;
+			}
+		}
+		if (!alreadyExists) {
+			currentSkillOptions_.push_back(newSkill);
+		}
+	}
+}
+
+void GameScene::UpdateSkillSelection() {
+	// 入力インスタンスを取得
+	Input* input = KamataEngine::Input::GetInstance();
+
+	// 上キー/下キーで選択肢を移動
+	if (input->TriggerKey(DIK_W) || input->TriggerKey(DIK_UP)) {
+		selectedSkillIndex_ = (selectedSkillIndex_ - 1 + currentSkillOptions_.size()) % currentSkillOptions_.size();
+	}
+	if (input->TriggerKey(DIK_S) || input->TriggerKey(DIK_DOWN)) {
+		selectedSkillIndex_ = (selectedSkillIndex_ + 1) % currentSkillOptions_.size();
+	}
+
+	// 決定キー (スペースキーやエンターキー) でスキルを適用し、ゲームを再開
+	if (input->TriggerKey(DIK_SPACE) || input->TriggerKey(DIK_RETURN)) {
+		ApplySkill(currentSkillOptions_[selectedSkillIndex_]);
+		isLevelUpPending_ = false;    // ゲーム再開
+		currentSkillOptions_.clear(); // 選択肢をクリア
+	}
+
+	// **TODO: スキル選択画面のUI描画ロジックはDraw関数内に実装**
+}
+
+void GameScene::ApplySkill(SkillType skill) {
+	// ここにPlayerクラスの機能拡張やGameScene全体のパラメータ変更処理を記述します
+	switch (skill) {
+	case SkillType::kAttackUp:
+		// 例: プレイヤーの攻撃半径を増やす (Playerクラスにpublicなメソッドが必要)
+		// player_->UpgradeAttackRadius(0.5f);
+		break;
+	case SkillType::kSpeedUp:
+		// 例: プレイヤーの移動速度を増やす (Playerクラスにpublicなメソッドが必要)
+		// player_->UpgradeMoveSpeed(0.1f);
+		break;
+	case SkillType::kHeal:
+		// 例: プレイヤーのHPを回復する (Playerクラスにpublicなメソッドが必要)
+		// player_->Heal(3);
+		break;
+	default:
+		break;
+	}
 }
 
 // 敵のランダム生成関数 (実装)
@@ -186,16 +271,26 @@ void GameScene::CheckAllCollisions() {
 void GameScene::Update() {
 	if (isGameOver_) {
 		// ゲームオーバーシーンへの**遷移**ロジックをここに記述
-		// 例: SceneManager::GetInstance()->ChangeScene(new GameOverScene());
 		return;
 	}
+
+	// ★ レベルアップ待ち状態の場合はスキル選択画面の更新のみを行う ★
+	if (isLevelUpPending_) {
+		UpdateSkillSelection();
+		return; // メインのゲーム更新はスキップ
+	}
+	// ------------------------------------
 
 	stage_->Update();
 	player_->Update();
 	// graph_->Update();
 
 	// スコア表示の更新
-	font_->Set(score_);
+	// **【修正】レベルと経験値を表示するように変更**
+	std::string levelString = "Lv:" + std::to_string(level_);
+	font_->Set(levelString + " EXP:" + std::to_string(currentExp_) + "/" + std::to_string(requiredExp_));
+	// ------------------------------------
+
 
 	// ------------------------------------
 	// 敵の生成
@@ -233,15 +328,23 @@ void GameScene::Update() {
 		exp->Update(playerPosForExp);
 	}
 
+
 	// --- アイテムの削除処理 (取得/死亡判定) ---
-	// 後方からループで処理することで、イテレータの無効化を避ける
 	for (auto it = experiences_.rbegin(); it != experiences_.rend();) {
 		Experience* exp = *it;
 		if (exp->IsDead()) {
-			score_ += 1; // 取得されたらスコアを加算
+			// **【修正】currentExp_を更新し、レベルアップ判定を行う**
+			int expValue = 1; // Experience1つあたりの経験値を1とする
+			currentExp_ += expValue;
+			score_ += expValue; // スコアも引き続き加算
+
+			// ★ レベルアップ判定 ★
+			if (currentExp_ >= requiredExp_) {
+				StartLevelUp(); // レベルアップ処理開始
+			}
+			// ----------------------------------------
 
 			delete exp; // メモリを解放
-			// rbegin() / rend() を使用しているため、削除には base() が必要
 			it = std::vector<Experience*>::reverse_iterator(experiences_.erase(std::next(it).base()));
 		} else {
 			++it;

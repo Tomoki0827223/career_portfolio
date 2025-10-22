@@ -16,7 +16,6 @@ GameScene::~GameScene() {
 	delete player_;
 	delete playerModel_;
 	delete model_;
-	//delete graph_;
 	delete font_;
 	delete hpBarBase_; // 追加
 	delete hpBar_;     // 追加
@@ -38,13 +37,6 @@ GameScene::~GameScene() {
 		delete enemy2;
 	}
 	enemies2_.clear();
-
-	// ★ スキル選択画面用スプライトの解放 (追加) ★
-	delete skillScreenBackground_;
-	delete skillCursorSprite_;
-	for (int i = 0; i < 3; ++i) {
-		delete skillOptionSprites_[i];
-	}
 }
 
 void GameScene::Initialize() {
@@ -85,126 +77,9 @@ void GameScene::Initialize() {
 	hpBar_ = KamataEngine::Sprite::Create(hpBarTexture_, kHpBarPos);
 	hpBar_->SetSize(kHpBarSize); // HP減少でサイズを変更するため、初期は最大サイズ
 
-	// ★ レベルアップシステム関連の初期化 (追加) ★
-	level_ = 1;
-	currentExp_ = 0;
-	requiredExp_ = kExpBase; // 10
-	isLevelUpPending_ = false;
-	selectedSkillIndex_ = 0;
-
-	// ★ スキル選択画面用スプライトの初期化 (追加) ★
-	// 既存の white1x1.png をテクスチャとしてロード
-	whiteTextureHandle_ = KamataEngine::TextureManager::Load("sample.png");
-
-	// 1. 全画面背景スプライトの生成 (画面全体を覆い、半透明にする)
-	skillScreenBackground_ = KamataEngine::Sprite::Create(whiteTextureHandle_, {0, 0});
-	skillScreenBackground_->SetSize({1280.0f, 720.0f});         // 画面サイズに合わせる (仮定)
-	skillScreenBackground_->SetColor({0.0f, 0.0f, 0.0f, 0.8f}); // 黒で半透明 (80%透明)
-
-	// 2. スキル選択肢スプライトの生成
-	const KamataEngine::Vector2 kOptionSize = {400.0f, 100.0f}; // 選択肢のサイズ
-	const KamataEngine::Vector2 kBasePos = {440.0f, 180.0f};    // 画面中央付近
-
-	for (int i = 0; i < 3; ++i) {
-		skillOptionSprites_[i] = KamataEngine::Sprite::Create(whiteTextureHandle_, {kBasePos.x, kBasePos.y + i * 120.0f});
-		skillOptionSprites_[i]->SetSize(kOptionSize);
-		skillOptionSprites_[i]->SetColor({0.2f, 0.2f, 0.2f, 1.0f}); // 濃い灰色
-	}
-
-	// 3. 選択カーソル/ハイライトスプライトの生成
-	skillCursorSprite_ = KamataEngine::Sprite::Create(whiteTextureHandle_, {0, 0}); // 位置はDrawで更新
-	skillCursorSprite_->SetSize({kOptionSize.x + 20.0f, kOptionSize.y + 10.0f});    // 選択肢より少し大きく
-	skillCursorSprite_->SetColor({1.0f, 1.0f, 0.0f, 0.5f});                         // 黄色で半透明
-	// ----------------------------------------
-}
-
-void GameScene::StartLevelUp() {
-	level_++;
-	// 次のレベルの経験値バーに超過分を回す
-	currentExp_ -= requiredExp_;
-
-	// 次の必要経験値を計算 (例: 10 * 1.2^(level-1))
-	// 経験値はintで計算し、小数点以下は切り捨てる（または四捨五入する）
-	requiredExp_ = static_cast<int>(kExpBase * std::pow(kExpScale, level_ - 1));
-
-	isLevelUpPending_ = true;
-	selectedSkillIndex_ = 0; // 選択インデックスをリセット
-
-	// スキル選択肢をランダムに3つ生成
-	// 【修正済】グローバルな乱数生成器を使用
-
-	// SkillType::kSkillCountはenumの要素数として使用
-	std::uniform_int_distribution<int> distType(0, static_cast<int>(SkillType::kSkillCount) - 1);
-
-	currentSkillOptions_.clear();
-
-	// ★ 修正箇所: size_t を int にキャストして比較する ★
-	while (static_cast<int>(currentSkillOptions_.size()) < 3) {
-		SkillType newSkill = static_cast<SkillType>(distType(engine));
-
-		// 重複チェック
-		bool alreadyExists = false;
-		for (SkillType skill : currentSkillOptions_) {
-			if (skill == newSkill) {
-				alreadyExists = true;
-				break;
-			}
-		}
-		if (!alreadyExists) {
-			currentSkillOptions_.push_back(newSkill);
-		}
-	}
-}
-
-void GameScene::UpdateSkillSelection() {
-	// 入力インスタンスを取得
-	Input* input = KamataEngine::Input::GetInstance();
-
-	// ★ 修正: size()の戻り値をintに明示的にキャストし、変数に格納する ★
-	// これにより、すべての算術演算がint型で行われるようになる
-	int optionCount = static_cast<int>(currentSkillOptions_.size());
-
-	// 上キー/下キーで選択肢を移動
-	if (input->TriggerKey(DIK_W) || input->TriggerKey(DIK_UP)) {
-		// 【修正適用】キャストしたint型の変数を使用
-		selectedSkillIndex_ = (selectedSkillIndex_ - 1 + optionCount) % optionCount;
-	}
-	if (input->TriggerKey(DIK_S) || input->TriggerKey(DIK_DOWN)) {
-		// 【修正適用】キャストしたint型の変数を使用
-		selectedSkillIndex_ = (selectedSkillIndex_ + 1) % optionCount;
-	}
-
-	// 決定キー (スペースキーやエンターキー) でスキルを適用し、ゲームを再開
-	if (input->TriggerKey(DIK_SPACE) || input->TriggerKey(DIK_RETURN)) {
-		ApplySkill(currentSkillOptions_[selectedSkillIndex_]);
-		isLevelUpPending_ = false;
-		
-		// ゲーム再開
-		currentSkillOptions_.clear(); // 選択肢をクリア
-	}
-
-	// **TODO: スキル選択画面のUI描画ロジックはDraw関数内に実装**
-}
-
-
-void GameScene::ApplySkill(SkillType skill) {
-	// ここにPlayerクラスの機能拡張やGameScene全体のパラメータ変更処理を記述します
-	switch (skill) {
-	case SkillType::kAttackUp:
-		// 例: プレイヤーの攻撃半径を増やす (Playerクラスにpublicなメソッドが必要)
-		// player_->UpgradeAttackRadius(0.5f);
-		break;
-	case SkillType::kSpeedUp:
-		// 例: プレイヤーの移動速度を増やす (Playerクラスにpublicなメソッドが必要)
-		// player_->UpgradeMoveSpeed(0.1f);
-		break;
-	case SkillType::kHeal:
-		// 例: プレイヤーのHPを回復する (Playerクラスにpublicなメソッドが必要)
-		// player_->Heal(3);
-		break;
-	default:
-		break;
-	}
+	// ★ LevelUpManagerの初期化 (追加) ★
+	levelUpManager_ = new LevelUpManager();
+	levelUpManager_->Initialize();
 }
 
 // 敵のランダム生成関数 (実装)
@@ -313,31 +188,24 @@ void GameScene::CheckAllCollisions() {
 
 void GameScene::Update() {
 	if (isGameOver_) {
-		// ゲームオーバーシーンへの**遷移**ロジックをここに記述
 		return;
 	}
-	
-	player_->Update();
 
-	// ★ レベルアップ待ち状態の場合はスキル選択画面の更新のみを行う ★
-	if (isLevelUpPending_) {
-		UpdateSkillSelection();
-
-		// 【修正】スキル選択画面中も、UIの描画のためにスコアの更新は行う
-		font_->Set(score_);
-
-		return; // メインのゲーム更新はスキップ
+	// ★ LevelUpManagerがレベルアップ待機中の場合は、プレイヤー以外の更新をスキップ ★
+	if (levelUpManager_->IsLevelUpPending()) {
+		player_->Update();         // 入力更新のためプレイヤーは更新する
+		levelUpManager_->Update(); // スキル選択処理
+		font_->Set(score_);        // スコア表示は更新しておく
+		return;                    // メインのゲーム更新はスキップ
 	}
 	// ------------------------------------
 
 	stage_->Update();
-	// graph_->Update();
+	player_->Update();
 
 	// スコア表示の更新
-	// **【修正】レベルと経験値を表示するように変更**
-	//std::string levelString = "Lv:" + std::to_string(level_);
+	// 【修正】font_->Set() は LevelUpManagerに情報を取得させるために、元の score_ に戻す
 	font_->Set(score_);
-	// ------------------------------------
 
 
 	// ------------------------------------
@@ -376,21 +244,15 @@ void GameScene::Update() {
 		exp->Update(playerPosForExp);
 	}
 
-
 	// --- アイテムの削除処理 (取得/死亡判定) ---
 	for (auto it = experiences_.rbegin(); it != experiences_.rend();) {
 		Experience* exp = *it;
 		if (exp->IsDead()) {
-			// **【修正】currentExp_を更新し、レベルアップ判定を行う**
-			int expValue = 1; // Experience1つあたりの経験値を1とする
-			currentExp_ += expValue;
-			score_ += expValue; // スコアも引き続き加算
-
-			// ★ レベルアップ判定 ★
-			if (currentExp_ >= requiredExp_) {
-				StartLevelUp(); // レベルアップ処理開始
-			}
-			// ----------------------------------------
+			int expValue = 1;
+			// ★ LevelUpManagerに経験値を加算させる処理に変更 ★
+			levelUpManager_->AddExperience(expValue);
+			score_ += expValue;
+			// 【削除】レベルアップ判定のロジックを削除 (LevelUpManager.AddExperience()に移動)
 
 			delete exp; // メモリを解放
 			it = std::vector<Experience*>::reverse_iterator(experiences_.erase(std::next(it).base()));
@@ -511,57 +373,18 @@ void GameScene::Draw() {
 
 
 	// --- ここから2D描画 ---
-
 	// 4. 2D描画のセットアップ (コマンドリスト設定)
 	Sprite::PreDraw(dxCommon->GetCommandList());
 
 	// 5. 2Dオブジェクトの描画
 	DrawHPBar(); // HPバーの描画
 
-	// font_->Draw();
-	// 【注意】font_->Draw() は BIt_Map_Font::Draw() 内で独自に Pre/PostDraw を呼んでいるため、
-	//        ここでは呼び出さないか、BIt_Map_Font::Draw() の中身を修正する必要があります。
-	//        ここでは、BIt_Map_Font::Draw() の中で Sprite::PreDraw/PostDraw が呼ばれていると仮定して、
-	//        一旦 font_->Draw() の呼び出しは避け、レベルアップ画面表示の描画のみに集中します。
-
-	// ★ スキル選択画面の描画 (追加) ★
-	if (isLevelUpPending_) {
-		// 1. 半透明の背景を描画
-		skillScreenBackground_->Draw();
-
-		// 2. 選択中のスキルにカーソルを描画 (先に描画することで、オプションの下に表示される)
-		KamataEngine::Sprite* selectedOption = skillOptionSprites_[selectedSkillIndex_];
-
-		// カーソルの位置を選択肢の中心に合わせる
-		KamataEngine::Vector2 cursorPosition = selectedOption->GetPosition();
-		KamataEngine::Vector2 cursorSize = skillCursorSprite_->GetSize();
-
-		// 選択肢の左上の座標からカーソルの左上の座標を計算
-		KamataEngine::Vector2 optionSize = selectedOption->GetSize();
-		KamataEngine::Vector2 cursorDrawPos = {cursorPosition.x - (cursorSize.x - optionSize.x) / 2.0f, cursorPosition.y - (cursorSize.y - optionSize.y) / 2.0f};
-
-		skillCursorSprite_->SetPosition(cursorDrawPos);
-		skillCursorSprite_->Draw();
-
-		// 3. 3つの選択肢の背景を描画
-		for (int i = 0; i < 3; ++i) {
-			skillOptionSprites_[i]->Draw();
-
-			// **TODO**: BIt_Map_Font の拡張が必要です。
-			// ここに「攻撃力アップ」などの**文字列**を描画するロジックを実装する必要がありますが、
-			// BIt_Map_Font は現在 int (整数) しか描画できません。
-			// 代替として、ここでは仮に数字を描画します。
-			// font_->Set(i + 1); // 選択肢番号の仮表示
-			// font_->Draw();    // (Draw内で独自にPreDraw/PostDrawを呼ぶ問題があるためコメントアウト)
-		}
-
-		// 【暫定対応】レベルアップの文字を中央に仮表示 (デバッグ用)
-		// 描画が上書きされてしまうため、ここでは表示しません。
-	}
-	// ------------------------------------
-
-	font_->Draw(); // BIt_Map_Font が単独で描画を完結させているため、ここで呼ぶ
+	// ★ LevelUpManagerの描画 (スキル選択画面) ★
+	levelUpManager_->Draw();
 
 	// 6. 2D描画の終了
 	Sprite::PostDraw();
+
+	// font_->Draw()はSprite::PostDrawの外で呼び出す
+	font_->Draw();
 }

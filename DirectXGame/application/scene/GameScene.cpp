@@ -10,6 +10,7 @@ std::uniform_real_distribution<float> dist(-MAP_HALF_RANGE, MAP_HALF_RANGE);
 } // namespace
 
 
+
 GameScene::~GameScene() {
 	delete stage_;
 	delete player_;

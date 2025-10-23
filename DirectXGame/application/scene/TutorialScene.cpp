@@ -4,9 +4,10 @@
 
 TutorialScene::~TutorialScene() {
 	delete tutorialSprite_;
-	delete backgroundSprite_; // ★追加: 背景スプライトの解放
-	delete fadeOutSprite_;    // ★追加: 暗転用スプライトの解放
-	delete loadingSprite_;    // ★追加: ロードスプライトの解放
+	delete backgroundSprite_;
+	delete fadeOutSprite_;
+	delete loadingSprite_; // ロード画面スプライト
+	delete slideSprite_;   // ★追加: スライド用スプライトの解放
 }
 
 void TutorialScene::Initialize() {
@@ -34,6 +35,16 @@ void TutorialScene::Initialize() {
 	// 色を黒(R=0, G=0, B=0)に設定し、透明度(A=0.0f)で初期化
 	fadeOutSprite_->SetColor({0.0f, 0.0f, 0.0f, 0.0f});
 
+	// ★追加: ロード画面用の暗転/スライド用スプライトの初期化
+	// 画面全体を覆う黒いスプライトを作成します。
+	slideTextureHandle_ = KamataEngine::TextureManager::Load("white1x1.png"); // 白い1x1テクスチャを使用
+	                                                                          // 画面外の上側（Y=-720）に配置。アンカーポイントはデフォルトの左上({0, 0})を使用
+	slideSprite_ = KamataEngine::Sprite::Create(
+	    slideTextureHandle_, {0.0f, -720.0f} // ★修正: 初期位置を画面外の上側（画面の高さ分マイナス）に設定
+	);
+	slideSprite_->SetSize({1280.0f, 720.0f});         // 画面全体を覆うサイズ
+	slideSprite_->SetColor({0.0f, 0.0f, 0.0f, 1.0f}); // 色は完全に不透明な黒
+
 	// ★追加: ロード画面用スプライトの初期化
 	// 画像ファイル名は適宜変更してください (例: Transition/Loading.png)
 	loadingTextureHandle_ = KamataEngine::TextureManager::Load("Tutorial/Loading.png");
@@ -44,6 +55,7 @@ void TutorialScene::Initialize() {
 	);
 	// 初期状態は透明にしておく (描画しない)
 	loadingSprite_->SetColor({1.0f, 1.0f, 1.0f, 0.0f});
+
 
 	isFinished_ = false;
 	isBackToTitle_ = false; // ★重要: 戻るフラグを確実にリセット
@@ -87,24 +99,59 @@ void TutorialScene::Update() {
 		// TODO: 必要に応じて、説明スプライトのアニメーションや点滅などをここに追加
 		break;
 
+
 	case State::Transition:
 		// 移行演出の更新 (フェードアウト + ロード演出)
 		if (fadeOutTimer_ < kFadeOutDuration) {
-			// フェードアウト中
+			// フェーズ1: フェードアウト中 (暗転スプライトで画面全体を徐々に暗くする)
 			fadeOutTimer_ += 1.0f;
 		} else {
-			// フェードアウト完了後 (画面は完全に黒)
+			// フェーズ2＆3: ロード画面の演出 (画面が完全に黒になった後)
 			loadingTimer_ += 1.0f;
 
-			if (loadingTimer_ >= kLoadingHoldDuration) {
-				// ロード演出完了 -> Finished状態へ移行し、次のシーンへ
-				state_ = State::Finished; // Finished状態へ
-				isFinished_ = true;       // ここでフラグを立てる
+			if (slideSprite_) {
+				float slideStartPosY = -720.0f; // 画面外上側
+				float slideCenterPosY = 0.0f;   // 画面上端
+
+				// フェーズ2: スライドイン (0 -> kSlideDuration)
+				if (loadingTimer_ < kSlideDuration) {
+					float t = loadingTimer_ / kSlideDuration;
+					float easedT = easeOutBounce(t);
+
+					float currentY = slideStartPosY + (slideCenterPosY - slideStartPosY) * easedT;
+					// ★修正: SetPositionを使用
+					slideSprite_->SetPosition({0.0f, currentY});
+
+				}
+				// フェーズ2: 中央で待機 (kSlideDuration -> kLoadingHoldDuration)
+				else if (loadingTimer_ < kLoadingHoldDuration) {
+					// SetPositionで位置を維持
+					slideSprite_->SetPosition({0.0f, slideCenterPosY});
+				}
+				// フェーズ3: スライドアウト (kLoadingHoldDuration -> kLoadingHoldDuration + kSlideDuration)
+				else if (loadingTimer_ < kLoadingHoldDuration + kSlideDuration) {
+					float t = (loadingTimer_ - kLoadingHoldDuration) / kSlideDuration;
+					// easeOutBounceを逆再生することで跳ねるように下へ退場させる
+					float easedT = easeOutBounce(t);
+
+					float slideEndPosY = 720.0f; // 画面下端 (画面外へ完全に出る手前)
+					float currentY = slideCenterPosY + (slideEndPosY - slideCenterPosY) * easedT;
+					// ★修正: SetPositionを使用
+					slideSprite_->SetPosition({0.0f, currentY});
+
+				}
+				// フェーズ3: 完了 -> 次のシーンへ
+				else {
+					state_ = State::Finished;
+					isFinished_ = true;
+				}
+
+				//slideSprite_->UpdateMatrix(); // スプライトの行列更新
 			}
 		}
 		break;
 
-	case State::Finished: // ★追加: Finished状態での処理
+	case State::Finished:
 		// isFinished_ が true の間、Draw で暗転が維持される
 		break;
 	}
@@ -129,45 +176,51 @@ void TutorialScene::Draw() {
 		alpha = t_eased;
 	}
 
-	// --- 背景スプライトの描画 ---
+// --- 背景・チュートリアルスプライトの描画 ---
 	if (backgroundSprite_) {
 		backgroundSprite_->SetColor({1.0f, 1.0f, 1.0f, alpha});
 		backgroundSprite_->Draw();
 	}
-
-	// --- メインスプライトの描画 ---
 	if (tutorialSprite_) {
 		tutorialSprite_->SetColor({1.0f, 1.0f, 1.0f, alpha});
 		tutorialSprite_->Draw();
 	}
 
-	// ★最前面に描画: フェードアウト用暗転スプライトの描画
+	// ★フェードアウト/ロード画面の描画
 	if (state_ == State::Transition) {
+		float t_fade = (std::min)(fadeOutTimer_ / kFadeOutDuration, 1.0f);
+		float t_eased_fade = EaseOutQuint(t_fade);
+
+		// フェーズ1: 暗転用スプライトの描画 (フェードアウト)
 		if (fadeOutSprite_) {
-			// 進行度 (0.0fから1.0f)
-			float t_fade = (std::min)(fadeOutTimer_ / kFadeOutDuration, 1.0f);
-
-			// イージングを適用 (ここでは既存のEaseOutQuintを使用)
-			float t_eased_fade = EaseOutQuint(t_fade);
-
-			// 暗転スプライトの透明度を 0.0 (透明) から 1.0 (不透明) へ変化させる
-			// 色はInitializeで黒({0,0,0})に設定済み
 			fadeOutSprite_->SetColor({0.0f, 0.0f, 0.0f, t_eased_fade});
 			fadeOutSprite_->Draw();
+		}
 
-			// ★追加: ロード画面の描画 (画面が完全に黒になった後)
-			if (t_fade >= 1.0f && loadingSprite_) {
-				// ロード演出の進捗 (0.0fから1.0f)
-				// float t_load = (std::min)(loadingTimer_ / kLoadingHoldDuration, 1.0f);
 
-				// タイマーが進んでいれば描画する
-				if (loadingTimer_ > 0.0f) {
-					// 例: loadingTimer_による点滅演出 (0.5 ~ 1.0 の間で点滅)
-					// 点滅の周期を調整したい場合は '0.1f' の値を変更してください
+		// フェーズ2/3: ロード画面（スライドスプライト）の描画
+		if (t_fade >= 1.0f && slideSprite_) {
+			// slideSpriteはUpdateで座標が更新されているのでDrawするだけ
+			slideSprite_->Draw();
+
+			// Now Loading画像/テキストの描画 (slideSpriteが画面内にある時のみ)
+			if (loadingSprite_ && loadingTimer_ > 0.0f && loadingTimer_ < kLoadingHoldDuration + kSlideDuration) {
+
+				// ★修正: loadingSpriteの位置を、slideSpriteの位置 + 画面中央オフセット に設定
+				// slideSpriteの現在位置を取得し、中央揃えの位置に配置
+				KamataEngine::Vector2 slidePos = slideSprite_->GetPosition(); // GetPositionが存在すると仮定
+				loadingSprite_->SetPosition({slidePos.x + 640.0f, slidePos.y + 360.0f});
+
+				// 点滅演出
+				float currentT = (std::min)(loadingTimer_ / kLoadingHoldDuration, 1.0f); // 0.0 -> 1.0
+				if (currentT < 1.0f) {
 					float blink = std::abs(std::sin(loadingTimer_ * 0.1f)) * 0.5f + 0.5f;
 					loadingSprite_->SetColor({1.0f, 1.0f, 1.0f, blink});
-					loadingSprite_->Draw();
+				} else {
+					loadingSprite_->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
 				}
+				// ★削除: UpdateMatrixはSpriteクラスには通常存在しないため削除
+				loadingSprite_->Draw();
 			}
 		}
 	} else if (state_ == State::Finished) {

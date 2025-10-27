@@ -470,12 +470,31 @@ void GameScene::Update() {
 	int currentHp = player_->GetCurrentHp();
 	int maxHp = player_->GetMaxHp();
 
-	if (currentHp <= 0) {
-		isGameOver_ = true; // ゲームオーバーフラグを立てる
-		                    // **TODO**: ここでゲームオーバーシーンへの遷移処理を実装してください。
+	// HPが0以下になったらゲームオーバーフラグを立てる
+	if (currentHp <= 0 && !isGameOver_) { // ★修正: GetHP() -> GetCurrentHp()
+		isGameOver_ = true;
+		// ★ プレイヤーの死亡モーションを開始させる ★
+		player_->Die(); // Playerクラスに追加した Die() メソッドを呼び出す
 	}
 
-	// HPバーのサイズを更新
+	if (isGameOver_) {
+		// ゲームオーバー時はこれ以上HPバーの更新以外の処理は必要ない
+		// (敵の生成や削除、衝突判定などは止めても良い)
+
+		// HPバーのサイズを更新 (HPが0の状態で固定)
+		hpBar_->SetSize({0.0f, hpBar_->GetSize().y});
+
+		// ★ プレイヤーの死亡モーションが終了したら、次のシーンへ遷移する処理をここに追加 ★
+		// 【修正】プライベートメンバーへの直接アクセスをgetterに置き換え
+		if (player_->IsDead() && player_->GetDeadTimer() > player_->GetMaxDeadTime()) { // ★ この行を修正 ★
+			                                                                            // 例: SceneManagerにゲームオーバーシーンへの遷移を指示する処理
+			                                                                            // (ここでは具体的な遷移ロジックは省略)
+		}
+
+		return;
+	}
+
+	// HPバーのサイズを更新 (通常時)
 	float hpRatio = (float)currentHp / maxHp;
 	float newWidth = hpBarBase_->GetSize().x * hpRatio;
 	Vector2 currentSize = hpBar_->GetSize();

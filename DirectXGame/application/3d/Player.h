@@ -22,9 +22,17 @@ public:
 	int GetMaxHp() const { return kMaxHp_; }              // 最大HPを取得
 	void TakeDamage(int damage) { currentHp_ -= damage; } // ダメージを受ける
 
+
 	// 攻撃関連 (追加)
 	bool IsAttacking() const { return isAttacking_; }        // 攻撃中か
 	float GetAttackRadius() const { return kAttackRadius_; } // 近接攻撃の判定半径
+
+	// ★ 死亡関連 (修正) ★
+	void Die() { isDead_ = true; }          // 死亡フラグを立てる
+	bool IsDead() const { return isDead_; } // 死亡したかを取得
+	// ★ 【追加】死亡タイマーと最大時間のgetter ★
+	int GetDeadTimer() const { return deadTimer_; }
+	int GetMaxDeadTime() const { return kMaxDeadTime_; }
 
 private:
 	// パーティクル3Dモデルデータ
@@ -37,7 +45,7 @@ private:
 	WorldTransform worldTransform;
 
 	// HP (追加)
-	const int kMaxHp_ = 1000; // 最大HPを10に設定
+	const int kMaxHp_ = 100; // 最大HPを10に設定
 	int currentHp_ = kMaxHp_;
 
 	// 攻撃関連 (追加)
@@ -45,4 +53,9 @@ private:
 	int attackTimer_ = 0;              // 攻撃の持続フレーム
 	const int kMaxAttackTime_ = 10;    // 攻撃が持続するフレーム数
 	const float kAttackRadius_ = 1.5f; // 近接攻撃の判定半径
+
+	// ★ 死亡関連 (追加) ★
+	bool isDead_ = false;              // 死亡フラグ
+	int deadTimer_ = 0;                // 死亡モーションのタイマー
+	const int kMaxDeadTime_ = 60;      // 死亡モーションの総フレーム数 (1秒間)
 };

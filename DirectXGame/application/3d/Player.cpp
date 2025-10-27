@@ -26,6 +26,34 @@ void Player::Initialize() {
 void Player::Update() {
 	const float speed = 0.5f;
 
+	// ★ 死亡している場合は、移動・攻撃処理をスキップし、死亡モーションのみ実行 ★
+	if (isDead_) {
+		deadTimer_++;
+
+		if (deadTimer_ <= kMaxDeadTime_) {
+			// t: 0.0f -> 1.0f へ線形に変化
+			float t = (float)deadTimer_ / kMaxDeadTime_;
+
+			// 2.0f (初期スケール) から 0.0f へ縮小
+			float currentScale = 2.0f * (1.0f - t);
+
+			// モデルを回転させる
+			worldTransform.rotation_.x += 0.8f;
+			worldTransform.rotation_.y += 0.4f;
+
+			worldTransform.scale_ = {currentScale, currentScale, currentScale};
+
+		} else {
+			// モーション終了後は、描画されないようにスケールを0にする
+			worldTransform.scale_ = {0.0f, 0.0f, 0.0f};
+		}
+
+		// 死亡モーションの反映と終了
+		worldTransform.TransferMatrix();
+		worldTransform.UpdateMatarix();
+		return; // 死亡時は以降の処理をスキップ
+	}
+
 	// 入力取得 (移動処理)
 	if (input_->PushKey(DIK_W)) {
 		worldTransform.translation_.y += speed;
@@ -80,6 +108,7 @@ void Player::Update() {
 
 	} else {
 		// 攻撃中でない場合はデフォルトのスケールを維持 (初期化時の 2.0f に戻す)
+		// ★ 死亡時はこの処理をスキップするために、上に isDead_ のチェックを追加しました ★
 		worldTransform.scale_ = {2.0f, 2.0f, 2.0f};
 	}
 

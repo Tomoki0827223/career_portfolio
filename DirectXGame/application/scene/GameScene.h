@@ -90,8 +90,8 @@ private:
 	// ★ レベルアップシステム関連 (追加) ★
 	int level_ = 1;               // 現在のレベル
 	int currentExp_ = 0;          // 現在の経験値 (score_から加算)
-	int requiredExp_ = 10;        // 次のレベルまでに必要な経験値
-	const int kExpBase = 10;      // 最初の必要経験値
+	int requiredExp_ = 150;        // 次のレベルまでに必要な経験値
+	const int kExpBase = 100;      // 最初の必要経験値
 	const float kExpScale = 1.2f; // 必要経験値の増加率 (レベルが上がるごとに必要経験値が1.2倍になる例)
 
 	bool isLevelUpPending_ = false;              // レベルアップ待ち状態 (スキル選択画面表示中)

@@ -100,10 +100,13 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 			if (gameOverScene->IsFinished()) {
 				if (gameOverScene->IsRetrySelected()) {
+					
 					// リトライ: GameSceneを再初期化してGameSceneへ
 					scene = Scene::Game;
 					gameScnce->Initialize();
+
 				} else {
+					
 					// タイトルへ: TitleSceneへ
 					scene = Scene::Title;
 					titleScnce->Initialize();

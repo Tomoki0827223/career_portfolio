@@ -49,6 +49,24 @@ GameScene::~GameScene() {
 
 void GameScene::Initialize() {
 
+	// ★追加: リトライに備え、敵と経験値のリストを確実にクリアする★
+	// 敵の解放
+	for (Enemy* enemy : enemies_) {
+		delete enemy;
+	}
+	enemies_.clear();
+
+	for (Enemy2* enemy2 : enemies2_) {
+		delete enemy2;
+	}
+	enemies2_.clear();
+
+	// 経験値アイテムの解放
+	for (Experience* exp : experiences_) {
+		delete exp;
+	}
+	experiences_.clear();
+
 	//graph_ = new Graph();
 	//graph_->Initialize();
 

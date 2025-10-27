@@ -101,6 +101,7 @@ void GameScene::Initialize() {
 	skillScreenBackground_->SetSize({1280.0f, 720.0f});         // 画面サイズに合わせる (仮定)
 	skillScreenBackground_->SetColor({0.0f, 0.0f, 0.0f, 0.8f}); // 黒で半透明 (80%透明)
 
+
 	// 2. スキル選択肢スプライトの生成
 	const KamataEngine::Vector2 kOptionSize = {400.0f, 100.0f}; // 選択肢のサイズ
 	const KamataEngine::Vector2 kBasePos = {440.0f, 180.0f};    // 画面中央付近

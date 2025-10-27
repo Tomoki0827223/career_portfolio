@@ -41,10 +41,12 @@ private:
 	bool isRetrySelected_ = false; // リトライ選択フラグ
 	int selectedOption_ = 0;       // 0: リトライ, 1: タイトルへ
 
-	uint32_t backgroundTexture_ = 0;
-	KamataEngine::Sprite* backgroundSprite_ = nullptr;
-	uint32_t optionBaseTexture_ = 0;
-	KamataEngine::Sprite* retrySprite_ = nullptr;
-	KamataEngine::Sprite* titleSprite_ = nullptr;
-	KamataEngine::Sprite* cursorSprite_ = nullptr;
+	uint32_t whiteTexture_ = 0;
+	uint32_t optionTexture_ = 0;
+
+	// ★ UI要素を分離したスプライト ★
+	KamataEngine::Sprite* backgroundSprite_ = nullptr; // 背景一枚
+	KamataEngine::Sprite* retrySprite_ = nullptr;      // リトライボタン
+	KamataEngine::Sprite* titleSprite_ = nullptr;      // タイトルへボタン
+	KamataEngine::Sprite* cursorSprite_ = nullptr;     // 選択カーソル/ハイライト
 };

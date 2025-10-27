@@ -1,13 +1,13 @@
+#include "GameOverScene.h"
 #include "GameScene.h"
 #include "KamataEngine.h"
 #include "TitleScnce.h"
-#include "TutorialScene.h" // ★追加
-#include "GameOverScene.h"
+#include "TutorialScene.h"
 #include <Windows.h>
 
 using namespace KamataEngine;
 
-// Scene enumに Tutorial を追加
+// Scene enumに Tutorial と GameOver を追加
 enum class Scene { Title, Tutorial, Game, GameOver };
 
 Scene scene = Scene::Tutorial;
@@ -16,15 +16,13 @@ Scene scene = Scene::Tutorial;
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	// 初期化処理
-	//  // エンジンの初期化
-
 	KamataEngine::Initialize(L"LE3C_19_ムラタ_トモキ_Bike_Savaiver");
 
 	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
 
 	// main関数の前に
 	TitleScnce* titleScnce = nullptr;
-	TutorialScene* tutorialScnce = nullptr; // ★追加
+	TutorialScene* tutorialScnce = nullptr;
 	GameScene* gameScnce = nullptr;
 	GameOverScene* gameOverScene = nullptr;
 
@@ -44,8 +42,6 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	gameOverScene = new GameOverScene();
 	gameOverScene->Initialize();
 
-
-
 	// メインループ
 	while (true) {
 
@@ -62,11 +58,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			if (titleScnce->IsSelectFinished()) {
 				// TitleSceneの終了 (Start選択)
 				scene = Scene::Tutorial;
-				// TutorialSceneをリセットする（ここでTutorialScene::Initializeを呼ぶべきですが、
-				// チュートリアル画面でリトライも行うため、ここはTutorialScene::Initialize()が呼ばれることを前提とします。
-				// 後続のコードでTutorialScene.cppの修正も提案します。)
+				// ※ ここではTutorialSceneのInitialize()は呼ばない（Tutorial::Update()内でリセットするため）
 			}
-
 		} else if (scene == Scene::Tutorial) {
 			tutorialScnce->Update();
 			tutorialScnce->Draw();
@@ -76,15 +69,16 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 				titleScnce->Initialize();
 
 				// ★修正: フラグをリセットしてループを防ぐ
-				tutorialScnce->ResetFlags();
+				// TutorialSceneのInitialize()を呼び出し、フラグを確実にリセット
+				tutorialScnce->Initialize();
 			} else if (tutorialScnce->IsFinished()) {
 				scene = Scene::Game;
 				gameScnce->Initialize();
 
 				// ★修正: フラグをリセットしてループを防ぐ
-				tutorialScnce->ResetFlags();
+				// TutorialSceneのInitialize()を呼び出し、フラグを確実にリセット
+				tutorialScnce->Initialize();
 			}
-
 
 		} else if (scene == Scene::Game) {
 			gameScnce->Update();
@@ -95,12 +89,12 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 				scene = Scene::GameOver;
 				gameOverScene->Initialize(); // ゲームオーバーシーンを初期化
 
-				// ★追加: GameSceneのisGameOver_フラグをリセット
-				// これにより、GameSceneに戻った際に即座に再判定されるのを防ぐ
+				// ★重要: GameSceneのisGameOver_フラグをリセット
+				// これがないと次のGameScene::Initialize()が呼ばれる前に再度IsGameOver()がtrueを返し続ける可能性がある
 				gameScnce->ResetGameOverFlag();
 			}
 
-		} else if (scene == Scene::GameOver) { // ★修正
+		} else if (scene == Scene::GameOver) {
 			gameOverScene->Update();
 			gameOverScene->Draw();
 
@@ -108,13 +102,13 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 				if (gameOverScene->IsRetrySelected()) {
 					// リトライ: GameSceneを再初期化してGameSceneへ
 					scene = Scene::Game;
-					gameScnce->Initialize(); // ここでisGameOver_もfalseになるはず
+					gameScnce->Initialize();
 				} else {
 					// タイトルへ: TitleSceneへ
 					scene = Scene::Title;
 					titleScnce->Initialize();
 				}
-				// gameOverSceneのisFinished_はInitializeでリセットされている
+				// GameOverSceneのisFinished_はInitializeでリセットされている
 			}
 		}
 
@@ -122,7 +116,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	}
 
 	// 終了処理
-	delete gameOverScene; // ★追加
+	delete gameOverScene;
 	gameOverScene = nullptr;
 	delete gameScnce;
 	gameScnce = nullptr;

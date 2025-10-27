@@ -313,7 +313,7 @@ void GameScene::CheckAllCollisions() {
 }
 
 void GameScene::Update() {
-	
+
 	player_->Update();
 
 	// ★ レベルアップ待ち状態の場合はスキル選択画面の更新のみを行う ★
@@ -332,10 +332,9 @@ void GameScene::Update() {
 
 	// スコア表示の更新
 	// **【修正】レベルと経験値を表示するように変更**
-	//std::string levelString = "Lv:" + std::to_string(level_);
+	// std::string levelString = "Lv:" + std::to_string(level_);
 	font_->Set(score_);
 	// ------------------------------------
-
 
 	// ------------------------------------
 	// 敵の生成
@@ -372,7 +371,6 @@ void GameScene::Update() {
 	for (Experience* exp : experiences_) {
 		exp->Update(playerPosForExp);
 	}
-
 
 	// --- アイテムの削除処理 (取得/死亡判定) ---
 	for (auto it = experiences_.rbegin(); it != experiences_.rend();) {
@@ -468,14 +466,8 @@ void GameScene::Update() {
 	hpBar_->SetSize({newWidth, currentSize.y});
 
 	// HPが0になったらゲームオーバーフラグを立てる
-	if (player_->GetHP() <= 0 && !isGameOver_) {
+	if (player_->GetCurrentHp() <= 0 && !isGameOver_) { // ★修正: GetHP() -> GetCurrentHp()
 		isGameOver_ = true;
-	}
-
-	if (isGameOver_) {
-		// ゲームオーバーになった瞬間以降は、ゲームの更新処理を停止
-		// ただし、isGameOver_は次のフレームでmain.cppが読み取るため、ここではfalseに戻さない
-		return;
 	}
 }
 

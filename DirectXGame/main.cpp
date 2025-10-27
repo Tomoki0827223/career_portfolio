@@ -2,12 +2,13 @@
 #include "KamataEngine.h"
 #include "TitleScnce.h"
 #include "TutorialScene.h" // ★追加
+#include "GameOverScene.h"
 #include <Windows.h>
 
 using namespace KamataEngine;
 
 // Scene enumに Tutorial を追加
-enum class Scene { Title, Tutorial, Game };
+enum class Scene { Title, Tutorial, Game, GameOver };
 
 Scene scene = Scene::Tutorial;
 
@@ -25,6 +26,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	TitleScnce* titleScnce = nullptr;
 	TutorialScene* tutorialScnce = nullptr; // ★追加
 	GameScene* gameScnce = nullptr;
+	GameOverScene* gameOverScene = nullptr;
 
 	// タイトルシーンの初期化
 	titleScnce = new TitleScnce();
@@ -37,6 +39,11 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// ゲームシーンの初期化
 	gameScnce = new GameScene();
 	gameScnce->Initialize();
+
+	// ★ ゲームオーバーシーンの初期化 (追加)
+	gameOverScene = new GameOverScene();
+	gameOverScene->Initialize();
+
 
 	// メインループ
 	while (true) {
@@ -61,10 +68,10 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 			if (tutorialScnce->IsBackToTitle()) {
 				scene = Scene::Title;
-				// ★TitleScnceを再初期化 (Initialize内でisFinished_がリセットされる)
+				// TitleScnceを再初期化 (Initialize内でisFinished_がリセットされる)
 				titleScnce->Initialize();
 
-				// ★追加: チュートリアルシーンも再初期化し、次のゲーム開始に備える
+				// チュートリアルシーンも再初期化し、次のゲーム開始に備える
 				tutorialScnce->Initialize(); // isFinished_とisBackToTitle_をリセット
 			} else if (tutorialScnce->IsFinished()) {
 				scene = Scene::Game;
@@ -73,15 +80,39 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		} else if (scene == Scene::Game) {
 			gameScnce->Update();
 			gameScnce->Draw();
+
+			// ★ ゲームオーバー判定とシーン遷移 (追加)
+			if (gameScnce->IsGameOver()) {
+				scene = Scene::GameOver;
+				gameOverScene->Initialize(); // ゲームオーバーシーンを初期化
+			}
+
+		} else if (scene == Scene::GameOver) { // ★追加
+			gameOverScene->Update();
+			gameOverScene->Draw();
+
+			if (gameOverScene->IsFinished()) {
+				if (gameOverScene->IsRetrySelected()) {
+					// リトライ: GameSceneを再初期化してGameSceneへ
+					scene = Scene::Game;
+					gameScnce->Initialize();
+				} else {
+					// タイトルへ: TitleSceneへ
+					scene = Scene::Title;
+					titleScnce->Initialize();
+				}
+			}
 		}
 
 		dxCommon->PostDraw();
 	}
 
 	// 終了処理
+	delete gameOverScene; // ★追加
+	gameOverScene = nullptr;
 	delete gameScnce;
 	gameScnce = nullptr;
-	delete tutorialScnce; // ★追加
+	delete tutorialScnce;
 	tutorialScnce = nullptr;
 	delete titleScnce;
 	titleScnce = nullptr;

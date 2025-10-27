@@ -244,7 +244,7 @@ void GameScene::SpawnEnemy() {
 
 void GameScene::CheckAllCollisions() {
 	Vector3 playerPos = player_->GetPosition();
-	// float playerBodyRadius = 0.5f; // プレイヤー本体の半径 (仮)
+	float playerBodyRadius = 0.5f; // プレイヤー本体の半径 (仮)
 
 	// ------------------------------------
 	// 1. プレイヤーの攻撃 vs 敵 (近接攻撃判定)
@@ -292,24 +292,24 @@ void GameScene::CheckAllCollisions() {
 	// ------------------------------------
 	// 2. 敵 vs プレイヤー (敵からの接触ダメージ)
 	// ------------------------------------
-	// for (Enemy* enemy : enemies_) {
-	//	// 死亡した敵や、すでにHPが0のプレイヤーにはダメージを与えない
-	//	if (enemy->IsDead() || player_->GetCurrentHp() <= 0)
-	//		continue;
+	 for (Enemy* enemy : enemies_) {
+		// 死亡した敵や、すでにHPが0のプレイヤーにはダメージを与えない
+		if (enemy->IsDead() || player_->GetCurrentHp() <= 0)
+			continue;
 
-	//	Vector3 enemyPos = enemy->GetPosition();
-	//	float enemyRadius = enemy->GetRadius();
+		Vector3 enemyPos = enemy->GetPosition();
+		float enemyRadius = enemy->GetRadius();
 
-	//	Vector3 diff = enemyPos - playerPos;
-	//	float distance = Math::Length(diff);
+		Vector3 diff = enemyPos - playerPos;
+		float distance = Math::Length(diff);
 
-	//	// 接触判定
-	//	if (distance <= playerBodyRadius + enemyRadius) {
-	//		// プレイヤーにダメージを与える (ここでは接触1回で1ダメージと仮定)
-	//		player_->TakeDamage(1);
-	//		// ダメージを一度与えたら、敵をプレイヤーから少し遠ざけるなどの処理を追加しても良い
-	//	}
-	//}
+		// 接触判定
+		if (distance <= playerBodyRadius + enemyRadius) {
+			// プレイヤーにダメージを与える (ここでは接触1回で1ダメージと仮定)
+			player_->TakeDamage(1);
+			// ダメージを一度与えたら、敵をプレイヤーから少し遠ざけるなどの処理を追加しても良い
+		}
+	}
 }
 
 void GameScene::Update() {

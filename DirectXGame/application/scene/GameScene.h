@@ -11,6 +11,7 @@
 #include <random>       
 #include <algorithm>
 #include "math/MathUtility.h" // ★ これを追加する ★
+#include "GameOverScene.h"
 
 using namespace KamataEngine;
 
@@ -31,6 +32,8 @@ public:
 	void Update();
 
 	void Draw();
+
+	bool IsGameOver() const { return isGameOver_; }
 
 private:
 

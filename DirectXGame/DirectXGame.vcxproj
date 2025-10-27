@@ -162,6 +162,7 @@
     <ClCompile Include="application\ui\Graph.cpp" />
     <ClCompile Include="Enemy.cpp" />
     <ClCompile Include="Enemy2.cpp" />
+    <ClCompile Include="GameOverScene.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="application\3d\Player.cpp" />
     <ClCompile Include="application\3d\Stage.cpp" />
@@ -277,6 +278,7 @@
     <ClInclude Include="application\scene\TutorialScene.h" />
     <ClInclude Include="Enemy.h" />
     <ClInclude Include="Enemy2.h" />
+    <ClInclude Include="GameOverScene.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

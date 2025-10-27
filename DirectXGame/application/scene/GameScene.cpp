@@ -332,13 +332,51 @@ void GameScene::CheckAllCollisions() {
 
 void GameScene::Update() {
 
+	// ★【1. 最優先】プレイヤーの更新 (死亡モーションのタイマーを必ず進める) ★
+	// isGameOver_ や isLevelUpPending_ の状態にかかわらず、毎フレーム実行されます。
 	player_->Update();
 
-	// ★ レベルアップ待ち状態の場合はスキル選択画面の更新のみを行う ★
+	// ------------------------------------
+	// ★【2. HP/ゲームオーバー判定と処理】★
+	// ------------------------------------
+	int currentHp = player_->GetCurrentHp();
+	int maxHp = player_->GetMaxHp();
+
+	// HPが0以下になったらゲームオーバーフラグを立てる (最初の1フレームのみ)
+	if (currentHp <= 0 && !isGameOver_) {
+		isGameOver_ = true;
+		player_->Die(); // 死亡モーション開始フラグを設定
+	}
+
+	// HPバーのサイズを更新（HPが0以下の場合も比率が0になる）
+	float hpRatio = (float)currentHp / maxHp;
+	if (hpRatio < 0.0f) { // 念のため比率がマイナスにならないようにする
+		hpRatio = 0.0f;
+	}
+	float newWidth = hpBarBase_->GetSize().x * hpRatio;
+	Vector2 currentSize = hpBar_->GetSize();
+	hpBar_->SetSize({newWidth, currentSize.y});
+
+	// ゲームオーバー中の処理 (モーション終了待ち)
+	if (isGameOver_) {
+		// 死亡モーションが終わるまで待つ (GetDeadTimer() > GetMaxDeadTime())
+		if (player_->IsDead() && player_->GetDeadTimer() > player_->GetMaxDeadTime()) {
+			// ★★★ ここに実際のシーン遷移ロジックを記述してください ★★★
+			// 例: KamataEngine::SceneManager::GetInstance()->ChangeScene("GameOver");
+			//     ※SceneManagerの適切な呼び出し方に合わせて修正してください
+		}
+
+		// ★ モーションが終了するまで、他のゲーム処理はスキップしてアニメーションを継続させます ★
+		return;
+	}
+
+	// ------------------------------------
+	// ★【3. 通常時のみ】レベルアップ待ちの処理（次に実行） ★
+	// ------------------------------------
 	if (isLevelUpPending_) {
 		UpdateSkillSelection();
 
-		// 【修正】スキル選択画面中も、UIの描画のためにスコアの更新は行う
+		// UIの描画のためにスコアの更新は行う
 		font_->Set(score_);
 
 		return; // メインのゲーム更新はスキップ
@@ -463,51 +501,7 @@ void GameScene::Update() {
 			++it;
 		}
 	}
-
-	// ------------------------------------
-	// HPバーの更新とゲームオーバー判定
-	// ------------------------------------
-	int currentHp = player_->GetCurrentHp();
-	int maxHp = player_->GetMaxHp();
-
-	// HPが0以下になったらゲームオーバーフラグを立てる
-	if (currentHp <= 0 && !isGameOver_) { // ★修正: GetHP() -> GetCurrentHp()
-		isGameOver_ = true;
-		// ★ プレイヤーの死亡モーションを開始させる ★
-		player_->Die(); // Playerクラスに追加した Die() メソッドを呼び出す
-	}
-
-	if (isGameOver_) {
-		// ゲームオーバー時はこれ以上HPバーの更新以外の処理は必要ない
-		// (敵の生成や削除、衝突判定などは止めても良い)
-
-		// HPバーのサイズを更新 (HPが0の状態で固定)
-		hpBar_->SetSize({0.0f, hpBar_->GetSize().y});
-
-		// ★ プレイヤーの死亡モーションが終了したら、次のシーンへ遷移する処理をここに追加 ★
-		// 【修正】プライベートメンバーへの直接アクセスをgetterに置き換え
-		if (player_->IsDead() && player_->GetDeadTimer() > player_->GetMaxDeadTime()) { // ★ この行を修正 ★
-			                                                                            // 例: SceneManagerにゲームオーバーシーンへの遷移を指示する処理
-			                                                                            // (ここでは具体的な遷移ロジックは省略)
-		}
-
-		return;
-	}
-
-	// HPバーのサイズを更新 (通常時)
-	float hpRatio = (float)currentHp / maxHp;
-	float newWidth = hpBarBase_->GetSize().x * hpRatio;
-	Vector2 currentSize = hpBar_->GetSize();
-
-	// HPバーの幅のみをHPの比率に合わせて変更する
-	hpBar_->SetSize({newWidth, currentSize.y});
-
-	// HPが0になったらゲームオーバーフラグを立てる
-	if (player_->GetCurrentHp() <= 0 && !isGameOver_) { // ★修正: GetHP() -> GetCurrentHp()
-		isGameOver_ = true;
-	}
 }
-
 
 /**
  * @brief HPバーの描画処理

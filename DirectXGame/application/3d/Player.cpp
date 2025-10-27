@@ -12,7 +12,7 @@ Player::~Player() {
 
 void Player::Initialize() {
 	// 3Dモデルデータの生成
-	modelPlayer_ = Model::CreateFromOBJ("block_4");
+	modelPlayer_ = Model::CreateFromOBJ("player");
 
 	input_ = KamataEngine::Input::GetInstance();
 

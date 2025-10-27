@@ -1,4 +1,11 @@
 #include "Book.h"
+#include <cmath> // std::cos, std::sin, M_PIのためにインクルード
+
+// M_PIが定義されていない環境のために手動で定義
+// この定義がないとM_PIを使用できません。
+#ifndef M_PI
+#define M_PI 3.14159265358979323846f
+#endif
 
 Book::Book() {}
 
@@ -14,7 +21,8 @@ void Book::Initialize() {
 	// 初期角度をランダムに設定 (複数生成時に重ならないように)
 	std::random_device seed_gen;
 	std::mt19937 engine(seed_gen());
-	std::uniform_real_distribution<float> dist(0.0f, 2.0f * (float)Math::PI);
+	// ★修正: Math::PI -> M_PI に変更★
+	std::uniform_real_distribution<float> dist(0.0f, 2.0f * (float)M_PI);
 	currentAngle_ = dist(engine);
 
 	worldTransform.translation_.z = 0.0f;
@@ -28,8 +36,9 @@ void Book::Initialize() {
 void Book::Update(const Vector3& playerPosition) {
 	// 角度を更新
 	currentAngle_ += kRotationSpeed;
-	if (currentAngle_ > 2.0f * (float)Math::PI) {
-		currentAngle_ -= 2.0f * (float)Math::PI;
+	// ★修正: Math::PI -> M_PI に変更★
+	if (currentAngle_ > 2.0f * (float)M_PI) {
+		currentAngle_ -= 2.0f * (float)M_PI; // ★修正: Math::PI -> M_PI に変更★
 	}
 
 	// プレイヤーを中心に円運動の座標を計算
@@ -38,7 +47,8 @@ void Book::Update(const Vector3& playerPosition) {
 	worldTransform.translation_.z = 0.0f;
 
 	// 常にプレイヤーの方向に向くように回転（見栄えのため）
-	worldTransform.rotation_.z = currentAngle_ + (float)Math::PI / 2.0f;
+	// ★修正: Math::PI -> M_PI に変更★
+	worldTransform.rotation_.z = currentAngle_ + (float)M_PI / 2.0f;
 
 	// 移動を反映
 	worldTransform.TransferMatrix();

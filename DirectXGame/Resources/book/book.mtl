@@ -1,4 +1,4 @@
-# Blender 4.4.1 MTL File: 'uploads_files_4162193_TestBlender0025_OldBook001_ShoeboxTextureTest.blend'
+# Blender 4.4.1 MTL File: 'None'
 # www.blender.org
 
 newmtl OldBook001_mat
@@ -9,4 +9,4 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 1
-map_Kd C:/OldBook001_tex.png
+map_Kd image.jpg

@@ -636,7 +636,7 @@ void GameScene::Update() {
 						if (enemy->IsDead())
 							continue;
 
-						// ★修正: LengthSqが存在しないため、Lengthを二乗して比較する★
+						// ★修正: Math::LengthSqが存在しないため、Lengthを二乗して比較する★
 						float distance = Math::Length(enemy->GetPosition() - playerPos);
 						float distanceSq = distance * distance;
 

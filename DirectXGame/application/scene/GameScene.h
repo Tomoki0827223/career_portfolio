@@ -42,7 +42,6 @@ public:
 	void ResetGameOverFlag() { isGameOver_ = false; }
 
 private:
-
 	uint32_t textureHandle_ = 0;
 
 	KamataEngine::Sprite* sprite_ = nullptr;
@@ -60,19 +59,21 @@ private:
 
 	Model* playerModel_ = nullptr;
 
-	//Graph* graph_ = nullptr;
+	// Graph* graph_ = nullptr;
 
 	BIt_Map_Font* font_ = nullptr;
 	int score_ = 0;
-
 
 	// 経験値アイテムを格納するベクトル
 	std::vector<Experience*> experiences_;
 	// 吸引範囲 (例: 10.0f)
 	const float ATTRACTION_RADIUS = 10.0f;
 
-	std::vector<Enemy*> enemies_; // ★ Enemy2のリストを追加 ★
-	const int kMaxEnemies = 5;     // ★ Enemy2の最大数を設定 (出現数を制限) ★
+	// 敵の管理
+	std::vector<Enemy*> enemies_;
+	const int kMaxEnemies = 20;
+	int enemySpawnTimer_ = 0;
+	const int kEnemySpawnInterval = 120; // 120フレームごとに生成 (2秒)
 
 	std::vector<Enemy2*> enemies2_; // ★ Enemy2のリストを追加 ★
 	const int kMaxEnemies2 = 5;     // ★ Enemy2の最大数を設定 (出現数を制限) ★
@@ -98,12 +99,11 @@ private:
 	// ゲームオーバーフラグ (追加)
 	bool isGameOver_ = false;
 
-
 	// ★ レベルアップシステム関連 (追加) ★
 	int level_ = 1;               // 現在のレベル
 	int currentExp_ = 0;          // 現在の経験値 (score_から加算)
-	int requiredExp_ = 150;        // 次のレベルまでに必要な経験値
-	const int kExpBase = 100;      // 最初の必要経験値
+	int requiredExp_ = 150;       // 次のレベルまでに必要な経験値
+	const int kExpBase = 100;     // 最初の必要経験値
 	const float kExpScale = 1.2f; // 必要経験値の増加率 (レベルが上がるごとに必要経験値が1.2倍になる例)
 
 	bool isLevelUpPending_ = false;              // レベルアップ待ち状態 (スキル選択画面表示中)

@@ -26,6 +26,7 @@ GameOverScene::~GameOverScene() {
 }
 
 
+
 void GameOverScene::Initialize() {
 	input_ = KamataEngine::Input::GetInstance();
 	isFinished_ = false;

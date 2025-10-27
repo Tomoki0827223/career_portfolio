@@ -313,10 +313,6 @@ void GameScene::CheckAllCollisions() {
 }
 
 void GameScene::Update() {
-	if (isGameOver_) {
-		// ゲームオーバーシーンへの**遷移**ロジックをここに記述
-		return;
-	}
 	
 	player_->Update();
 
@@ -470,6 +466,17 @@ void GameScene::Update() {
 
 	// HPバーの幅のみをHPの比率に合わせて変更する
 	hpBar_->SetSize({newWidth, currentSize.y});
+
+	// HPが0になったらゲームオーバーフラグを立てる
+	if (player_->GetHP() <= 0 && !isGameOver_) {
+		isGameOver_ = true;
+	}
+
+	if (isGameOver_) {
+		// ゲームオーバーになった瞬間以降は、ゲームの更新処理を停止
+		// ただし、isGameOver_は次のフレームでmain.cppが読み取るため、ここではfalseに戻さない
+		return;
+	}
 }
 
 

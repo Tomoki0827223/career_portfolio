@@ -35,6 +35,12 @@ public:
 	// ★追加: タイトルシーンへ戻るフラグ
 	bool IsBackToTitle() const { return isBackToTitle_; }
 
+	// ★追加: 遷移フラグをリセットするメソッド
+	void ResetFlags() {
+		isFinished_ = false;
+		isBackToTitle_ = false;
+	}
+
 private:
 	KamataEngine::DirectXCommon* dxCommon_ = nullptr;
 	KamataEngine::Input* input_ = nullptr;

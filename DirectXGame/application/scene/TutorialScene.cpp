@@ -58,6 +58,16 @@ void TutorialScene::Initialize() {
 }
 
 void TutorialScene::Update() {
+
+	// タイトルに戻るボタンの判定 (例としてDIK_Qを使用)
+	if (input_->TriggerKey(DIK_Q)) {
+		isBackToTitle_ = true;
+	}
+
+	if (isBackToTitle_ || isFinished_) {
+		return; // フラグが立っている間は以降の処理を行わない
+	}
+
 	timer_ += 1.0f;
 
 	switch (state_) {

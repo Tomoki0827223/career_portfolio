@@ -45,6 +45,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	gameOverScene->Initialize();
 
 
+
 	// メインループ
 	while (true) {
 
@@ -59,35 +60,47 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			titleScnce->Update();
 			titleScnce->Draw();
 			if (titleScnce->IsSelectFinished()) {
-				// タイトル演出完了後、Tutorialシーンへ移行
+				// TitleSceneの終了 (Start選択)
 				scene = Scene::Tutorial;
+				// TutorialSceneをリセットする（ここでTutorialScene::Initializeを呼ぶべきですが、
+				// チュートリアル画面でリトライも行うため、ここはTutorialScene::Initialize()が呼ばれることを前提とします。
+				// 後続のコードでTutorialScene.cppの修正も提案します。)
 			}
+
 		} else if (scene == Scene::Tutorial) {
 			tutorialScnce->Update();
 			tutorialScnce->Draw();
 
 			if (tutorialScnce->IsBackToTitle()) {
 				scene = Scene::Title;
-				// TitleScnceを再初期化 (Initialize内でisFinished_がリセットされる)
 				titleScnce->Initialize();
 
-				// チュートリアルシーンも再初期化し、次のゲーム開始に備える
-				tutorialScnce->Initialize(); // isFinished_とisBackToTitle_をリセット
+				// ★修正: フラグをリセットしてループを防ぐ
+				tutorialScnce->ResetFlags();
 			} else if (tutorialScnce->IsFinished()) {
 				scene = Scene::Game;
+				gameScnce->Initialize();
+
+				// ★修正: フラグをリセットしてループを防ぐ
+				tutorialScnce->ResetFlags();
 			}
+
 
 		} else if (scene == Scene::Game) {
 			gameScnce->Update();
 			gameScnce->Draw();
 
-			// ★ ゲームオーバー判定とシーン遷移 (追加)
+			// ゲームオーバー判定とシーン遷移
 			if (gameScnce->IsGameOver()) {
 				scene = Scene::GameOver;
 				gameOverScene->Initialize(); // ゲームオーバーシーンを初期化
+
+				// ★追加: GameSceneのisGameOver_フラグをリセット
+				// これにより、GameSceneに戻った際に即座に再判定されるのを防ぐ
+				gameScnce->ResetGameOverFlag();
 			}
 
-		} else if (scene == Scene::GameOver) { // ★追加
+		} else if (scene == Scene::GameOver) { // ★修正
 			gameOverScene->Update();
 			gameOverScene->Draw();
 
@@ -95,12 +108,13 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 				if (gameOverScene->IsRetrySelected()) {
 					// リトライ: GameSceneを再初期化してGameSceneへ
 					scene = Scene::Game;
-					gameScnce->Initialize();
+					gameScnce->Initialize(); // ここでisGameOver_もfalseになるはず
 				} else {
 					// タイトルへ: TitleSceneへ
 					scene = Scene::Title;
 					titleScnce->Initialize();
 				}
+				// gameOverSceneのisFinished_はInitializeでリセットされている
 			}
 		}
 

@@ -34,6 +34,8 @@ public:
 	void Draw();
 
 	bool IsGameOver() const { return isGameOver_; }
+	// ★追加: ゲームオーバーフラグをリセットするためのpublicメソッド
+	void ResetGameOverFlag() { isGameOver_ = false; }
 
 private:
 

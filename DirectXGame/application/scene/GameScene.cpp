@@ -9,14 +9,12 @@ const float MAP_HALF_RANGE = 50.0f;
 std::uniform_real_distribution<float> dist(-MAP_HALF_RANGE, MAP_HALF_RANGE);
 } // namespace
 
-
-
 GameScene::~GameScene() {
 	delete stage_;
 	delete player_;
 	delete playerModel_;
 	delete model_;
-	//delete graph_;
+	// delete graph_;
 	delete font_;
 	delete hpBarBase_; // 追加
 	delete hpBar_;     // 追加
@@ -32,12 +30,27 @@ GameScene::~GameScene() {
 		delete enemy;
 	}
 	enemies_.clear();
-	
+
 	// ★ Enemy2の解放を追加 ★
 	for (Enemy2* enemy2 : enemies2_) {
 		delete enemy2;
 	}
 	enemies2_.clear();
+
+	// ★追加: スキル関連オブジェクトの解放 ★
+	for (Bullet* bullet : bullets_) {
+		delete bullet;
+	}
+	bullets_.clear();
+	for (Book* book : books_) {
+		delete book;
+	}
+	books_.clear();
+	for (Wine* wine : wines_) {
+		delete wine;
+	}
+	wines_.clear();
+	// ------------------------------------
 
 	// ★ スキル選択画面用スプライトの解放 (追加) ★
 	delete skillScreenBackground_;
@@ -67,8 +80,26 @@ void GameScene::Initialize() {
 	}
 	experiences_.clear();
 
-	//graph_ = new Graph();
-	//graph_->Initialize();
+	// ★追加: スキル関連オブジェクトのクリアと初期化 ★
+	for (Bullet* bullet : bullets_) {
+		delete bullet;
+	}
+	bullets_.clear();
+	for (Book* book : books_) {
+		delete book;
+	}
+	books_.clear();
+	for (Wine* wine : wines_) {
+		delete wine;
+	}
+	wines_.clear();
+
+	bulletSpawnTimer_ = 0;
+	wineSpawnTimer_ = 0;
+	// ------------------------------------
+
+	// graph_ = new Graph();
+	// graph_->Initialize();
 
 	stage_ = new Stage();
 	stage_->Initialize();
@@ -106,7 +137,7 @@ void GameScene::Initialize() {
 	// ★ レベルアップシステム関連の初期化 (追加) ★
 	level_ = 1;
 	currentExp_ = 0;
-	requiredExp_ = kExpBase; // 10
+	requiredExp_ = kExpBase; // 100
 	isLevelUpPending_ = false;
 	selectedSkillIndex_ = 0;
 
@@ -118,7 +149,6 @@ void GameScene::Initialize() {
 	skillScreenBackground_ = KamataEngine::Sprite::Create(whiteTextureHandle_, {0, 0});
 	skillScreenBackground_->SetSize({1280.0f, 720.0f});         // 画面サイズに合わせる (仮定)
 	skillScreenBackground_->SetColor({0.0f, 0.0f, 0.0f, 0.8f}); // 黒で半透明 (80%透明)
-
 
 	// 2. スキル選択肢スプライトの生成
 	const KamataEngine::Vector2 kOptionSize = {400.0f, 100.0f}; // 選択肢のサイズ
@@ -134,7 +164,7 @@ void GameScene::Initialize() {
 	skillCursorSprite_ = KamataEngine::Sprite::Create(whiteTextureHandle_, {0, 0}); // 位置はDrawで更新
 	skillCursorSprite_->SetSize({kOptionSize.x + 20.0f, kOptionSize.y + 10.0f});    // 選択肢より少し大きく
 	skillCursorSprite_->SetColor({1.0f, 1.0f, 0.0f, 0.5f});                         // 黄色で半透明
-	// ----------------------------------------
+	                                                                                // ----------------------------------------
 }
 
 void GameScene::StartLevelUp() {
@@ -150,7 +180,6 @@ void GameScene::StartLevelUp() {
 	selectedSkillIndex_ = 0; // 選択インデックスをリセット
 
 	// スキル選択肢をランダムに3つ生成
-	// 【修正済】グローバルな乱数生成器を使用
 
 	// SkillType::kSkillCountはenumの要素数として使用
 	std::uniform_int_distribution<int> distType(0, static_cast<int>(SkillType::kSkillCount) - 1);
@@ -197,7 +226,7 @@ void GameScene::UpdateSkillSelection() {
 	if (input->TriggerKey(DIK_SPACE) || input->TriggerKey(DIK_RETURN)) {
 		ApplySkill(currentSkillOptions_[selectedSkillIndex_]);
 		isLevelUpPending_ = false;
-		
+
 		// ゲーム再開
 		currentSkillOptions_.clear(); // 選択肢をクリア
 	}
@@ -205,22 +234,42 @@ void GameScene::UpdateSkillSelection() {
 	// **TODO: スキル選択画面のUI描画ロジックはDraw関数内に実装**
 }
 
-
 void GameScene::ApplySkill(SkillType skill) {
 	// ここにPlayerクラスの機能拡張やGameScene全体のパラメータ変更処理を記述します
 	switch (skill) {
-	case SkillType::kAttackUp:
-		// 例: プレイヤーの攻撃半径を増やす (Playerクラスにpublicなメソッドが必要)
-		// player_->UpgradeAttackRadius(0.5f);
+	case SkillType::kBook: {
+		// Bookスキルレベルを上げる
+		int newLevel = player_->GetBookLevel() + 1;
+		player_->SetBookLevel(newLevel);
+
+		// 既に存在するBookをクリアしてから再生成
+		for (Book* book : books_) {
+			delete book;
+		}
+		books_.clear();
+
+		// レベル数に応じてBookを生成
+		// 最初のBookは初期位置をランダムにすることで、重なりを防ぐ
+		for (int i = 0; i < newLevel; ++i) {
+			Book* newBook = new Book();
+			newBook->Initialize();
+			books_.push_back(newBook);
+		}
+	} break;
+	case SkillType::kBullet: {
+		// Bulletスキルレベルを上げる
+		int newLevel = player_->GetBulletLevel() + 1;
+		player_->SetBulletLevel(newLevel);
+	} break;
+	case SkillType::kHeart:
+		// HPを回復する
+		player_->Heal(30);
 		break;
-	case SkillType::kSpeedUp:
-		// 例: プレイヤーの移動速度を増やす (Playerクラスにpublicなメソッドが必要)
-		// player_->UpgradeMoveSpeed(0.1f);
-		break;
-	case SkillType::kHeal:
-		// 例: プレイヤーのHPを回復する (Playerクラスにpublicなメソッドが必要)
-		// player_->Heal(3);
-		break;
+	case SkillType::kWine: {
+		// Wineの出現レベルを上げる (Updateの生成ロジックに使用)
+		int newLevel = player_->GetWineLevel() + 1;
+		player_->SetWineLevel(newLevel);
+	} break;
 	default:
 		break;
 	}
@@ -240,7 +289,6 @@ void GameScene::SpawnEnemy() {
 	Vector3 randomPos;
 	float distance = 0.0f;
 
-
 	do {
 		// x, yをランダムに生成し、zは0.0f（固定）に設定
 		randomPos = {dist(engine), dist(engine), 0.0f};
@@ -257,6 +305,33 @@ void GameScene::SpawnEnemy() {
 		Enemy* newEnemy = new Enemy(randomPos);
 		newEnemy->Initialize();
 		enemies_.push_back(newEnemy);
+	}
+}
+
+// ★追加: Wineのランダム生成関数 ★
+void GameScene::SpawnWine() {
+	// Wineレベルが0の場合は生成しない
+	if (player_->GetWineLevel() == 0) {
+		return;
+	}
+
+	// プレイヤーから離れた位置に生成する (最小距離 10.0f)
+	const float kMinSpawnDistance = 10.0f;
+	Vector3 playerPos = player_->GetPosition();
+	Vector3 randomPos;
+	float distance = 0.0f;
+
+	do {
+		// x, yをランダムに生成し、zは0.0f（固定）に設定
+		randomPos = {dist(engine), dist(engine), 0.0f};
+		distance = Math::Length(randomPos - playerPos);
+	} while (distance < kMinSpawnDistance);
+
+	// Wineは画面に最大1個までにする (Wineレベルが上がると生成間隔が短くなる)
+	if (wines_.empty()) {
+		Wine* newWine = new Wine(randomPos);
+		newWine->Initialize();
+		wines_.push_back(newWine);
 	}
 }
 
@@ -310,7 +385,7 @@ void GameScene::CheckAllCollisions() {
 	// ------------------------------------
 	// 2. 敵 vs プレイヤー (敵からの接触ダメージ)
 	// ------------------------------------
-	 for (Enemy* enemy : enemies_) {
+	for (Enemy* enemy : enemies_) {
 		// 死亡した敵や、すでにHPが0のプレイヤーにはダメージを与えない
 		if (enemy->IsDead() || player_->GetCurrentHp() <= 0)
 			continue;
@@ -328,6 +403,107 @@ void GameScene::CheckAllCollisions() {
 			// ダメージを一度与えたら、敵をプレイヤーから少し遠ざけるなどの処理を追加しても良い
 		}
 	}
+
+	// ------------------------------------
+	// ★追加: Book (周回攻撃) vs 敵 の衝突判定 ★
+	// ------------------------------------
+	for (Book* book : books_) {
+		Vector3 bookPos = book->GetPosition();
+		float bookRadius = book->GetRadius();
+		int bookDamage = book->GetDamage();
+
+		// Enemy1 & Enemy2
+		auto checkEnemyCollision = [&](auto& enemies_list) {
+			for (auto enemy : enemies_list) {
+				if (enemy->IsDead())
+					continue;
+
+				Vector3 enemyPos = enemy->GetPosition();
+				float enemyRadius = enemy->GetRadius();
+
+				// Bookと敵の接触判定
+				if (Math::Length(enemyPos - bookPos) <= bookRadius + enemyRadius) {
+					enemy->TakeDamage(bookDamage);
+				}
+			}
+		};
+		checkEnemyCollision(enemies_);
+		checkEnemyCollision(enemies2_);
+	}
+	// ------------------------------------
+
+	// ------------------------------------
+	// ★追加: Bullet (オート攻撃) vs 敵 の衝突判定 ★
+	// ------------------------------------
+	for (auto itB = bullets_.begin(); itB != bullets_.end();) {
+		Bullet* bullet = *itB;
+		if (bullet->IsDead()) { // Updateで画面外に出たBulletはisDead=trueになっている
+			delete bullet;
+			itB = bullets_.erase(itB);
+			continue;
+		}
+
+		Vector3 bulletPos = bullet->GetPosition();
+		float bulletRadius = bullet->GetRadius();
+		int bulletDamage = bullet->GetDamage();
+		bool hit = false;
+
+		// Enemy1 & Enemy2
+		auto checkBulletCollision = [&](auto& enemies_list) -> bool {
+			for (auto enemy : enemies_list) {
+				if (enemy->IsDead())
+					continue;
+
+				Vector3 enemyPos = enemy->GetPosition();
+				float enemyRadius = enemy->GetRadius();
+
+				if (Math::Length(enemyPos - bulletPos) <= bulletRadius + enemyRadius) {
+					enemy->TakeDamage(bulletDamage);
+					bullet->Die(); // Bulletを消滅させる
+					return true;
+				}
+			}
+			return false;
+		};
+
+		// いずれかの敵に当たったらhitをtrueにする
+		if (checkBulletCollision(enemies_) || checkBulletCollision(enemies2_)) {
+			hit = true;
+		}
+
+		if (hit) {
+			// 敵に当たったBulletをリストから削除
+			delete bullet;
+			itB = bullets_.erase(itB);
+		} else {
+			++itB;
+		}
+	}
+	// ------------------------------------
+
+	// ------------------------------------
+	// ★追加: Wine (回復アイテム) vs プレイヤー の衝突判定 ★
+	// ------------------------------------
+	for (auto itW = wines_.begin(); itW != wines_.end();) {
+		Wine* wine = *itW;
+		Vector3 winePos = wine->GetPosition();
+		float wineRadius = wine->GetRadius();
+
+		// プレイヤーとWineの接触判定
+		if (Math::Length(winePos - playerPos) <= playerBodyRadius + wineRadius) {
+			// プレイヤーを回復
+			player_->Heal(wine->GetHealAmount());
+
+			wine->Die(); // Wineを消滅させる
+
+			// Wineをリストから削除
+			delete wine;
+			itW = wines_.erase(itW);
+		} else {
+			++itW;
+		}
+	}
+	// ------------------------------------
 }
 
 void GameScene::Update() {
@@ -403,6 +579,22 @@ void GameScene::Update() {
 	}
 
 	// ------------------------------------
+	// ★追加: Wineの生成 ★
+	// ------------------------------------
+	wineSpawnTimer_++;
+	// Wineレベルが1以上で、かつ画面にWineがない場合に生成
+	// レベルが上がるほど、生成間隔が短くなるようにする (例: 間隔 = kInterval / level)
+	const int kMinWineInterval = 100; // 最小間隔を設定 (極端に短くならないように)
+	int currentWineInterval = kWineSpawnInterval / (std::max)(1, player_->GetWineLevel());
+	currentWineInterval = (std::max)(currentWineInterval, kMinWineInterval);
+
+	if (player_->GetWineLevel() >= 1 && wines_.empty() && wineSpawnTimer_ >= currentWineInterval) {
+		SpawnWine();
+		wineSpawnTimer_ = 0; // タイマーリセット
+	}
+	// ------------------------------------
+
+	// ------------------------------------
 	// 敵の更新 (追尾)
 	// ------------------------------------
 	Vector3 playerPos = player_->GetPosition();
@@ -413,6 +605,74 @@ void GameScene::Update() {
 	for (Enemy2* enemy2 : enemies2_) {
 		enemy2->Update(playerPos);
 	}
+
+	// ------------------------------------
+	// ★追加: Book (周回攻撃) の更新 ★
+	// ------------------------------------
+	for (Book* book : books_) {
+		// プレイヤーの位置を渡して周回させる
+		book->Update(playerPos);
+	}
+	// ------------------------------------
+
+	// ------------------------------------
+	// ★追加: Bulletの自動生成と更新 ★
+	// ------------------------------------
+	if (player_->GetBulletLevel() >= 1) {
+		bulletSpawnTimer_++;
+		// レベルが上がるほど、発射間隔が短くなるようにする (例: 間隔 = kInterval / level)
+		const int kMinBulletInterval = 10; // 最小間隔を設定
+		int currentBulletInterval = kBulletSpawnInterval / (std::max)(1, player_->GetBulletLevel());
+		currentBulletInterval = (std::max)(currentBulletInterval, kMinBulletInterval);
+
+		if (bulletSpawnTimer_ >= currentBulletInterval) {
+			// 最も近い敵を検索 (Enemy1/Enemy2両方から)
+			auto findNearestEnemy = [&]() -> std::pair<Vector3, float> {
+				float minDistanceSq = 1e10f;
+				Vector3 targetPos = playerPos;
+
+				auto checkEnemy = [&](auto& enemies_list) {
+					for (auto enemy : enemies_list) {
+						if (enemy->IsDead())
+							continue;
+
+						// ★修正: LengthSqが存在しないため、Lengthを二乗して比較する★
+						float distance = Math::Length(enemy->GetPosition() - playerPos);
+						float distanceSq = distance * distance;
+
+						if (distanceSq < minDistanceSq) {
+							minDistanceSq = distanceSq;
+							targetPos = enemy->GetPosition();
+						}
+					}
+				};
+
+				checkEnemy(enemies_);
+				checkEnemy(enemies2_);
+
+				return {targetPos, minDistanceSq};
+			};
+
+			auto [targetPos, minDistanceSq] = findNearestEnemy();
+
+			// 敵がいればBulletを生成 (距離が無限大でなければ敵がいるとみなす)
+			if (minDistanceSq < 1e9f) {
+				Vector3 velocity = targetPos - playerPos;
+
+				Bullet* newBullet = new Bullet(playerPos, velocity);
+				newBullet->Initialize();
+				bullets_.push_back(newBullet);
+			}
+
+			bulletSpawnTimer_ = 0;
+		}
+	}
+
+	// Bulletの更新 (Bullet::Update内で画面外判定が行われ、isDead_がtrueになる)
+	for (Bullet* bullet : bullets_) {
+		bullet->Update();
+	}
+	// ------------------------------------
 
 	// ------------------------------------
 	// 衝突判定の実行
@@ -426,6 +686,11 @@ void GameScene::Update() {
 	Vector3 playerPosForExp = player_->GetPosition();
 	for (Experience* exp : experiences_) {
 		exp->Update(playerPosForExp);
+	}
+
+	// Wineの更新 (何もしないが関数を呼ぶ)
+	for (Wine* wine : wines_) {
+		wine->Update(playerPos);
 	}
 
 	// --- アイテムの削除処理 (取得/死亡判定) ---
@@ -501,6 +766,19 @@ void GameScene::Update() {
 			++it;
 		}
 	}
+
+	// ------------------------------------
+	// Bulletの削除処理 (Bullet::UpdateとCheckAllCollisionsでisDead=trueになったものの削除)
+	// ------------------------------------
+	for (auto itB = bullets_.rbegin(); itB != bullets_.rend();) {
+		Bullet* bullet = *itB;
+		if (bullet->IsDead()) {
+			delete bullet;
+			itB = std::vector<Bullet*>::reverse_iterator(bullets_.erase(std::next(itB).base()));
+		} else {
+			++itB;
+		}
+	}
 }
 
 /**
@@ -528,6 +806,11 @@ void GameScene::Draw() {
 		exp->Draw(camera_);
 	}
 
+	// ★追加: Wineアイテムの描画 ★
+	for (Wine* wine : wines_) {
+		wine->Draw(camera_);
+	}
+
 	// 敵の描画
 	for (Enemy* enemy : enemies_) {
 		enemy->Draw(camera_);
@@ -537,9 +820,18 @@ void GameScene::Draw() {
 		enemy2->Draw(camera_);
 	}
 
+	// ★追加: Bulletの描画 ★
+	for (Bullet* bullet : bullets_) {
+		bullet->Draw(camera_);
+	}
+
+	// ★追加: Book (周回攻撃) の描画 ★
+	for (Book* book : books_) {
+		book->Draw(camera_);
+	}
+
 	// 3. 3D描画の終了
 	Model::PostDraw(); // ★ Sprite描画の前にModelの描画を一旦区切る ★
-
 
 	// --- ここから2D描画 ---
 

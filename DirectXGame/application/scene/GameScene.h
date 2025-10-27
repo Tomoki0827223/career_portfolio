@@ -1,25 +1,29 @@
 #pragma once
 #include "BIt_Map_Font.h"
+#include "Book.h"   // ★追加
+#include "Bullet.h" // ★追加
+#include "Enemy.h"  // 追記
+#include "Enemy2.h"
+#include "Experience.h"
+#include "GameOverScene.h"
 #include "Graph.h"
 #include "KamataEngine.h"
 #include "Player.h"
 #include "Stage.h"
-#include "Experience.h" 
-#include "Enemy.h"       // 追記
-#include "Enemy2.h"
-#include <vector>       
-#include <random>       
-#include <algorithm>
+#include "Wine.h"             // ★追加
 #include "math/MathUtility.h" // ★ これを追加する ★
-#include "GameOverScene.h"
+#include <algorithm>
+#include <random>
+#include <vector>
 
 using namespace KamataEngine;
 
-// ★ レベルアップ後のスキル選択肢の定義 (追加) ★
+// ★ レベルアップ後のスキル選択肢の定義 (修正) ★
 enum class SkillType {
-	kAttackUp,  // 攻撃力アップ
-	kSpeedUp,   // 移動速度アップ
-	kHeal,      // HP回復
+	kBook,      // Book: プレイヤーの周りを回る攻撃
+	kBullet,    // Bullet: 自動で敵に撃つ
+	kHeart,     // Heart: HP回復 (既存のkHealの代替)
+	kWine,      // Wine: ランダムドロップアイテムの出現
 	kSkillCount // スキル数のカウント用
 };
 
@@ -67,15 +71,23 @@ private:
 	// 吸引範囲 (例: 10.0f)
 	const float ATTRACTION_RADIUS = 10.0f;
 
-
-	// 敵の管理
-	std::vector<Enemy*> enemies_;
-	const int kMaxEnemies = 20;
-	int enemySpawnTimer_ = 0;
-	const int kEnemySpawnInterval = 120; // 120フレームごとに生成 (2秒)
+	std::vector<Enemy*> enemies_; // ★ Enemy2のリストを追加 ★
+	const int kMaxEnemies = 5;     // ★ Enemy2の最大数を設定 (出現数を制限) ★
 
 	std::vector<Enemy2*> enemies2_; // ★ Enemy2のリストを追加 ★
 	const int kMaxEnemies2 = 5;     // ★ Enemy2の最大数を設定 (出現数を制限) ★
+
+	// ★追加: スキル関連のオブジェクト管理 ★
+	std::vector<Bullet*> bullets_;
+	const int kBulletSpawnInterval = 60; // 60フレームごとに発射
+	int bulletSpawnTimer_ = 0;
+
+	std::vector<Book*> books_;
+
+	std::vector<Wine*> wines_;
+	const int kWineSpawnInterval = 600; // 600フレーム (10秒) ごとに生成
+	int wineSpawnTimer_ = 0;
+	// ------------------------------------
 
 	// HPバー用のスプライト (追加)
 	KamataEngine::Sprite* hpBarBase_ = nullptr;
@@ -115,6 +127,9 @@ private:
 
 	// 敵のランダム生成関数 (追加)
 	void SpawnEnemy();
+
+	// ★追加: Wineのランダム生成関数 ★
+	void SpawnWine();
 
 	// ★ スキル関連関数 (追加) ★
 	void StartLevelUp();              // レベルアップ開始

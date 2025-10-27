@@ -21,6 +21,13 @@ void Player::Initialize() {
 
 	worldTransform.Initialize();
 	worldTransform.scale_ = {2.0f, 2.0f, 2.0f}; // ★ プレイヤーのサイズを2倍に ★
+
+	// ★修正: HPとスキルレベルのリセットを追加 ★
+	currentHp_ = kMaxHp_;
+	bookLevel_ = 0;
+	bulletLevel_ = 0;
+	wineLevel_ = 0;
+	// ------------------------------------
 }
 
 void Player::Update() {
@@ -112,6 +119,7 @@ void Player::Update() {
 		worldTransform.scale_ = {2.0f, 2.0f, 2.0f};
 	}
 
+
 	// 移動を反映
 	worldTransform.TransferMatrix();
 	worldTransform.UpdateMatarix();
@@ -131,3 +139,12 @@ void Player::Draw() {
 
 	Model::PostDraw();
 }
+
+// ★追加: HP回復メソッドの実装 ★
+void Player::Heal(int amount) {
+	currentHp_ += amount;
+	if (currentHp_ > kMaxHp_) {
+		currentHp_ = kMaxHp_;
+	}
+}
+// ----------------------------------------

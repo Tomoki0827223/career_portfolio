@@ -569,6 +569,29 @@ void GameScene::Update() {
 	font_->Set(score_);
 	// ------------------------------------
 
+	// --- ここから追加 ---
+	// ------------------------------------
+	// ★追加: カメラのプレイヤー追従処理 ★
+	// ------------------------------------
+	Vector3 playerPos = player_->GetPosition();
+	// カメラのZ位置は変えず、XとYをプレイヤーに合わせる
+	// Camera.hのtranslation_の初期値は{0, 0, -50}
+	// Z軸はプレイヤーから奥に離れた位置 (例: -50.0f) に固定
+	const float kCameraOffsetZ = -50.0f;
+	// プレイヤーを少し見下ろすためにY軸方向も調整 (任意)
+	const float kCameraOffsetY = 10.0f;
+
+	// カメラの移動(translation)をプレイヤーの位置に追従させる
+	// プレイヤーのX, Y座標をカメラのtranslation_に設定
+	camera_.translation_.x = playerPos.x;
+	camera_.translation_.y = playerPos.y + kCameraOffsetY; // プレイヤーより少し高い位置
+	camera_.translation_.z = kCameraOffsetZ;               // Z座標は固定 (プレイヤーのZは0.0fと想定)
+
+	// カメラの行列を更新
+	camera_.UpdateMatrix();
+	// ------------------------------------
+	// --- ここまで追加 ---
+
 	// ------------------------------------
 	// 敵の生成
 	// ------------------------------------
@@ -598,7 +621,7 @@ void GameScene::Update() {
 	// ------------------------------------
 	// 敵の更新 (追尾)
 	// ------------------------------------
-	Vector3 playerPos = player_->GetPosition();
+	//Vector3 playerPos = player_->GetPosition();
 	for (Enemy* enemy : enemies_) {
 		enemy->Update(playerPos);
 	}

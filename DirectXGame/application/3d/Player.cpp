@@ -34,31 +34,33 @@ void Player::Update() {
 	const float speed = 0.5f;
 
 	// ★ 死亡している場合は、移動・攻撃処理をスキップし、死亡モーションのみ実行 ★
-	if (isDead_) {
+	if (isDead_) { // プレイヤーが死亡している場合
 		deadTimer_++;
 
+		// 死亡モーションの総フレーム数 (60フレーム) の間アニメーションを実行
 		if (deadTimer_ <= kMaxDeadTime_) {
-			// t: 0.0f -> 1.0f へ線形に変化
+			// t: 0.0f (開始時) -> 1.0f (終了時) へ線形に変化する値
 			float t = (float)deadTimer_ / kMaxDeadTime_;
 
-			// 2.0f (初期スケール) から 0.0f へ縮小
+			// 2.0f (初期スケール) から 0.0f へ線形に縮小
 			float currentScale = 2.0f * (1.0f - t);
 
 			// モデルを回転させる
 			worldTransform.rotation_.x += 0.8f;
 			worldTransform.rotation_.y += 0.4f;
 
+			// 縮小したスケールを適用
 			worldTransform.scale_ = {currentScale, currentScale, currentScale};
 
 		} else {
-			// モーション終了後は、描画されないようにスケールを0にする
+			// モーション終了後 (60フレーム経過後) は、描画されないようにスケールを0にする
 			worldTransform.scale_ = {0.0f, 0.0f, 0.0f};
 		}
 
 		// 死亡モーションの反映と終了
 		worldTransform.TransferMatrix();
 		worldTransform.UpdateMatarix();
-		return; // 死亡時は以降の処理をスキップ
+		return; // 死亡時は以降の移動・攻撃処理をスキップ
 	}
 
 	// 入力取得 (移動処理)

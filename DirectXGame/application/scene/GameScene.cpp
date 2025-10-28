@@ -540,6 +540,9 @@ void GameScene::Update() {
 			// ★★★ ここに実際のシーン遷移ロジックを記述してください ★★★
 			// 例: KamataEngine::SceneManager::GetInstance()->ChangeScene("GameOver");
 			//     ※SceneManagerの適切な呼び出し方に合わせて修正してください
+
+			// 【修正】プレイヤーの消滅モーション完了後、GameOverシーンへ遷移するロジックを追記
+			//KamataEngine::SceneManager::GetInstance()->ChangeScene("GAMEOVER");
 		}
 
 		// ★ モーションが終了するまで、他のゲーム処理はスキップしてアニメーションを継続させます ★

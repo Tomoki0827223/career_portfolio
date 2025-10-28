@@ -512,19 +512,14 @@ void GameScene::Update() {
 	// isGameOver_ や isLevelUpPending_ の状態にかかわらず、毎フレーム実行されます。
 	player_->Update();
 
+
 	// ------------------------------------
 	// ★【2. HP/ゲームオーバー判定と処理】★
 	// ------------------------------------
 	int currentHp = player_->GetCurrentHp();
 	int maxHp = player_->GetMaxHp();
 
-	// HPが0以下になったらゲームオーバーフラグを立てる (最初の1フレームのみ)
-	if (currentHp <= 0 && !isGameOver_) {
-		isGameOver_ = true;
-		player_->Die(); // 死亡モーション開始フラグを設定
-	}
-
-	// HPバーのサイズを更新（HPが0以下の場合も比率が0になる）
+	// 1. HPバーのサイズを更新（死亡アニメーション中もHPが0の状態を反映させるため、最初に移動）
 	float hpRatio = (float)currentHp / maxHp;
 	if (hpRatio < 0.0f) { // 念のため比率がマイナスにならないようにする
 		hpRatio = 0.0f;
@@ -533,21 +528,30 @@ void GameScene::Update() {
 	Vector2 currentSize = hpBar_->GetSize();
 	hpBar_->SetSize({newWidth, currentSize.y});
 
-	// ゲームオーバー中の処理 (モーション終了待ち)
-	if (isGameOver_) {
-		// 死亡モーションが終わるまで待つ (GetDeadTimer() > GetMaxDeadTime())
-		if (player_->IsDead() && player_->GetDeadTimer() > player_->GetMaxDeadTime()) {
-			// ★★★ ここに実際のシーン遷移ロジックを記述してください ★★★
-			// 例: KamataEngine::SceneManager::GetInstance()->ChangeScene("GameOver");
-			//     ※SceneManagerの適切な呼び出し方に合わせて修正してください
+	// 2. HPが0以下の場合の処理
+	if (currentHp <= 0) {
 
-			// 【修正】プレイヤーの消滅モーション完了後、GameOverシーンへ遷移するロジックを追記
-			//KamataEngine::SceneManager::GetInstance()->ChangeScene("GAMEOVER");
+		// プレイヤーがまだ死亡フラグを立てていなければ、Die()を呼び出す
+		if (!player_->IsDead()) {
+			player_->Die(); // 死亡モーション開始フラグを設定 (isDead_ = trueになる)
 		}
 
-		// ★ モーションが終了するまで、他のゲーム処理はスキップしてアニメーションを継続させます ★
+		// プレイヤーが死亡状態の場合（isDead_ == true）
+		if (player_->IsDead()) {
+			// ★ 修正点: 死亡アニメーションが完了したかチェックし、完了した場合のみ isGameOver_ を true にする ★
+			// deadTimer_がkMaxDeadTime_ (60) を超えたらシーン遷移フラグを立てる
+			if (player_->GetDeadTimer() >= player_->GetMaxDeadTime()) {
+				// アニメーションが完了したので、ゲームオーバーシーンへ遷移するフラグを立てる
+				isGameOver_ = true;
+			}
+		}
+
+		// 死亡モーション中（isDead_ == true）は、これ以降の通常のゲーム更新処理をスキップ
 		return;
 	}
+	// ------------------------------------
+
+	// ★ プレイヤーが生存している場合は、ここから下の通常のゲーム更新処理が続行されます。 ★
 
 	// ------------------------------------
 	// ★【3. 通常時のみ】レベルアップ待ちの処理（次に実行） ★

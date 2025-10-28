@@ -66,7 +66,7 @@ private:
 	// ★ 死亡関連 (追加) ★
 	bool isDead_ = false;         // 死亡フラグ
 	int deadTimer_ = 0;           // 死亡モーションのタイマー
-	const int kMaxDeadTime_ = 60; // 死亡モーションの総フレーム数 (1秒間)
+	const int kMaxDeadTime_ = 120; // 死亡モーションの総フレーム数 (1秒間)
 
 	// ★追加: 新しいスキルレベル ★
 	int bookLevel_ = 0;

@@ -33,6 +33,7 @@ void GameOverScene::Initialize() {
 	isRetrySelected_ = false;
 	selectedOption_ = 0; // 初期選択はリトライ
 
+
 	// 既存のテクスチャをロード
 	// white1x1.pngは真っ白なテクスチャとして、sample.pngはUIのベースとして利用
 	whiteTexture_ = KamataEngine::TextureManager::Load("gameOver.png");

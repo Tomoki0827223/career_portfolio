@@ -538,16 +538,18 @@ void GameScene::Update() {
 
 		// プレイヤーが死亡状態の場合（isDead_ == true）
 		if (player_->IsDead()) {
-			// ★ 修正点: 死亡アニメーションが完了したかチェックし、完了した場合のみ isGameOver_ を true にする ★
-			// deadTimer_がkMaxDeadTime_ (60) を超えたらシーン遷移フラグを立てる
+			// 死亡アニメーションが完了したかチェックし、完了した場合のみ isGameOver_ を true にする
 			if (player_->GetDeadTimer() >= player_->GetMaxDeadTime()) {
-				// アニメーションが完了したので、ゲームオーバーシーンへ遷移するフラグを立てる
 				isGameOver_ = true;
 			}
 		}
 
+		// ★ 修正点: 死亡モーション中は、この後の通常のゲーム更新処理をスキップするようにします。
+		//           これにより、敵の動き、生成、衝突判定、経験値の更新が止まります。
+
 		// 死亡モーション中（isDead_ == true）は、これ以降の通常のゲーム更新処理をスキップ
-		return;
+		// ※ Draw()関数でプレイヤーのアニメーションは続行されるため、敵が消えてプレイヤーだけが残ります。
+		return; // ★ この return; を利用して敵の更新を停止します。
 	}
 	// ------------------------------------
 
@@ -813,29 +815,33 @@ void GameScene::Draw() {
 		exp->Draw(camera_);
 	}
 
-	// ★追加: Wineアイテムの描画 ★
-	for (Wine* wine : wines_) {
-		wine->Draw(camera_);
-	}
+	// ★ 修正点: プレイヤーが死亡モーション中の場合は、敵やアイテムの描画をスキップ ★
+	if (!player_->IsDead()) {
+		// ★追加: Wineアイテムの描画 ★
+		for (Wine* wine : wines_) {
+			wine->Draw(camera_);
+		}
 
-	// 敵の描画
-	for (Enemy* enemy : enemies_) {
-		enemy->Draw(camera_);
-	}
-	// ★ Enemy2の描画を追加 ★
-	for (Enemy2* enemy2 : enemies2_) {
-		enemy2->Draw(camera_);
-	}
+		// 敵の描画
+		for (Enemy* enemy : enemies_) {
+			enemy->Draw(camera_);
+		}
+		// ★ Enemy2の描画を追加 ★
+		for (Enemy2* enemy2 : enemies2_) {
+			enemy2->Draw(camera_);
+		}
 
-	// ★追加: Bulletの描画 ★
-	for (Bullet* bullet : bullets_) {
-		bullet->Draw(camera_);
-	}
+		// ★追加: Bulletの描画 ★
+		for (Bullet* bullet : bullets_) {
+			bullet->Draw(camera_);
+		}
 
-	// ★追加: Book (周回攻撃) の描画 ★
-	for (Book* book : books_) {
-		book->Draw(camera_);
+		// ★追加: Book (周回攻撃) の描画 ★
+		for (Book* book : books_) {
+			book->Draw(camera_);
+		}
 	}
+	// ------------------------------------
 
 	// 3. 3D描画の終了
 	Model::PostDraw(); // ★ Sprite描画の前にModelの描画を一旦区切る ★

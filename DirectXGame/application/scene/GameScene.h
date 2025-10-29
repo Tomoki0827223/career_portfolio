@@ -15,17 +15,9 @@
 #include <algorithm>
 #include <random>
 #include <vector>
+#include "SkillSelect.h"
 
 using namespace KamataEngine;
-
-// ★ レベルアップ後のスキル選択肢の定義 (修正) ★
-enum class SkillType {
-	kBook,      // Book: プレイヤーの周りを回る攻撃
-	kBullet,    // Bullet: 自動で敵に撃つ
-	kHeart,     // Heart: HP回復 (既存のkHealの代替)
-	kWine,      // Wine: ランダムドロップアイテムの出現
-	kSkillCount // スキル数のカウント用
-};
 
 class GameScene {
 public:
@@ -99,25 +91,15 @@ private:
 	// ゲームオーバーフラグ (追加)
 	bool isGameOver_ = false;
 
-	// ★ レベルアップシステム関連 (追加) ★
+	// ★ 経験値アイテムの削除処理から経験値とスコア加算のロジックはGameSceneに残します ★
 	int level_ = 1;               // 現在のレベル
 	int currentExp_ = 0;          // 現在の経験値 (score_から加算)
 	int requiredExp_ = 150;       // 次のレベルまでに必要な経験値
 	const int kExpBase = 100;     // 最初の必要経験値
 	const float kExpScale = 1.2f; // 必要経験値の増加率 (レベルが上がるごとに必要経験値が1.2倍になる例)
 
-	bool isLevelUpPending_ = false;              // レベルアップ待ち状態 (スキル選択画面表示中)
-	int selectedSkillIndex_ = 0;                 // 選択中のスキルインデックス (0, 1, 2)
-	std::vector<SkillType> currentSkillOptions_; // 現在のスキル選択肢 (3つ)
-	// ------------------------------------
-
-	// ★ スキル選択画面用スプライト (追加) ★
-	KamataEngine::Sprite* skillScreenBackground_ = nullptr; // 半透明の背景
-	KamataEngine::Sprite* skillOptionSprites_[3] = {};      // 3つの選択肢の背景
-	KamataEngine::Sprite* skillCursorSprite_ = nullptr;     // 選択カーソル
-
-	uint32_t whiteTextureHandle_ = 0; // スプライトの色付けに使う1x1の白テクスチャ
-	// ----------------------------------------
+	// ★ 修正: isLevelUpPending_ のみを残し、UI関連の変数を削除 ★
+	bool isLevelUpPending_ = false; // レベルアップ待ち状態 (スキル選択画面表示中)
 
 	// 衝突判定関数 (追加)
 	void CheckAllCollisions();
@@ -131,8 +113,10 @@ private:
 	// ★追加: Wineのランダム生成関数 ★
 	void SpawnWine();
 
-	// ★ スキル関連関数 (追加) ★
-	void StartLevelUp();              // レベルアップ開始
-	void UpdateSkillSelection();      // スキル選択画面の更新
-	void ApplySkill(SkillType skill); // 選択したスキルを適用
+	// ★ 修正: スキル関連関数を削除・修正 ★
+	void StartLevelUp(); // レベルアップ開始 (GameScene内に残す)
+	                     // ★ 削除: UpdateSkillSelection は SkillSelect に移管します ★
+	                     // void UpdateSkillSelection();
+	                     // ★ 削除: ApplySkill は SkillSelect に移管します ★
+	                     // void ApplySkill(SkillType skill);
 };

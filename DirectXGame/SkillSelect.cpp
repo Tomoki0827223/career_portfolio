@@ -24,6 +24,7 @@ SkillSelect::~SkillSelect() {
 	}
 }
 
+
 void SkillSelect::Initialize(Player* player) {
 	player_ = player;
 

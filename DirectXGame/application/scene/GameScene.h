@@ -1,141 +1,160 @@
 #pragma once
-#include "BIt_Map_Font.h"
-#include "Book.h"   // ★追加
-#include "Bullet.h" // ★追加
-#include "Enemy.h"  // 追記
+// ★修正: IScene.hのインクルードを削除 (ISceneを使わない方法へ変更) ★
+// #include "External/KamataEngine/include/scene/IScene.h"
+
+#include "2d/DebugText.h"
+#include "2d/Sprite.h"
+#include "3d/Camera.h" // unique_ptrで管理するためヘッダーを追加
+#include "3d/PrimitiveDrawer.h"
+
+#include "Book.h"
+#include "Bullet.h"
+#include "Enemy.h"
 #include "Enemy2.h"
 #include "Experience.h"
 #include "GameOverScene.h"
-#include "Graph.h"
-#include "KamataEngine.h"
-#include "Player.h"
-#include "Stage.h"
-#include "Wine.h"             // ★追加
-#include "math/MathUtility.h" // ★ これを追加する ★
+#include "Wine.h"
+
+// 既存のヘッダーもインクルード
+#include "application/3d/Player.h"
+#include "application/3d/Stage.h"
+#include "base/TextureManager.h"
+#include "input/Input.h"
+#include "math/MathUtility.h"
+
 #include <algorithm>
+#include <array>
+#include <memory>
 #include <random>
 #include <vector>
 
 using namespace KamataEngine;
 
-// ★ レベルアップ後のスキル選択肢の定義 (修正) ★
-enum class SkillType {
-	kBook,      // Book: プレイヤーの周りを回る攻撃
-	kBullet,    // Bullet: 自動で敵に撃つ
-	kHeart,     // Heart: HP回復 (既存のkHealの代替)
-	kWine,      // Wine: ランダムドロップアイテムの出現
-	kSkillCount // スキル数のカウント用
-};
-
+// ★修正: ISceneの継承を削除し、純粋なクラスにする ★
 class GameScene {
 public:
-	~GameScene();
+	// スキル選択用の列挙型
+	enum SkillType {
+		kNone,
+		kBook,      // Book.cpp/Book.h の効果
+		kBullet,    // Bullet.cpp/Bullet.h の強化
+		kHart,      // 回復 (Hart.pngに対応)
+		kWine,      // Wine.cpp/Wine.h の効果
+		kSkillCount // スキル総数（kNoneを除く）
+	};
 
-	/// <summary>
-	/// 初期化
-	/// </summary>
+	// スキル情報構造体
+	struct SkillInfo {
+		SkillType type;
+		std::string texturePath;         // スキルアイコンの画像パス
+		std::string name;                // スキル名
+		std::string description;         // スキルの説明
+		Sprite* sprite = nullptr;        // スキルアイコン表示用Sprite
+		Vector2 position = {0.0f, 0.0f}; // 表示位置
+	};
+
+	// コンストラクタ / デストラクタ
+	GameScene() = default;
+	~GameScene(); // ★修正: overrideを削除 ★
+
+	// ISceneの仮想関数をオーバーライドしていた部分 (overrideを削除)
 	void Initialize();
-
-	/// <summary>
-	/// 毎フレーム処理
-	/// </summary>
 	void Update();
-
-	/// <summary>
-	/// 描画
-	/// </summary>
 	void Draw();
 
+	// ★main.cppで利用されるGetterを公開 ★
 	bool IsGameOver() const { return isGameOver_; }
-	// ★追加: ゲームオーバーフラグをリセットするためのpublicメソッド
-	void ResetGameOverFlag() { isGameOver_ = false; }
+	void ResetGameOverFlag() { isGameOver_ = false; } // main.cppでフラグをリセットするために追加
 
-private:
-	uint32_t textureHandle_ = 0;
-
-	KamataEngine::Sprite* sprite_ = nullptr;
-
-	// 3Dモデルデータ
-	Model* model_ = nullptr;
-
-	Camera camera_;
-
-	WorldTransform worldTransform;
-
-	Stage* stage_ = nullptr;
-
-	Player* player_ = nullptr;
-
-	Model* playerModel_ = nullptr;
-
-	// Graph* graph_ = nullptr;
-
-	BIt_Map_Font* font_ = nullptr;
-	int score_ = 0;
-
-	// 経験値アイテムを格納するベクトル
-	std::vector<Experience*> experiences_;
-	// 吸引範囲 (例: 10.0f)
-	const float ATTRACTION_RADIUS = 10.0f;
-
-	// 敵の管理
-	std::vector<Enemy*> enemies_;
-	const int kMaxEnemies = 20;
-	int enemySpawnTimer_ = 0;
-	const int kEnemySpawnInterval = 120; // 120フレームごとに生成 (2秒)
-
-	std::vector<Enemy2*> enemies2_; // ★ Enemy2のリストを追加 ★
-	const int kMaxEnemies2 = 5;     // ★ Enemy2の最大数を設定 (出現数を制限) ★
-
-	// ★追加: スキル関連のオブジェクト管理 ★
-	std::vector<Bullet*> bullets_;
-	const int kBulletSpawnInterval = 60; // 60フレームごとに発射
-	int bulletSpawnTimer_ = 0;
-
-	std::vector<Book*> books_;
-
-	std::vector<Wine*> wines_;
-	const int kWineSpawnInterval = 600; // 600フレーム (10秒) ごとに生成
-	int wineSpawnTimer_ = 0;
+	// スキル関連の関数プロトタイプ宣言
+	void StartSkillSelection();
+	void UpdateSkillSelection();
+	void DrawSkillSelection();
+	void ApplySkill(SkillType type);
 	// ------------------------------------
 
-	// HPバー用のスプライト (追加)
+private:
+	// ------------------ ゲームオブジェクト管理 ------------------
+	// ★ unique_ptr の vector はデストラクタで解放処理が不要になるため、GameScene.cppのデストラクタ修正と整合を取ります ★
+	std::unique_ptr<Camera> camera_;
+	Player* player_ = nullptr;
+	std::unique_ptr<Stage> stage_;
+
+	// 敵 (unique_ptrのまま維持)
+	std::vector<std::unique_ptr<Enemy>> enemies_;
+	std::vector<std::unique_ptr<Enemy2>> enemies2_;
+	const int kMaxEnemies = 10;
+	const int kMaxEnemies2 = 5;
+	int enemySpawnTimer_ = 0;
+	int enemy2SpawnTimer_ = 0;
+
+	// 弾丸・スキルアイテム (生ポインタのvectorのまま維持)
+	std::vector<Bullet*> bullets_;
+	const int kBulletSpawnInterval = 60; // 弾丸発射間隔の定数を追加
+	int bulletSpawnTimer_ = 0;
+	std::vector<Book*> books_;
+	std::vector<Wine*> wines_;
+	const int kWineSpawnInterval = 600; // Wine生成間隔の定数を追加
+	int wineSpawnTimer_ = 0;
+
+	// 経験値アイテム (生ポインタのvectorのまま維持)
+	std::vector<Experience*> experiences_;
+
+	// UI
 	KamataEngine::Sprite* hpBarBase_ = nullptr;
 	KamataEngine::Sprite* hpBar_ = nullptr;
 	uint32_t hpBarBaseTexture_ = 0;
 	uint32_t hpBarTexture_ = 0;
-
-	// ゲームオーバーフラグ (追加)
-	bool isGameOver_ = false;
-
-	// ★ レベルアップシステム関連 (追加) ★
-	int level_ = 1;               // 現在のレベル
-	int currentExp_ = 0;          // 現在の経験値 (score_から加算)
-	int requiredExp_ = 150;       // 次のレベルまでに必要な経験値
-	const int kExpBase = 100;     // 最初の必要経験値
-	const float kExpScale = 1.2f; // 必要経験値の増加率 (レベルが上がるごとに必要経験値が1.2倍になる例)
-
-	// スキル選択画面関連の変数は削除
-	// ------------------------------------
-
-	// スキル選択画面用スプライト関連の変数はすべて削除
-
+	// ★未定義エラー解消のため追加: スコア表示系 ★
+	int score_ = 0;
+	DebugText* font_ = nullptr; // DebugTextのインスタンスを保持すると仮定
 	// ----------------------------------------
-
-	// 衝突判定関数 (追加)
-	void CheckAllCollisions();
-
-	// HPバー描画関数 (追加)
 	void DrawHPBar();
+	void DrawLevelAndExp();
 
-	// 敵のランダム生成関数 (追加)
-	void SpawnEnemy();
+	// ------------------ スキル・レベルアップ関連 ------------------
+	bool isSkillSelectionMode = false;
 
-	// ★追加: Wineのランダム生成関数 ★
-	void SpawnWine();
+	// 全スキル情報 (kNoneを除く)
+	std::array<SkillInfo, SkillType::kSkillCount - 1> allSkills_;
 
-	// ★ スキル関連関数 (追加) ★
-	void StartLevelUp(); // レベルアップ開始
-	// UpdateSkillSelection の宣言を削除
-	void ApplySkill(SkillType skill); // 選択したスキルを適用
+	// ランダムに選ばれた3つのスキル
+	std::array<SkillInfo*, 3> selectedSkills_ = {nullptr, nullptr, nullptr};
+	int currentSelectedIndex_ = 0;
+
+	// スキル強化レベル (GameSceneでも保持)
+	int bookLevel_ = 0;
+	int bulletLevel_ = 0;
+	int wineLevel_ = 0;
+
+	// レベルアップシステム
+	int level_ = 1;
+	int currentExp_ = 0;
+	int requiredExp_ = 100; // 初期必要経験値
+	void UpdateLevel();
+	void StartLevelUp() { UpdateLevel(); } // GameScene::cppでStartLevelUp()が呼ばれていたため追加
+	// -----------------------------------------------------------------------------------
+
+	// 衝突判定関数
+	void CheckAllCollisions();
+	// void PlayerAttackCollision(); // CheckAllCollisionsに統合されているため削除
+	// void BulletEnemyCollision(); // CheckAllCollisionsに統合されているため削除
+	void PlayerEnemyCollision();
+	void PlayerExperienceCollision();
+	void PlayerWineCollision();
+
+	// 敵の生成関数 (GameScene.cppでSpawnEnemyを実装しているため、その宣言も追加)
+	void EnemySpawn();  // EnemySpawnTimerの管理関数として宣言
+	void Enemy2Spawn(); // Enemy2SpawnTimerの管理関数として宣言
+	void SpawnEnemy();  // 実際の敵を生成する関数として宣言
+	void SpawnWine();   // Wineアイテムを生成する関数として宣言
+
+	// 弾の発射関数
+	void BulletSpawn();
+
+	// リストからの削除
+	void RemoveDeadEntities();
+
+	// ゲームオーバー処理
+	bool isGameOver_ = false;
 };

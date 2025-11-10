@@ -4,6 +4,17 @@
 
 using namespace KamataEngine;
 
+// ★ Player::GetInstance()の実装 (シングルトンパターン) がないとリンクエラーになるため、追加します。
+// Player.hには宣言がありますが、ここでは定義がないため、簡略的な定義を追加します。
+Player* Player::instance_ = nullptr;
+Player* Player::GetInstance() {
+	if (instance_ == nullptr) {
+		instance_ = new Player();
+	}
+	return instance_;
+}
+// ★
+
 Player::~Player() {
 
 	delete modelPlayer_;
@@ -22,16 +33,16 @@ void Player::Initialize() {
 	worldTransform.Initialize();
 	worldTransform.scale_ = {2.0f, 2.0f, 2.0f}; // ★ プレイヤーのサイズを2倍に ★
 
-	// ★修正: HPとスキルレベルのリセットを追加 ★
-	currentHp_ = kMaxHp_;
-	bookLevel_ = 0;
-	bulletLevel_ = 0;
-	wineLevel_ = 0;
+	// ★修正: HPのリセットを追加 (Player.hの定義 kMaxHP_ に合わせる) ★
+	// スキルレベル (bookLevel_, bulletLevel_, wineLevel_) はPlayer.hに定義がないため削除
+	currentHP_ = kMaxHP_;
 	// ------------------------------------
 }
 
 void Player::Update() {
-	const float speed = 0.5f;
+	// ★修正: 移動速度にスキルによる乗数を適用する ★
+	const float baseSpeed = 0.5f;
+	const float currentSpeed = baseSpeed * moveSpeedMultiplier_;
 
 	// ★ 死亡している場合は、移動・攻撃処理をスキップし、死亡モーションのみ実行 ★
 	if (isDead_) {
@@ -63,16 +74,16 @@ void Player::Update() {
 
 	// 入力取得 (移動処理)
 	if (input_->PushKey(DIK_W)) {
-		worldTransform.translation_.y += speed;
+		worldTransform.translation_.y += currentSpeed; // ★修正: currentSpeedを使用 ★
 	}
 	if (input_->PushKey(DIK_S)) {
-		worldTransform.translation_.y -= speed;
+		worldTransform.translation_.y -= currentSpeed; // ★修正: currentSpeedを使用 ★
 	}
 	if (input_->PushKey(DIK_A)) {
-		worldTransform.translation_.x -= speed;
+		worldTransform.translation_.x -= currentSpeed; // ★修正: currentSpeedを使用 ★
 	}
 	if (input_->PushKey(DIK_D)) {
-		worldTransform.translation_.x += speed;
+		worldTransform.translation_.x += currentSpeed; // ★修正: currentSpeedを使用 ★
 	}
 
 	// 攻撃入力 (追加)
@@ -119,13 +130,13 @@ void Player::Update() {
 		worldTransform.scale_ = {2.0f, 2.0f, 2.0f};
 	}
 
-
 	// 移動を反映
 	worldTransform.TransferMatrix();
 	worldTransform.UpdateMatarix();
 
-	if (currentHp_ < 0) {
-		currentHp_ = 0;
+	// ★修正: 変数名を currentHP_ に修正 ★
+	if (currentHP_ < 0) {
+		currentHP_ = 0;
 	}
 }
 
@@ -140,11 +151,11 @@ void Player::Draw() {
 	Model::PostDraw();
 }
 
-// ★追加: HP回復メソッドの実装 ★
+// ★修正: HP回復メソッドの実装 (変数名を currentHP_ に修正) ★
 void Player::Heal(int amount) {
-	currentHp_ += amount;
-	if (currentHp_ > kMaxHp_) {
-		currentHp_ = kMaxHp_;
+	currentHP_ += amount;
+	if (currentHP_ > kMaxHP_) {
+		currentHP_ = kMaxHP_;
 	}
 }
 // ----------------------------------------

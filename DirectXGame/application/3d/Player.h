@@ -1,76 +1,83 @@
 #pragma once
+#include "3d/Camera.h" // Cameraが必要なため追加
+#include "3d/Model.h"  // Modelが必要なため追加
 #include "3d/WorldTransform.h"
-#include "KamataEngine.h"
+#include "input/Input.h" // Inputが必要なため追加
+#include "math/MathUtility.h"
+#include "math/Vector3.h"
 
 using namespace KamataEngine;
 
 class Player {
 public:
+	// シングルトン化 (既存コードがGetInstance()を使っていると想定)
+	static Player* GetInstance();
+
+	Player();
 	~Player();
 
 	void Initialize();
-
 	void Update();
+	void Draw(); // Drawの引数がない既存コードのsnippetに合わせた
 
-	void Draw();
-
-	// プレイヤーの位置を取得するためのgetter
 	Vector3 GetPosition() const { return worldTransform.translation_; }
+	float GetRadius() const { return radius_; } // 半径のGetterを追加 (既存ロジックに必要)
 
-	// HP関連 (追加)
-	int GetCurrentHp() const { return currentHp_; }       // 現在HPを取得
-	int GetMaxHp() const { return kMaxHp_; }              // 最大HPを取得
-	void TakeDamage(int damage) { currentHp_ -= damage; } // ダメージを受ける
-	void Heal(int amount);                                // ★修正: HP回復メソッドを追加 ★
+	// HP関連
+	void TakeDamage(int damage) { currentHP_ -= damage; }
 
-	// 攻撃関連 (追加)
-	bool IsAttacking() const { return isAttacking_; }        // 攻撃中か
+	// ★修正: Heal関数は宣言のみに留め、定義はPlayer.cppで行う ★
+	void Heal(int amount);
+
+	int GetCurrentHP() const { return currentHP_; }
+	int GetMaxHP() const { return kMaxHP_; }
+
+	// 攻撃関連
 	float GetAttackRadius() const { return kAttackRadius_; } // 近接攻撃の判定半径
+	bool IsAttacking() const { return isAttacking_; }
 
-	// ★追加: スキルレベルのGetter/Setter ★
-	int GetBookLevel() const { return bookLevel_; }
-	void SetBookLevel(int level) { bookLevel_ = level; }
-	int GetBulletLevel() const { return bulletLevel_; }
-	void SetBulletLevel(int level) { bulletLevel_ = level; }
-	int GetWineLevel() const { return wineLevel_; }
-	void SetWineLevel(int level) { wineLevel_ = level; }
-	// ------------------------------------
-
-	// ★ 死亡関連 (修正) ★
-	void Die() { isDead_ = true; }          // 死亡フラグを立てる
-	bool IsDead() const { return isDead_; } // 死亡したかを取得
-	// ★ 【追加】死亡タイマーと最大時間のgetter ★
+	// 死亡関連
+	void Die() { isDead_ = true; }
+	bool IsDead() const { return isDead_; }
 	int GetDeadTimer() const { return deadTimer_; }
 	int GetMaxDeadTime() const { return kMaxDeadTime_; }
 
+	// ★追加: スキルによる強化値のGetter/Setter (GameScene::ApplySkillで利用) ★
+	void SetBulletDamage(int damage) { bulletDamage_ = damage; }
+	int GetBulletDamage() const { return bulletDamage_; }
+	void SetMoveSpeedMultiplier(float multiplier) { moveSpeedMultiplier_ = multiplier; }
+	float GetMoveSpeedMultiplier() const { return moveSpeedMultiplier_; }
+
 private:
-	// パーティクル3Dモデルデータ
-	Model* modelPlayer_ = nullptr;
+	// シングルトン用の静的インスタンス
+	static Player* instance_;
 
-	Input* input_ = nullptr;
+	// HP (kMaxHp_ -> kMaxHP_ に修正)
+	const int kMaxHP_ = 100;
+	int currentHP_ = kMaxHP_; // ★修正: 初期値を最大HPに設定 ★
 
-	Camera camera_;
-
-	WorldTransform worldTransform;
-
-	// HP (追加)
-	const int kMaxHp_ = 999999; // 最大HPを10に設定
-	int currentHp_ = kMaxHp_;
-
-	// 攻撃関連 (追加)
+	// 攻撃
+	const float kAttackRadius_ = 1.0f; // 攻撃の判定半径
 	bool isAttacking_ = false;
-	int attackTimer_ = 0;              // 攻撃の持続フレーム
-	const int kMaxAttackTime_ = 10;    // 攻撃が持続するフレーム数
-	const float kAttackRadius_ = 1.5f; // 近接攻撃の判定半径
+	const int kMaxAttackTime_ = 10;
+	int attackTimer_ = 0;
 
-	// ★ 死亡関連 (追加) ★
-	bool isDead_ = false;         // 死亡フラグ
-	int deadTimer_ = 0;           // 死亡モーションのタイマー
-	const int kMaxDeadTime_ = 60; // 死亡モーションの総フレーム数 (1秒間)
+	// 死亡
+	const int kMaxDeadTime_ = 60; // 死亡モーションの最大時間
+	int deadTimer_ = 0;
+	bool isDead_ = false;
 
-	// ★追加: 新しいスキルレベル ★
-	int bookLevel_ = 0;
-	int bulletLevel_ = 0;
-	int wineLevel_ = 0;
-	// ------------------------------------
+	// 移動
+	const float kMoveSpeed = 0.2f;
+	const float radius_ = 0.5f;
+
+	// ★追加: スキルによる強化値 (Initializeでリセットされる) ★
+	int bulletDamage_ = 1;
+	float moveSpeedMultiplier_ = 1.0f;
+
+	// オブジェクトデータ
+	Model* modelPlayer_ = nullptr;
+	Input* input_ = nullptr;
+	Camera camera_; // PlayerのカメラはGameSceneのカメラと別物として扱う
+	WorldTransform worldTransform;
 };

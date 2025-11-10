@@ -19,25 +19,25 @@ GameScene::~GameScene() {
 	delete hpBarBase_; // 追加
 	delete hpBar_;     // 追加
 
-	// 経験値アイテムの解放
+	// 経験値アイテムの解放 (ポインタリスト)
 	for (Experience* exp : experiences_) {
 		delete exp;
 	}
 	experiences_.clear();
 
-	// 敵の解放 (追加)
+	// 敵の解放 (ポインタリスト)
 	for (Enemy* enemy : enemies_) {
 		delete enemy;
 	}
 	enemies_.clear();
 
-	// ★ Enemy2の解放を追加 ★
+	// ★ Enemy2の解放 (ポインタリスト) ★
 	for (Enemy2* enemy2 : enemies2_) {
 		delete enemy2;
 	}
 	enemies2_.clear();
 
-	// ★追加: スキル関連オブジェクトの解放 ★
+	// ★ スキル関連オブジェクトの解放 (ポインタリスト) ★
 	for (Bullet* bullet : bullets_) {
 		delete bullet;
 	}
@@ -46,10 +46,10 @@ GameScene::~GameScene() {
 		delete book;
 	}
 	books_.clear();
-	for (Wine* wine : wines_) {
-		delete wine;
-	}
-	wines_.clear();
+
+	// 【重要: 修正】Wineの解放処理 - unique_ptrのリストは .clear() のみでOK
+	// for (Wine* wine : wines_) { delete wine; } <- 削除
+	wines_.clear(); // ★ この一行で、全ての unique_ptr がデストラクタを呼び出し、メモリを解放します ★
 	// ------------------------------------
 
 	// ★ スキル選択画面用スプライトの解放 (追加) ★
@@ -62,7 +62,6 @@ GameScene::~GameScene() {
 
 void GameScene::Initialize() {
 
-	// ★追加: リトライに備え、敵と経験値のリストを確実にクリアする★
 	// 敵の解放
 	for (Enemy* enemy : enemies_) {
 		delete enemy;
@@ -89,9 +88,7 @@ void GameScene::Initialize() {
 		delete book;
 	}
 	books_.clear();
-	for (Wine* wine : wines_) {
-		delete wine;
-	}
+
 	wines_.clear();
 
 	bulletSpawnTimer_ = 0;
@@ -165,6 +162,13 @@ void GameScene::Initialize() {
 	skillCursorSprite_->SetSize({kOptionSize.x + 20.0f, kOptionSize.y + 10.0f});    // 選択肢より少し大きく
 	skillCursorSprite_->SetColor({1.0f, 1.0f, 0.0f, 0.5f});                         // 黄色で半透明
 	                                                                                // ----------------------------------------
+
+	// 【追加】パーティクルマネージャーの初期化
+	ParticleManager::GetInstance()->Initialize();
+
+	// 【追加】Wineリストの初期化と生成タイマーのリセット
+	wines_.clear();
+	wineSpawnTimer_ = kWineSpawnInterval;
 }
 
 void GameScene::StartLevelUp() {
@@ -327,13 +331,6 @@ void GameScene::SpawnWine() {
 		randomPos = {dist(engine), dist(engine), 0.0f};
 		distance = Math::Length(randomPos - playerPos);
 	} while (distance < kMinSpawnDistance);
-
-	// Wineは画面に最大1個までにする (Wineレベルが上がると生成間隔が短くなる)
-	if (wines_.empty()) {
-		Wine* newWine = new Wine(randomPos);
-		newWine->Initialize();
-		wines_.push_back(newWine);
-	}
 }
 
 void GameScene::CheckAllCollisions() {
@@ -485,26 +482,20 @@ void GameScene::CheckAllCollisions() {
 	// ------------------------------------
 	// ★追加: Wine (回復アイテム) vs プレイヤー の衝突判定 ★
 	// ------------------------------------
-	for (auto itW = wines_.begin(); itW != wines_.end();) {
-		Wine* wine = *itW;
-		Vector3 winePos = wine->GetPosition();
-		float wineRadius = wine->GetRadius();
+	
+	//for (auto itW = wines_.begin(); itW != wines_.end();) {
+	//	Vector3 winePos = wine->GetPosition();
+	//	float wineRadius = wine->GetRadius();
 
-		// プレイヤーとWineの接触判定
-		if (Math::Length(winePos - playerPos) <= playerBodyRadius + wineRadius) {
-			// プレイヤーを回復
-			player_->Heal(wine->GetHealAmount());
+	//	// プレイヤーとWineの接触判定
+	//	if (Math::Length(winePos - playerPos) <= playerBodyRadius + wineRadius) {
+	//		// プレイヤーを回復
+	//		player_->Heal(wine->GetHealAmount());
 
-			wine->Die(); // Wineを消滅させる
 
-			// Wineをリストから削除
-			delete wine;
-			itW = wines_.erase(itW);
-		} else {
-			++itW;
-		}
-	}
-	// ------------------------------------
+	//		wine->SetIsActive(false);
+	//	}
+	//}
 }
 
 void GameScene::Update() {
@@ -512,6 +503,7 @@ void GameScene::Update() {
 	// ★【1. 最優先】プレイヤーの更新 (死亡モーションのタイマーを必ず進める) ★
 	// isGameOver_ や isLevelUpPending_ の状態にかかわらず、毎フレーム実行されます。
 	player_->Update();
+	ParticleManager::GetInstance()->Update(); // ★インクルードが正しければこれで動きます★
 
 	// ------------------------------------
 	// ★【2. HP/ゲームオーバー判定と処理】★
@@ -689,10 +681,34 @@ void GameScene::Update() {
 		exp->Update(playerPosForExp);
 	}
 
-	// Wineの更新 (何もしないが関数を呼ぶ)
-	for (Wine* wine : wines_) {
-		wine->Update(playerPos);
+
+	wineSpawnTimer_--;
+	if (wineSpawnTimer_ <= 0) {
+		// タイマーをリセット
+		wineSpawnTimer_ = kWineSpawnInterval;
+
+		// X座標をランダムに決定
+		// 【修正】KamataEngine::MathUtility::RandomFの代わりに、GameScene.cpp冒頭で定義された dist(engine) を使用
+		float randomX = dist(engine);
+
+		Vector3 spawnPos = {randomX, kSpawnY, 50.0f}; // Z座標はステージの奥の固定位置
+
+		// Wineオブジェクトを生成 (unique_ptrを使用)
+		// 【修正】引数なしのコンストラクタを呼び出し、Initializeに位置を渡します
+		std::unique_ptr<Wine> newWine = std::make_unique<Wine>();
+		newWine->Initialize(spawnPos);
+
+		// unique_ptrをリストに追加
+		wines_.push_back(std::move(newWine));
 	}
+
+	// ------------------- Wineの更新と削除 -------------------
+	// Wineを更新し、非アクティブになったもの（地面に衝突したもの）をリストから削除
+	wines_.remove_if([](std::unique_ptr<Wine>& wine) {
+		// ★unique_ptr::get() は不要。unique_ptrがそのままWine*として機能する。
+		wine->Update();
+		return !wine->IsActive(); // IsDeadではなくIsActiveを使う
+	});
 
 	// --- アイテムの削除処理 (取得/死亡判定) ---
 	for (auto it = experiences_.rbegin(); it != experiences_.rend();) {
@@ -807,10 +823,14 @@ void GameScene::Draw() {
 		exp->Draw(camera_);
 	}
 
-	// ★追加: Wineアイテムの描画 ★
-	for (Wine* wine : wines_) {
-		wine->Draw(camera_);
+	for (const auto& wine : wines_) {
+		if (wine->IsActive()) {
+			wine->Draw(camera_);
+		}
 	}
+
+	// 【修正】パーティクルの描画
+	ParticleManager::GetInstance()->Draw(camera_); // ★【修正】Cameraのポインタから参照渡しに変更★
 
 	// 敵の描画
 	for (Enemy* enemy : enemies_) {

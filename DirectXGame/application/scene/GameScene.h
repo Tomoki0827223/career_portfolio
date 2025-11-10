@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <random>
 #include <vector>
+#include "ParticleManager.h"
 
 using namespace KamataEngine;
 
@@ -85,10 +86,16 @@ private:
 
 	std::vector<Book*> books_;
 
-	std::vector<Wine*> wines_;
-	const int kWineSpawnInterval = 600; // 600フレーム (10秒) ごとに生成
+	// 【追加】Wineのリスト
+	std::list<std::unique_ptr<Wine>> wines_;
+
+	// 【追加】Wineの生成タイマー
 	int wineSpawnTimer_ = 0;
-	// ------------------------------------
+	const int kWineSpawnInterval = 120; // 約2秒間隔で生成 (60FPS想定)
+	// 【追加】Wineの生成範囲 (X座標)
+	const float kSpawnMinX = -5.0f; // ステージの左端
+	const float kSpawnMaxX = 5.0f;  // ステージの右端
+	const float kSpawnY = 15.0f;    // 画面外の上空のY座標
 
 	// HPバー用のスプライト (追加)
 	KamataEngine::Sprite* hpBarBase_ = nullptr;

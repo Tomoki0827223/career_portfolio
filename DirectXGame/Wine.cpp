@@ -1,35 +1,49 @@
 #include "Wine.h"
+#include "3d/Model.h" 
+#include "ParticleManager.h" // ParticleManager.hをインクルード
+#include "math/Vector4.h"
+#include "3d/PrimitiveDrawer.h"
 
-Wine::Wine(const Vector3& position) { worldTransform.translation_ = position; }
+void Wine::Initialize(const Vector3& initialPos) {
+	model_ = KamataEngine::Model::CreateFromOBJ("wine");
 
-Wine::~Wine() { delete model_; }
+	worldTransform_.Initialize();
+	worldTransform_.scale_ = {1.0f, 1.0f, 1.0f};
 
-void Wine::Initialize() {
-	// モデルとして"wine"を使用
-	model_ = Model::CreateFromOBJ("wine");
+	worldTransform_.translation_ = initialPos;
 
-	worldTransform.Initialize();
-	worldTransform.scale_ = {1.0f, 1.0f, 1.0f};
-
-	worldTransform.translation_.z = 0.0f;
-	worldTransform.UpdateMatarix();
+	isActive_ = true;
+	dropSpeed_ = 0.5f;
+	worldTransform_.UpdateMatarix();
 }
 
-void Wine::Update(const Vector3& playerPosition) {
-	// Wineはマップに固定配置されるため、ここでは特別な移動処理は行わない
-	(void)playerPosition;
-}
 
-void Wine::Draw(const Camera& camera) {
-	if (isDead_) {
+void Wine::Update() {
+	if (!isActive_) {
 		return;
 	}
 
-	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
-	dxCommon->ClearDepthBuffer();
-	Model::PreDraw();
+	// 落下処理: Y座標を減らす
+	worldTransform_.translation_.y -= dropSpeed_;
 
-	model_->Draw(worldTransform, camera);
+	if (worldTransform_.translation_.y <= kGroundY) {
+		worldTransform_.translation_.y = kGroundY;
 
-	Model::PostDraw();
+		// 【修正】KamataEngine:: を削除して、グローバルなParticleManagerを呼び出す
+		//         Vector4には KamataEngine:: を維持します
+		KamataEngine::Vector4 wineColor = {0.5f, 0.0f, 0.2f, 1.0f};
+
+		ParticleManager::GetInstance()->CreateSplash(worldTransform_.translation_, wineColor);
+
+		isActive_ = false;
+	}
+	worldTransform_.UpdateMatarix();
+}
+
+
+// Wine::Draw の修正
+void Wine::Draw(const KamataEngine::Camera& camera) {
+	if (isActive_ && model_) {
+		model_->Draw(worldTransform_, camera);
+	}
 }

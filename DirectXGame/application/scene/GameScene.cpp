@@ -51,13 +51,13 @@ GameScene::~GameScene() {
 	}
 	wines_.clear();
 	// ------------------------------------
-
 	// ★ スキル選択画面用スプライトの解放 (追加) ★
 	delete skillScreenBackground_;
 	delete skillCursorSprite_;
 	for (int i = 0; i < 3; ++i) {
 		delete skillOptionSprites_[i];
 	}
+	delete skillIconSprite_; // ★ 追加: アイコンスプライトの解放 ★
 }
 
 void GameScene::Initialize() {
@@ -143,7 +143,15 @@ void GameScene::Initialize() {
 
 	// ★ スキル選択画面用スプライトの初期化 (追加) ★
 	// 既存の white1x1.png をテクスチャとしてロード
-	whiteTextureHandle_ = KamataEngine::TextureManager::Load("sample.png");
+	//whiteTextureHandle_ = KamataEngine::TextureManager::Load("sample.png");
+	// ★ スキルアイコン用のテクスチャをロード (追加) ★
+	// Resourcesフォルダからの相対パスを想定
+	bookTextureHandle_ = KamataEngine::TextureManager::Load("Sukill/book.png");
+	bulletTextureHandle_ = KamataEngine::TextureManager::Load("Sukill/Gun.png"); // Gun.pngの代わり
+	heartTextureHandle_ = KamataEngine::TextureManager::Load("Sukill/Hart.png");      // Hert.pngの代わり
+	wineTextureHandle_ = KamataEngine::TextureManager::Load("Sukill/Wine.png");   // Wine.pngの代わり
+
+
 
 	// 1. 全画面背景スプライトの生成 (画面全体を覆い、半透明にする)
 	skillScreenBackground_ = KamataEngine::Sprite::Create(whiteTextureHandle_, {0, 0});
@@ -164,7 +172,11 @@ void GameScene::Initialize() {
 	skillCursorSprite_ = KamataEngine::Sprite::Create(whiteTextureHandle_, {0, 0}); // 位置はDrawで更新
 	skillCursorSprite_->SetSize({kOptionSize.x + 20.0f, kOptionSize.y + 10.0f});    // 選択肢より少し大きく
 	skillCursorSprite_->SetColor({1.0f, 1.0f, 0.0f, 0.5f});                         // 黄色で半透明
-	                                                                                // ----------------------------------------
+
+	// ★ スキルアイコン用の使いまわしスプライトを生成 (追加) ★
+	skillIconSprite_ = KamataEngine::Sprite::Create(whiteTextureHandle_, {0, 0});
+	skillIconSprite_->SetSize({80.0f, 80.0f});            // アイコンサイズを仮設定
+	skillIconSprite_->SetColor({1.0f, 1.0f, 1.0f, 1.0f}); // 色は白に戻す
 }
 
 void GameScene::StartLevelUp() {
@@ -849,6 +861,7 @@ void GameScene::Draw() {
 
 	// ★ スキル選択画面の描画 (追加) ★
 	if (isLevelUpPending_) {
+
 		// 1. 半透明の背景を描画
 		skillScreenBackground_->Draw();
 
@@ -863,19 +876,54 @@ void GameScene::Draw() {
 		KamataEngine::Vector2 optionSize = selectedOption->GetSize();
 		KamataEngine::Vector2 cursorDrawPos = {cursorPosition.x - (cursorSize.x - optionSize.x) / 2.0f, cursorPosition.y - (cursorSize.y - optionSize.y) / 2.0f};
 
+
 		skillCursorSprite_->SetPosition(cursorDrawPos);
 		skillCursorSprite_->Draw();
 
-		// 3. 3つの選択肢の背景を描画
+		// 3. 3つの選択肢の背景とアイコンを描画
+		const KamataEngine::Vector2 kIconSize = skillIconSprite_->GetSize(); // 80x80
+		const KamataEngine::Vector2 kOptionSize = {400.0f, 100.0f};          // 選択肢のサイズ (Initializeから流用)
+		const float kIconOffsetX = 50.0f;                                    // 選択肢の左からのオフセット
+
 		for (int i = 0; i < 3; ++i) {
-			skillOptionSprites_[i]->Draw();
+			KamataEngine::Sprite* optionSprite = skillOptionSprites_[i];
+			optionSprite->Draw(); // 選択肢の背景を描画
+
+			// ★ スキルアイコンの描画 ★
+			SkillType skillType = currentSkillOptions_[i];
+
+			// 1. スキルタイプに応じてテクスチャハンドルを選択
+			uint32_t iconTextureHandle = 0;
+			switch (skillType) {
+			case SkillType::kBook:
+				iconTextureHandle = bookTextureHandle_;
+				break;
+			case SkillType::kBullet:
+				iconTextureHandle = bulletTextureHandle_;
+				break;
+			case SkillType::kHeart:
+				iconTextureHandle = heartTextureHandle_;
+				break;
+			case SkillType::kWine:
+				iconTextureHandle = wineTextureHandle_;
+				break;
+			default:
+				// 未知のスキルタイプの場合は何もしない
+				continue;
+			}
+
+			// 2. アイコンスプライトの設定と描画
+			skillIconSprite_->SetTextureHandle(iconTextureHandle); // ★ 修正: SetTextureHandleに置き換え
+
+			// アイコンの描画位置を計算: 選択肢の左端から kIconOffsetX 離れた位置、上下は中央
+			KamataEngine::Vector2 optionPos = optionSprite->GetPosition();
+			KamataEngine::Vector2 iconDrawPos = {optionPos.x + kIconOffsetX, optionPos.y + (kOptionSize.y - kIconSize.y) / 2.0f};
+
+			skillIconSprite_->SetPosition(iconDrawPos);
+			skillIconSprite_->Draw(); // アイコンを描画
 
 			// **TODO**: BIt_Map_Font の拡張が必要です。
-			// ここに「攻撃力アップ」などの**文字列**を描画するロジックを実装する必要がありますが、
-			// BIt_Map_Font は現在 int (整数) しか描画できません。
-			// 代替として、ここでは仮に数字を描画します。
-			// font_->Set(i + 1); // 選択肢番号の仮表示
-			// font_->Draw();    // (Draw内で独自にPreDraw/PostDrawを呼ぶ問題があるためコメントアウト)
+			// ... (中略)
 		}
 
 		// 【暫定対応】レベルアップの文字を中央に仮表示 (デバッグ用)

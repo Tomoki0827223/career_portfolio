@@ -117,6 +117,15 @@ private:
 	KamataEngine::Sprite* skillCursorSprite_ = nullptr;     // 選択カーソル
 
 	uint32_t whiteTextureHandle_ = 0; // スプライトの色付けに使う1x1の白テクスチャ
+
+	// ★ スキルアイコン用のテクスチャハンドル (追加) ★
+	uint32_t bookTextureHandle_ = 0;
+	uint32_t bulletTextureHandle_ = 0;
+	uint32_t heartTextureHandle_ = 0;
+	uint32_t wineTextureHandle_ = 0;
+
+	KamataEngine::Sprite* skillIconSprite_ = nullptr; // 描画時に使いまわすアイコン用スプライト
+
 	// ----------------------------------------
 
 	// 衝突判定関数 (追加)

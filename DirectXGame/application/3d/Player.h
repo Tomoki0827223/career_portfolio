@@ -54,7 +54,7 @@ private:
 	WorldTransform worldTransform;
 
 	// HP (追加)
-	const int kMaxHp_ = 100; // 最大HPを10に設定
+	const int kMaxHp_ = 999999; // 最大HPを10に設定
 	int currentHp_ = kMaxHp_;
 
 	// 攻撃関連 (追加)

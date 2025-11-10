@@ -728,6 +728,7 @@ void GameScene::Update() {
 	}
 }
 
+
 void GameScene::DrawHPBar() {
 	// HPバーを描画 (左上配置)
 	hpBarBase_->Draw(); // ベース (枠)

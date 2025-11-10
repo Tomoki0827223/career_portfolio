@@ -1,3 +1,5 @@
+#define NOMINMAX          // min/maxマクロの衝突を防ぐ
+#define _USE_MATH_DEFINES // M_PIを使用可能にするために追加
 #include "GameScene.h"
 
 // 乱数生成器のグローバル宣言 (Initializeで使用)
@@ -51,13 +53,7 @@ GameScene::~GameScene() {
 	}
 	wines_.clear();
 	// ------------------------------------
-	// ★ スキル選択画面用スプライトの解放 (追加) ★
-	delete skillScreenBackground_;
-	delete skillCursorSprite_;
-	for (int i = 0; i < 3; ++i) {
-		delete skillOptionSprites_[i];
-	}
-	delete skillIconSprite_; // ★ 追加: アイコンスプライトの解放 ★
+	// ★ スキル選択画面用スプライトの解放は削除済み ★
 }
 
 void GameScene::Initialize() {
@@ -134,47 +130,11 @@ void GameScene::Initialize() {
 	hpBar_ = KamataEngine::Sprite::Create(hpBarTexture_, kHpBarPos);
 	hpBar_->SetSize(kHpBarSize); // HP減少でサイズを変更するため、初期は最大サイズ
 
-
 	// ★ レベルアップシステム関連の初期化 (追加) ★
 	level_ = 1;
 	currentExp_ = 0;
 	requiredExp_ = kExpBase; // 100
-	isLevelUpPending_ = false;
-	selectedSkillIndex_ = 0;
-
-	// ★ スキルアイコン用のテクスチャをロード (パスを統一) ★
-	whiteTextureHandle_ = KamataEngine::TextureManager::Load("white1x1.png");
-	bookTextureHandle_ = KamataEngine::TextureManager::Load("Sukill/book.png");
-	bulletTextureHandle_ = KamataEngine::TextureManager::Load("Sukill/Gun.png");
-	heartTextureHandle_ = KamataEngine::TextureManager::Load("Sukill/Hart.png");
-	wineTextureHandle_ = KamataEngine::TextureManager::Load("Sukill/Wine.png");
-
-	// 1. 全画面背景スプライトの生成 (画面全体を覆い、半透明にする)
-	skillScreenBackground_ = KamataEngine::Sprite::Create(whiteTextureHandle_, {0, 0});
-	skillScreenBackground_->SetSize({1280.0f, 720.0f});         // 画面サイズに合わせる (仮定)
-	skillScreenBackground_->SetColor({0.0f, 0.0f, 0.0f, 0.8f}); // 黒で半透明 (80%透明)
-
-	// 2. スキル選択肢スプライトの生成
-	const KamataEngine::Vector2 kOptionSize = {400.0f, 100.0f}; // 選択肢のサイズ
-	const KamataEngine::Vector2 kBasePos = {440.0f, 180.0f};    // 画面中央付近
-
-	for (int i = 0; i < 3; ++i) {
-		skillOptionSprites_[i] = KamataEngine::Sprite::Create(whiteTextureHandle_, {kBasePos.x, kBasePos.y + i * 120.0f});
-		skillOptionSprites_[i]->SetSize(kOptionSize);
-		skillOptionSprites_[i]->SetColor({0.2f, 0.2f, 0.2f, 1.0f}); // 濃い灰色
-	}
-
-	// 3. 選択カーソル/ハイライトスプライトの生成
-	skillCursorSprite_ = KamataEngine::Sprite::Create(whiteTextureHandle_, {0, 0}); // 位置はDrawで更新
-	skillCursorSprite_->SetSize({kOptionSize.x + 20.0f, kOptionSize.y + 10.0f});    // 選択肢より少し大きく
-	skillCursorSprite_->SetColor({1.0f, 1.0f, 0.0f, 0.5f});                         // 黄色で半透明
-
-	// ★ スキルアイコン用の使いまわしスプライトを生成 (初期設定) ★
-	skillIconSprite_ = KamataEngine::Sprite::Create(whiteTextureHandle_, {0, 0});
-	skillIconSprite_->SetSize({1220.0f, 220.0f});            // アイコンサイズを仮設定
-	skillIconSprite_->SetColor({1.0f, 1.0f, 1.0f, 1.0f}); // 色は白に戻す
-
-	// ★★★ 以前追加された不要なスプライト再生成ブロックは削除済み ★★★
+	                         // スキル選択関連の変数は削除済み
 }
 
 void GameScene::StartLevelUp() {
@@ -186,63 +146,15 @@ void GameScene::StartLevelUp() {
 	// 経験値はintで計算し、小数点以下は切り捨てる（または四捨五入する）
 	requiredExp_ = static_cast<int>(kExpBase * std::pow(kExpScale, level_ - 1));
 
-	isLevelUpPending_ = true;
-	selectedSkillIndex_ = 0; // 選択インデックスをリセット
-
-	// スキル選択肢をランダムに3つ生成
-
 	// SkillType::kSkillCountはenumの要素数として使用
 	std::uniform_int_distribution<int> distType(0, static_cast<int>(SkillType::kSkillCount) - 1);
 
-	currentSkillOptions_.clear();
-
-	// ★ 修正箇所: size_t を int にキャストして比較する ★
-	while (static_cast<int>(currentSkillOptions_.size()) < 3) {
-		SkillType newSkill = static_cast<SkillType>(distType(engine));
-
-		// 重複チェック
-		bool alreadyExists = false;
-		for (SkillType skill : currentSkillOptions_) {
-			if (skill == newSkill) {
-				alreadyExists = true;
-				break;
-			}
-		}
-		if (!alreadyExists) {
-			currentSkillOptions_.push_back(newSkill);
-		}
-	}
+	// ★ 修正: ランダムに選んだスキルを即座に適用するロジックに変更 ★
+	SkillType selectedSkill = static_cast<SkillType>(distType(engine));
+	ApplySkill(selectedSkill);
 }
 
-void GameScene::UpdateSkillSelection() {
-	// 入力インスタンスを取得
-	Input* input = KamataEngine::Input::GetInstance();
-
-	// ★ 修正: size()の戻り値をintに明示的にキャストし、変数に格納する ★
-	// これにより、すべての算術演算がint型で行われるようになる
-	int optionCount = static_cast<int>(currentSkillOptions_.size());
-
-	// 上キー/下キーで選択肢を移動
-	if (input->TriggerKey(DIK_W) || input->TriggerKey(DIK_UP)) {
-		// 【修正適用】キャストしたint型の変数を使用
-		selectedSkillIndex_ = (selectedSkillIndex_ - 1 + optionCount) % optionCount;
-	}
-	if (input->TriggerKey(DIK_S) || input->TriggerKey(DIK_DOWN)) {
-		// 【修正適用】キャストしたint型の変数を使用
-		selectedSkillIndex_ = (selectedSkillIndex_ + 1) % optionCount;
-	}
-
-	// 決定キー (スペースキーやエンターキー) でスキルを適用し、ゲームを再開
-	if (input->TriggerKey(DIK_SPACE) || input->TriggerKey(DIK_RETURN)) {
-		ApplySkill(currentSkillOptions_[selectedSkillIndex_]);
-		isLevelUpPending_ = false;
-
-		// ゲーム再開
-		currentSkillOptions_.clear(); // 選択肢をクリア
-	}
-
-	// **TODO: スキル選択画面のUI描画ロジックはDraw関数内に実装**
-}
+// UpdateSkillSelection() は削除済み
 
 void GameScene::ApplySkill(SkillType skill) {
 	// ここにPlayerクラスの機能拡張やGameScene全体のパラメータ変更処理を記述します
@@ -302,18 +214,21 @@ void GameScene::SpawnEnemy() {
 	do {
 		// x, yをランダムに生成し、zは0.0f（固定）に設定
 		randomPos = {dist(engine), dist(engine), 0.0f};
+		// ★修正: Vector3Length -> Math::Length
 		distance = Math::Length(randomPos - playerPos);
 	} while (distance < kMinSpawnDistance);
 
 	// ★ 敵の種類をランダムに決定 (Enemy2を低確率で出現させる) ★
 	std::uniform_int_distribution<int> distType(0, 3); // 0: Enemy2, 1-3: Enemy1 (4分の1の確率でEnemy2)
 	if (enemies2_.size() < kMaxEnemies2 && distType(engine) == 0) {
+		// ★修正: コンストラクタに初期位置を渡す★
 		Enemy2* newEnemy2 = new Enemy2(randomPos);
-		newEnemy2->Initialize();
+		newEnemy2->Initialize(); // Initializeは引数なしと想定
 		enemies2_.push_back(newEnemy2);
 	} else if (enemies_.size() < kMaxEnemies) {
+		// ★修正: コンストラクタに初期位置を渡す★
 		Enemy* newEnemy = new Enemy(randomPos);
-		newEnemy->Initialize();
+		newEnemy->Initialize(); // Initializeは引数なしと想定
 		enemies_.push_back(newEnemy);
 	}
 }
@@ -334,13 +249,15 @@ void GameScene::SpawnWine() {
 	do {
 		// x, yをランダムに生成し、zは0.0f（固定）に設定
 		randomPos = {dist(engine), dist(engine), 0.0f};
+		// ★修正: Vector3Length -> Math::Length
 		distance = Math::Length(randomPos - playerPos);
 	} while (distance < kMinSpawnDistance);
 
 	// Wineは画面に最大1個までにする (Wineレベルが上がると生成間隔が短くなる)
 	if (wines_.empty()) {
+		// ★修正: コンストラクタに初期位置を渡す★
 		Wine* newWine = new Wine(randomPos);
-		newWine->Initialize();
+		newWine->Initialize(); // Initializeは引数なしと想定
 		wines_.push_back(newWine);
 	}
 }
@@ -364,6 +281,7 @@ void GameScene::CheckAllCollisions() {
 			float enemyRadius = enemy->GetRadius();
 
 			Vector3 diff = enemyPos - playerPos;
+			// ★修正: Vector3Length -> Math::Length
 			float distance = Math::Length(diff);
 
 			// 攻撃判定: プレイヤー位置と敵が、攻撃半径+敵半径内にいれば命中
@@ -382,6 +300,7 @@ void GameScene::CheckAllCollisions() {
 			float enemyRadius = enemy2->GetRadius();
 
 			Vector3 diff = enemyPos - playerPos;
+			// ★修正: Vector3Length -> Math::Length
 			float distance = Math::Length(diff);
 
 			// 攻撃判定
@@ -404,6 +323,7 @@ void GameScene::CheckAllCollisions() {
 		float enemyRadius = enemy->GetRadius();
 
 		Vector3 diff = enemyPos - playerPos;
+		// ★修正: Vector3Length -> Math::Length
 		float distance = Math::Length(diff);
 
 		// 接触判定
@@ -455,7 +375,7 @@ void GameScene::CheckAllCollisions() {
 
 		Vector3 bulletPos = bullet->GetPosition();
 		float bulletRadius = bullet->GetRadius();
-		int bulletDamage = bullet->GetDamage();
+		// ★修正: hitをここで定義
 		bool hit = false;
 
 		// Enemy1 & Enemy2
@@ -468,8 +388,10 @@ void GameScene::CheckAllCollisions() {
 				float enemyRadius = enemy->GetRadius();
 
 				if (Math::Length(enemyPos - bulletPos) <= bulletRadius + enemyRadius) {
-					enemy->TakeDamage(bulletDamage);
-					bullet->Die(); // Bulletを消滅させる
+					// ★修正: BulletのダメージはGetDamage()で取得
+					enemy->TakeDamage(bullet->GetDamage());
+					// ★修正: OnCollisionではなくDie()を使用
+					bullet->Die();
 					return true;
 				}
 			}
@@ -504,7 +426,28 @@ void GameScene::CheckAllCollisions() {
 			// プレイヤーを回復
 			player_->Heal(wine->GetHealAmount());
 
-			wine->Die(); // Wineを消滅させる
+			// Wine取得時の処理: 経験値アイテムをランダムにばら撒く (Wine::OnCollision()で処理されていた内容をここに移動)
+			const int kExpCount = 50; // 生成する経験値の数
+			const float kScatterRadius = 5.0f;
+			std::uniform_real_distribution<float> angleDist(0.0f, 2.0f * (float)M_PI);
+			std::uniform_real_distribution<float> scatterDist(0.5f, kScatterRadius);
+
+			for (int i = 0; i < kExpCount; ++i) {
+				float angle = angleDist(engine);
+				float d = scatterDist(engine);
+				float xOffset = std::cos(angle) * d;
+				float zOffset = std::sin(angle) * d;
+
+				Vector3 expSpawnPos = playerPos + Vector3{xOffset, 0.0f, zOffset};
+
+				// ★修正: コンストラクタに初期位置を渡す★
+				Experience* newExp = new Experience(expSpawnPos);
+				newExp->Initialize();
+				experiences_.push_back(newExp);
+			}
+
+			// ★修正: OnCollisionではなくDie()を使用
+			wine->Die();
 
 			// Wineをリストから削除
 			delete wine;
@@ -557,16 +500,7 @@ void GameScene::Update() {
 	}
 
 	// ------------------------------------
-	// ★【3. 通常時のみ】レベルアップ待ちの処理（次に実行） ★
-	// ------------------------------------
-	if (isLevelUpPending_) {
-		UpdateSkillSelection();
-
-		// UIの描画のためにスコアの更新は行う
-		font_->Set(score_);
-
-		return; // メインのゲーム更新はスキップ
-	}
+	// ★【3. 通常時のみ】レベルアップ待ちの処理は削除済み ★
 	// ------------------------------------
 
 	stage_->Update();
@@ -595,6 +529,7 @@ void GameScene::Update() {
 	// Wineレベルが1以上で、かつ画面にWineがない場合に生成
 	// レベルが上がるほど、生成間隔が短くなるようにする (例: 間隔 = kInterval / level)
 	const int kMinWineInterval = 100; // 最小間隔を設定 (極端に短くならないように)
+	// ★修正: (std::max) で囲む
 	int currentWineInterval = kWineSpawnInterval / (std::max)(1, player_->GetWineLevel());
 	currentWineInterval = (std::max)(currentWineInterval, kMinWineInterval);
 
@@ -632,6 +567,7 @@ void GameScene::Update() {
 		bulletSpawnTimer_++;
 		// レベルが上がるほど、発射間隔が短くなるようにする (例: 間隔 = kInterval / level)
 		const int kMinBulletInterval = 10; // 最小間隔を設定
+		// ★修正: (std::max) で囲む
 		int currentBulletInterval = kBulletSpawnInterval / (std::max)(1, player_->GetBulletLevel());
 		currentBulletInterval = (std::max)(currentBulletInterval, kMinBulletInterval);
 
@@ -646,7 +582,7 @@ void GameScene::Update() {
 						if (enemy->IsDead())
 							continue;
 
-						// ★修正: Math::LengthSqが存在しないため、Lengthを二乗して比較する★
+						// ★修正: Math::Lengthを二乗して比較する★
 						float distance = Math::Length(enemy->GetPosition() - playerPos);
 						float distanceSq = distance * distance;
 
@@ -667,9 +603,8 @@ void GameScene::Update() {
 
 			// 敵がいればBulletを生成 (距離が無限大でなければ敵がいるとみなす)
 			if (minDistanceSq < 1e9f) {
-				Vector3 velocity = targetPos - playerPos;
-
-				Bullet* newBullet = new Bullet(playerPos, velocity);
+				// ★修正: コンストラクタに引数を渡し、Initializeは引数なしに統一★
+				Bullet* newBullet = new Bullet(playerPos, targetPos);
 				newBullet->Initialize();
 				bullets_.push_back(newBullet);
 			}
@@ -742,6 +677,7 @@ void GameScene::Update() {
 			int dropCount = distCount1(engine); // 10〜15個の乱数
 
 			for (int i = 0; i < dropCount; ++i) {
+				// ★修正: コンストラクタに初期位置を渡す★
 				Experience* newExp = new Experience(dropPosition);
 				newExp->Initialize();
 				experiences_.push_back(newExp);
@@ -765,6 +701,7 @@ void GameScene::Update() {
 			int dropCount = kEnemy2DropCount; // 30個ドロップ
 
 			for (int i = 0; i < dropCount; ++i) {
+				// ★修正: コンストラクタに初期位置を渡す★
 				Experience* newExp = new Experience(dropPosition);
 				newExp->Initialize();
 				experiences_.push_back(newExp);
@@ -791,9 +728,6 @@ void GameScene::Update() {
 	}
 }
 
-/**
- * @brief HPバーの描画処理
- */
 void GameScene::DrawHPBar() {
 	// HPバーを描画 (左上配置)
 	hpBarBase_->Draw(); // ベース (枠)
@@ -801,6 +735,7 @@ void GameScene::DrawHPBar() {
 }
 
 void GameScene::Draw() {
+	// ... (描画ロジックは変更なし)
 
 	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
 
@@ -853,79 +788,7 @@ void GameScene::Draw() {
 
 	// font_->Draw();
 
-	// ★ スキル選択画面の描画 (追加) ★
-	if (isLevelUpPending_) {
-
-		// 1. 半透明の背景を描画
-		skillScreenBackground_->Draw();
-
-		// 2. 選択中のスキルにカーソルを描画 (先に描画することで、オプションの下に表示される)
-		KamataEngine::Sprite* selectedOption = skillOptionSprites_[selectedSkillIndex_];
-
-		// カーソルの位置を選択肢の中心に合わせる
-		KamataEngine::Vector2 cursorPosition = selectedOption->GetPosition();
-		KamataEngine::Vector2 cursorSize = skillCursorSprite_->GetSize();
-
-		// 選択肢の左上の座標からカーソルの左上の座標を計算
-		KamataEngine::Vector2 optionSize = selectedOption->GetSize();
-		KamataEngine::Vector2 cursorDrawPos = {cursorPosition.x - (cursorSize.x - optionSize.x) / 2.0f, cursorPosition.y - (cursorSize.y - optionSize.y) / 2.0f};
-
-		skillCursorSprite_->SetPosition(cursorDrawPos);
-		skillCursorSprite_->Draw();
-
-		// 3. 3つの選択肢の背景とアイコンを描画
-		const KamataEngine::Vector2 kIconSize = skillIconSprite_->GetSize(); // 80x80
-		const KamataEngine::Vector2 kOptionSize = {400.0f, 100.0f};
-		
-		// 選択肢のサイズ (Initializeから流用)
-		const float kIconOffsetX = 50.0f;	
-		
-		// 選択肢の左からのオフセット
-
-		for (int i = 0; i < 3; ++i) {
-			KamataEngine::Sprite* optionSprite = skillOptionSprites_[i];
-			optionSprite->Draw(); // 選択肢の背景を描画
-
-
-			// ★ スキルアイコンの描画 ★
-			SkillType skillType = currentSkillOptions_[i];
-
-			// 1. スキルタイプに応じてテクスチャハンドルを選択
-			uint32_t iconTextureHandle = 0;
-			switch (skillType) {
-			case SkillType::kBook:
-				iconTextureHandle = bookTextureHandle_;
-				break;
-			case SkillType::kBullet:
-				iconTextureHandle = bulletTextureHandle_;
-				break;
-			case SkillType::kHeart:
-				iconTextureHandle = heartTextureHandle_;
-				break;
-			case SkillType::kWine:
-				iconTextureHandle = wineTextureHandle_;
-				break;
-			default:
-				// 未知のスキルタイプの場合は何もしない
-				continue;
-			}
-
-			// 2. アイコンスプライトの設定と描画
-			skillIconSprite_->SetTextureHandle(iconTextureHandle);
-
-			// ★★★ 修正: SetTextureRectの描画サイズを、テクスチャの最大サイズ (128x128を仮定) に設定 ★★★
-			// {texBase (左上座標)}, {texSize (ピクセルサイズ)}
-			// アイコン画像のピクセルサイズに合わせて、この {128.0f, 128.0f} の部分を修正してください。
-			skillIconSprite_->SetTextureRect({0.0f, 0.0f}, {1200.0f, 222.0f});
-
-			// アイコンの描画位置を計算: 選択肢の左端から kIconOffsetX 離れた位置、上下は中央
-			KamataEngine::Vector2 optionPos = optionSprite->GetPosition();
-			KamataEngine::Vector2 iconDrawPos = {optionPos.x + kIconOffsetX, optionPos.y + (kOptionSize.y - kIconSize.y) / 2.0f};
-
-			skillIconSprite_->SetPosition(iconDrawPos);
-			skillIconSprite_->Draw(); // アイコンを描画
-		}
-	}
+	// ★ スキル選択画面の描画は削除済み ★
 
 	font_->Draw(); // BIt_Map_Font が単独で描画を完結させているため、ここで呼ぶ
 

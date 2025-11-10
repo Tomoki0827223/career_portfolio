@@ -31,10 +31,19 @@ class GameScene {
 public:
 	~GameScene();
 
+	/// <summary>
+	/// 初期化
+	/// </summary>
 	void Initialize();
 
+	/// <summary>
+	/// 毎フレーム処理
+	/// </summary>
 	void Update();
 
+	/// <summary>
+	/// 描画
+	/// </summary>
 	void Draw();
 
 	bool IsGameOver() const { return isGameOver_; }
@@ -106,25 +115,10 @@ private:
 	const int kExpBase = 100;     // 最初の必要経験値
 	const float kExpScale = 1.2f; // 必要経験値の増加率 (レベルが上がるごとに必要経験値が1.2倍になる例)
 
-	bool isLevelUpPending_ = false;              // レベルアップ待ち状態 (スキル選択画面表示中)
-	int selectedSkillIndex_ = 0;                 // 選択中のスキルインデックス (0, 1, 2)
-	std::vector<SkillType> currentSkillOptions_; // 現在のスキル選択肢 (3つ)
+	// スキル選択画面関連の変数は削除
 	// ------------------------------------
 
-	// ★ スキル選択画面用スプライト (追加) ★
-	KamataEngine::Sprite* skillScreenBackground_ = nullptr; // 半透明の背景
-	KamataEngine::Sprite* skillOptionSprites_[3] = {};      // 3つの選択肢の背景
-	KamataEngine::Sprite* skillCursorSprite_ = nullptr;     // 選択カーソル
-
-	uint32_t whiteTextureHandle_ = 0; // スプライトの色付けに使う1x1の白テクスチャ
-
-	// ★ スキルアイコン用のテクスチャハンドル (追加) ★
-	uint32_t bookTextureHandle_ = 0;
-	uint32_t bulletTextureHandle_ = 0;
-	uint32_t heartTextureHandle_ = 0;
-	uint32_t wineTextureHandle_ = 0;
-
-	KamataEngine::Sprite* skillIconSprite_ = nullptr; // 描画時に使いまわすアイコン用スプライト
+	// スキル選択画面用スプライト関連の変数はすべて削除
 
 	// ----------------------------------------
 
@@ -141,7 +135,7 @@ private:
 	void SpawnWine();
 
 	// ★ スキル関連関数 (追加) ★
-	void StartLevelUp();              // レベルアップ開始
-	void UpdateSkillSelection();      // スキル選択画面の更新
+	void StartLevelUp(); // レベルアップ開始
+	// UpdateSkillSelection の宣言を削除
 	void ApplySkill(SkillType skill); // 選択したスキルを適用
 };

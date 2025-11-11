@@ -39,4 +39,5 @@ private:
 	Vector3 startPosition_;    // 投擲開始位置
 	bool isDead_ = false;      // 消滅フラグ
 	bool isReturning_ = false; // 戻り中フラグ
+
 };

@@ -165,6 +165,7 @@
     <ClCompile Include="Bullet.cpp" />
     <ClCompile Include="Enemy.cpp" />
     <ClCompile Include="Enemy2.cpp" />
+    <ClCompile Include="GameLogic.cpp" />
     <ClCompile Include="GameOverScene.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="application\3d\Player.cpp" />
@@ -287,6 +288,7 @@
     <ClInclude Include="Bullet.h" />
     <ClInclude Include="Enemy.h" />
     <ClInclude Include="Enemy2.h" />
+    <ClInclude Include="GameLogic.h" />
     <ClInclude Include="GameOverScene.h" />
     <ClInclude Include="Minion.h" />
     <ClInclude Include="Missile.h" />

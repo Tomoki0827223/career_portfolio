@@ -13,6 +13,7 @@ GameScene::~GameScene() {
 
 	// GameLogicへ移動したリストの解放処理は削除
 
+
 	// スキル選択画面用スプライトの解放 (GameSceneに残すUI要素)
 	delete skillScreenBackground_;
 	delete skillCursorSprite_;

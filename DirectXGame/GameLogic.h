@@ -51,6 +51,10 @@ public:
 	void UpdateSkillSelection();
 	void DrawSkillSelectionUI(KamataEngine::Sprite* skillCursorSprite, KamataEngine::Sprite* skillOptionSprites[], KamataEngine::Sprite* skillScreenBackground);
 
+	// 描画に必要なテクスチャハンドルをGameSceneへ渡すためのGetter
+	// スキルアイコンのテクスチャハンドル配列を返す
+	const uint32_t* GetSkillTextureHandles() const { return skillTextureHandles_; }
+
 private:
 	// GameSceneから移動したオブジェクト管理
 	std::vector<Bullet*> bullets_;
@@ -103,4 +107,13 @@ private:
 	void SpawnWine();
 	void StartLevelUp();
 	void ApplySkill(SkillType skill);
+
+	uint32_t skillTextureHandles_[static_cast<int>(SkillType::kSkillCount)] = {};
+	KamataEngine::Sprite* skillIconSprites_[3] = {};
+	const KamataEngine::Vector2 kIconSize_ = {256.0f, 222.0f};
+	
+	// 新しいテクスチャのハンドル
+	uint32_t boomerangTextureHandle_ = 0;
+	uint32_t minionTextureHandle_ = 0;
+	uint32_t missileTextureHandle_ = 0;
 };

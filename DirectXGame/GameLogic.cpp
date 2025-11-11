@@ -54,6 +54,10 @@ GameLogic::~GameLogic() {
 		delete missile;
 	}
 	missiles_.clear();
+	
+	for (int i = 0; i < 3; ++i) {
+		delete skillIconSprites_[i];
+	}
 }
 
 void GameLogic::Initialize() {
@@ -107,6 +111,26 @@ void GameLogic::Initialize() {
 	requiredExp_ = kExpBase;
 	isLevelUpPending_ = false;
 	selectedSkillIndex_ = 0;
+
+	// ★★★ スキルアイコンテクスチャのロードと割り当て ★★★
+
+
+	// 既存スキルのテクスチャロード (アップロードされたファイル名と対応)
+	skillTextureHandles_[static_cast<int>(SkillType::kBook)] = KamataEngine::TextureManager::Load("Sukill/book.png");  //
+	skillTextureHandles_[static_cast<int>(SkillType::kBullet)] = KamataEngine::TextureManager::Load("Sukill/Gun.png"); //
+	skillTextureHandles_[static_cast<int>(SkillType::kHeart)] = KamataEngine::TextureManager::Load("Sukill/Hart.png"); //
+	skillTextureHandles_[static_cast<int>(SkillType::kWine)] = KamataEngine::TextureManager::Load("Sukill/Wine.png");  //
+
+	// 新規スキルのテクスチャ (一時的に既存のテクスチャを割り当て。必要に応じて変更してください)
+	skillTextureHandles_[static_cast<int>(SkillType::kBoomerang)] = KamataEngine::TextureManager::Load("Sukill/axe.png");  // Resources/axe/axe.png を想定
+	skillTextureHandles_[static_cast<int>(SkillType::kMinion)] = KamataEngine::TextureManager::Load("Sukill/player.png");  // Resources/player/player.png を想定
+	skillTextureHandles_[static_cast<int>(SkillType::kMissile)] = KamataEngine::TextureManager::Load("Sukill/Bullet.png"); // Resources/Bullet/Bullet.png を想定
+
+	uint32_t initialTextureHandle = KamataEngine::TextureManager::Load("sample.png");
+	for (int i = 0; i < 3; ++i) {
+		skillIconSprites_[i] = KamataEngine::Sprite::Create(initialTextureHandle, {0, 0});
+		skillIconSprites_[i]->SetSize(kIconSize_);
+	}
 }
 
 // ----------------------------------------------------
@@ -889,58 +913,33 @@ void GameLogic::DrawSkillSelectionUI(KamataEngine::Sprite* skillCursorSprite, Ka
 	skillCursorSprite->SetPosition(cursorDrawPos);
 	skillCursorSprite->Draw();
 
+
 	// 3. 3つの選択肢の背景と文字列を描画
 	for (int i = 0; i < 3; ++i) {
-		skillOptionSprites[i]->Draw();
+		KamataEngine::Sprite* optionSprite = skillOptionSprites[i];
+		optionSprite->Draw();
 
-		// スキル名の文字列表示（BIt_Map_Fontで文字列を表示できないため、ここでは仮に数字とレベルを表示）
-		std::string skillName;
 		SkillType type = currentSkillOptions_[i];
-		int level = 0;
 
-		switch (type) {
-		case SkillType::kBook:
-			skillName = "Book Attack";
-			level = player_->GetBookLevel();
-			break;
-		case SkillType::kBullet:
-			skillName = "Bullet Shot";
-			level = player_->GetBulletLevel();
-			break;
-		case SkillType::kHeart:
-			skillName = "Heal (HP +30)";
-			level = 0; // 回復はレベルなし
-			break;
-		case SkillType::kWine:
-			skillName = "Wine Drop";
-			level = player_->GetWineLevel();
-			break;
-		case SkillType::kBoomerang:
-			skillName = "Boomerang";
-			level = player_->GetBoomerangLevel();
-			break;
-		case SkillType::kMinion:
-			skillName = "Minion Spawn";
-			level = player_->GetMinionLevel();
-			break;
-		case SkillType::kMissile:
-			skillName = "Homing Missile";
-			level = player_->GetMissileLevel();
-			break;
-		default:
-			skillName = "UNKNOWN";
-			level = 0;
-			break;
-		}
+		// ★★★ アイコン描画処理 ★★★
+		uint32_t iconHandle = skillTextureHandles_[static_cast<int>(type)];
 
-		// BIt_Map_Fontで表示できるのは数字のみであるため、ここではスキル番号とレベルを仮に表示します。
-		// フォントの位置調整は必要に応じて行ってください。
+		// 既存のスプライトを再利用して設定を変更
+		KamataEngine::Sprite* iconSprite = skillIconSprites_[i];
 
-		// 選択肢の真ん中にレベルと次のレベルを表示 (例: "Lv 1 -> 2")
-		// 【修正】BIt_Map_FontにSetTextメソッドがないため、以下の2行を削除/コメントアウトします。
-		// std::string levelString = "Lv " + std::to_string(level) + " -> " + std::to_string(level + 1);
-		// font_->SetText(levelString, {skillOptionSprites[i]->GetPosition().x + 50.0f, skillOptionSprites[i]->GetPosition().y + 35.0f});
+		// 【修正】SetTexture を SetTextureHandle に変更
+		iconSprite->SetTextureHandle(iconHandle);
+		iconSprite->SetSize(kIconSize_);
 
-		// font_->Draw()はGameScene.cppのDraw()の最後にまとめて呼び出す設計であるため、ここでは呼び出しません。
+		KamataEngine::Vector2 optionPos = optionSprite->GetPosition();
+		KamataEngine::Vector2 iconPos = {
+		    optionPos.x + 10.0f,                                            // オプションの左端から少し右
+		    optionPos.y + (optionSprite->GetSize().y - kIconSize_.y) / 2.0f // 中央揃え
+		};
+
+		iconSprite->SetPosition(iconPos);
+		iconSprite->Draw();
+
+		// ... (後略: スキル情報取得ロジックは削除されたまま)
 	}
 }

@@ -76,6 +76,15 @@ private:
 	KamataEngine::Sprite* hpBar_ = nullptr;
 	uint32_t hpBarBaseTexture_ = 0;
 	uint32_t hpBarTexture_ = 0;
+	
+
+	// ★★★ 追記: EXPゲージ用のスプライト ★★★
+	KamataEngine::Sprite* expBarBase_ = nullptr;
+	KamataEngine::Sprite* expBar_ = nullptr;
+	uint32_t expBarBaseTexture_ = 0;
+	uint32_t expBarTexture_ = 0;
+	// EXPバーのテクスチャはHPバーのものを流用します (hpBarBaseTexture_, hpBarTexture_)
+	// ----------------------------------------
 
 	uint32_t sousaTextureHandle_ = 0;
 	uint32_t sousaTextureHandle2_ = 0;
@@ -99,6 +108,7 @@ private:
 	// HPバー描画関数 (GameSceneに残す - UI描画)
 	void DrawHPBar();
 
+	void DrawEXPBar();
 	// 敵のランダム生成関数、Wineのランダム生成関数 (GameLogicへ移動したため削除)
 	// スキル関連関数 (GameLogicへ移動したため削除)
 };

@@ -9,12 +9,15 @@ std::mt19937 engine(seed_gen());
 // マップの範囲を定義
 const float MAP_HALF_RANGE = 50.0f;
 std::uniform_real_distribution<float> dist(-MAP_HALF_RANGE, MAP_HALF_RANGE);
+const float kScreenDamageRadius = 20.0f; // プレイヤー中心から15.0f以上離れた敵にはダメージを与えない
 } // namespace
 
 // GameScene.cppから移動
 const float PI = 3.14159265358979323846f;
 
-GameLogic::GameLogic(Player* player, BIt_Map_Font* font, KamataEngine::Sprite* hpBar, KamataEngine::Sprite* hpBarBase) : player_(player), font_(font), hpBar_(hpBar), hpBarBase_(hpBarBase) {
+GameLogic::GameLogic(Player* player, BIt_Map_Font* font, KamataEngine::Sprite* hpBar, KamataEngine::Sprite* hpBarBase, KamataEngine::Sprite* expBar, KamataEngine::Sprite* expBarBase)
+    : player_(player), font_(font), hpBar_(hpBar), hpBarBase_(hpBarBase), expBar_(expBar), expBarBase_(expBarBase) {
+
 	// Audioインスタンスの取得とサウンドのロードをGameLogicで行う
 	audio_ = KamataEngine::Audio::GetInstance(); //
 	// 敵死亡時の効果音 (既存)
@@ -26,13 +29,12 @@ GameLogic::GameLogic(Player* player, BIt_Map_Font* font, KamataEngine::Sprite* h
 	player_->SetAudio(audio_, soundHandlePlayerAttack_); //
 }
 
-
 GameLogic::~GameLogic() {
 	// 全ての動的オブジェクトの解放
 	for (Experience* exp : experiences_) {
 		delete exp;
 	}
-experiences_.clear();
+	experiences_.clear();
 	for (Enemy* enemy : enemies_) {
 		delete enemy;
 	}
@@ -49,6 +51,10 @@ experiences_.clear();
 		delete enemy4;
 	}
 	enemies4_.clear(); // ★ 追記 ★
+	for (Enemy5* enemy5 : enemies5_) {
+		delete enemy5;
+	}
+	enemies5_.clear();
 	for (EnemyBullet* enemyBullet : enemyBullets_) { // ★ 追記: 敵弾の解放 ★
 		delete enemyBullet;
 	}
@@ -77,7 +83,7 @@ experiences_.clear();
 		delete missile;
 	}
 	missiles_.clear();
-	
+
 	for (int i = 0; i < 3; ++i) {
 		delete skillIconSprites_[i];
 	}
@@ -105,6 +111,10 @@ void GameLogic::Initialize() {
 		delete enemy4;
 	}
 	enemies4_.clear(); // ★ 追記 ★
+	for (Enemy5* enemy5 : enemies5_) {
+		delete enemy5;
+	}
+	enemies5_.clear();
 	for (EnemyBullet* enemyBullet : enemyBullets_) { // ★ 追記: 敵弾の解放 ★
 		delete enemyBullet;
 	}
@@ -179,8 +189,8 @@ void GameLogic::Initialize() {
 	skillTextureHandles_[static_cast<int>(SkillType::kWine)] = KamataEngine::TextureManager::Load("Sukill/Wine.png");  //
 
 	// 新規スキルのテクスチャ (一時的に既存のテクスチャを割り当て。必要に応じて変更してください)
-	skillTextureHandles_[static_cast<int>(SkillType::kBoomerang)] = KamataEngine::TextureManager::Load("Sukill/axe.png");  // Resources/axe/axe.png を想定
-	skillTextureHandles_[static_cast<int>(SkillType::kMinion)] = KamataEngine::TextureManager::Load("Sukill/Minion.png");  // Resources/player/player.png を想定
+	skillTextureHandles_[static_cast<int>(SkillType::kBoomerang)] = KamataEngine::TextureManager::Load("Sukill/axe.png");   // Resources/axe/axe.png を想定
+	skillTextureHandles_[static_cast<int>(SkillType::kMinion)] = KamataEngine::TextureManager::Load("Sukill/Minion.png");   // Resources/player/player.png を想定
 	skillTextureHandles_[static_cast<int>(SkillType::kMissile)] = KamataEngine::TextureManager::Load("Sukill/Missile.png"); // Resources/Bullet/Bullet.png を想定
 
 	// ★★★ 修正: アイコン描画用スプライトの初期化 (iconSize_ を使用) ★★★
@@ -216,6 +226,19 @@ void GameLogic::Update() {
 	Vector2 currentSize = hpBar_->GetSize();
 	hpBar_->SetSize({newWidth, currentSize.y});
 
+	// ★★★ 追記: EXPバーの更新 ★★★
+	float expRatio = (float)currentExp_ / requiredExp_;
+	if (expRatio > 1.0f) { // 経験値が要求経験値を超えた場合（レベルアップが未処理の場合）
+		expRatio = 1.0f;
+	}
+	if (expRatio < 0.0f) {
+		expRatio = 0.0f;
+	}
+	float newExpWidth = expBarBase_->GetSize().x * expRatio;
+	Vector2 currentExpSize = expBar_->GetSize();
+	expBar_->SetSize({newExpWidth, currentExpSize.y});
+	// ---------------------------------
+
 	if (isLevelUpPending_) {
 		return;
 	}
@@ -225,8 +248,26 @@ void GameLogic::Update() {
 
 	// 敵の生成
 	enemySpawnTimer_++;
-	// ★ 修正: Enemy3とEnemy4の最大数も考慮に入れる ★
-	if (enemies_.size() + enemies2_.size() + enemies3_.size() + enemies4_.size() < kMaxEnemies + kMaxEnemies2 + kMaxEnemies3 + kMaxEnemies4 && enemySpawnTimer_ >= kEnemySpawnInterval) {
+
+	// ★★★ 修正: 動的な敵出現間隔の計算 (スコア1000ごとに高速化) ★★★
+	const int kBaseSpawnInterval = 120;
+	const int kScoreInterval = 1000;
+	const float kReductionPerInterval = 0.2f; // 20% 削減
+	const int kMinSpawnInterval = 30;         // 最小30フレーム (0.5秒)
+
+	int intervalTier = score_ / kScoreInterval;
+	float reductionFactor = 1.0f - (intervalTier * kReductionPerInterval);
+
+	if (reductionFactor < (float)kMinSpawnInterval / kBaseSpawnInterval) {
+		reductionFactor = (float)kMinSpawnInterval / kBaseSpawnInterval;
+	}
+
+	int currentEnemyInterval = (int)(kBaseSpawnInterval * reductionFactor);
+	currentEnemyInterval = (std::max)(currentEnemyInterval, kMinSpawnInterval);
+
+	// ★ 修正: kEnemySpawnInterval の代わりに currentEnemyInterval を使用 ★
+	if (enemies_.size() + enemies2_.size() + enemies3_.size() + enemies4_.size() + enemies5_.size() < kMaxEnemies + kMaxEnemies2 + kMaxEnemies3 + kMaxEnemies4 + kMaxEnemies5 &&
+	    enemySpawnTimer_ >= currentEnemyInterval) {
 		SpawnEnemy();
 		enemySpawnTimer_ = 0;
 	}
@@ -248,6 +289,28 @@ void GameLogic::Update() {
 	}
 	for (Enemy2* enemy2 : enemies2_) {
 		enemy2->Update(playerPos);
+
+		// ★★★ 追記: Enemy2の発射ロジック (Enemy3/4と同様) ★★★
+		if (enemy2->CanShoot() && enemyBullets_.size() < kMaxEnemyBullets) {
+			enemy2->ResetShotTimer();
+
+			// プレイヤーへの方向ベクトルを計算
+			Vector3 diff = playerPos - enemy2->GetShotPosition();
+			Vector3 direction = Math::Normalize(diff);
+
+			// 速度を設定
+			// Enemy3やEnemy4と差別化するため、ここでは弾速を0.8fに設定します
+			const float kEnemyBulletSpeed = 1.2f;
+			Vector3 velocity = direction * kEnemyBulletSpeed;
+
+			// 弾を生成
+			EnemyBullet* newBullet = new EnemyBullet(enemy2->GetShotPosition(), velocity);
+			// 弾のダメージは Enemy3(10) や Enemy4(70) より低めの5に設定します
+			newBullet->SetDamage(30);
+			newBullet->Initialize();
+			enemyBullets_.push_back(newBullet);
+		}
+		// ★★★ 追記ここまで ★★★
 	}
 	for (Enemy3* enemy3 : enemies3_) {
 		enemy3->Update(playerPos);
@@ -262,7 +325,7 @@ void GameLogic::Update() {
 
 			// 速度を設定
 			// kEnemyBulletSpeedは下記で定義されているため、ここでは流用
-			const float kEnemyBulletSpeed = 2.0f;
+			const float kEnemyBulletSpeed = 1.0f;
 			Vector3 velocity = direction * kEnemyBulletSpeed;
 
 			// 弾を生成
@@ -284,7 +347,7 @@ void GameLogic::Update() {
 			Vector3 direction = Math::Normalize(diff);
 
 			// 速度を設定
-			const float kEnemyBulletSpeed = 2.0f;
+			const float kEnemyBulletSpeed = 0.6f;
 			Vector3 velocity = direction * kEnemyBulletSpeed;
 
 			// 弾を生成
@@ -293,6 +356,9 @@ void GameLogic::Update() {
 			newBullet->Initialize();
 			enemyBullets_.push_back(newBullet);
 		}
+	}
+	for (Enemy5* enemy5 : enemies5_) {
+		enemy5->Update(playerPos);
 	}
 	for (EnemyBullet* enemyBullet : enemyBullets_) {
 		enemyBullet->Update();
@@ -656,6 +722,25 @@ void GameLogic::Update() {
 			++it;
 		}
 	}
+	for (auto it = enemies5_.rbegin(); it != enemies5_.rend();) {
+		Enemy5* enemy5 = *it;
+		if (enemy5->IsDead()) {
+
+			audio_->PlayWave(soundHandleEnemyDie_);
+
+			Vector3 dropPosition = enemy5->GetPosition();
+			int dropCount = kEnemy2DropCount; // 仮でEnemy2と同じドロップ数
+			for (int i = 0; i < dropCount; ++i) {
+				Experience* newExp = new Experience(dropPosition);
+				newExp->Initialize();
+				experiences_.push_back(newExp);
+			}
+			delete enemy5;
+			it = std::vector<Enemy5*>::reverse_iterator(enemies5_.erase(std::next(it).base()));
+		} else {
+			++it;
+		}
+	}
 
 	// 弾/スキルの削除処理
 	for (auto itB = bullets_.rbegin(); itB != bullets_.rend();) {
@@ -702,6 +787,14 @@ void GameLogic::CheckAllCollisions() {
 				if (enemy->IsDead())
 					continue;
 				Vector3 enemyPos = enemy->GetPosition();
+
+				Vector3 diffFromPlayer = enemyPos - playerPos;
+				// ★★★ 追記: 画面内チェック ★★★
+				if (Math::Length(diffFromPlayer) > kScreenDamageRadius) {
+					continue; // 画面外の敵にはダメージを与えない
+				}
+				// ★★★ 追記ここまで ★★★
+
 				float enemyRadius = enemy->GetRadius();
 				Vector3 diff = enemyPos - playerPos;
 				float distance = Math::Length(diff);
@@ -714,6 +807,7 @@ void GameLogic::CheckAllCollisions() {
 		checkPlayerAttackCollision(enemies2_);
 		checkPlayerAttackCollision(enemies3_);
 		checkPlayerAttackCollision(enemies4_);
+		checkPlayerAttackCollision(enemies5_);
 	}
 
 	// 2. 敵 vs プレイヤー (敵からの接触ダメージ)
@@ -741,6 +835,7 @@ void GameLogic::CheckAllCollisions() {
 	checkEnemyPlayerCollision(enemies2_);
 	checkEnemyPlayerCollision(enemies3_);
 	checkEnemyPlayerCollision(enemies4_);
+	checkEnemyPlayerCollision(enemies5_);
 
 	// 3. Book (周回攻撃) vs 敵 の衝突判定
 	for (Book* book : books_) {
@@ -752,6 +847,14 @@ void GameLogic::CheckAllCollisions() {
 				if (enemy->IsDead())
 					continue;
 				Vector3 enemyPos = enemy->GetPosition();
+
+				Vector3 diffFromPlayer = enemyPos - playerPos;
+				// ★★★ 追記: 画面内チェック ★★★
+				if (Math::Length(diffFromPlayer) > kScreenDamageRadius) {
+					continue; // 画面外の敵にはダメージを与えない
+				}
+				// ★★★ 追記ここまで ★★★
+
 				float enemyRadius = enemy->GetRadius();
 				if (Math::Length(enemyPos - bookPos) <= bookRadius + enemyRadius) {
 					enemy->TakeDamage(bookDamage);
@@ -762,7 +865,7 @@ void GameLogic::CheckAllCollisions() {
 		checkEnemyCollision(enemies2_);
 		checkEnemyCollision(enemies3_);
 		checkEnemyCollision(enemies4_);
-
+		checkEnemyCollision(enemies5_);
 	}
 
 	// 4. Bullet (オート攻撃) vs 敵 の衝突判定
@@ -782,6 +885,12 @@ void GameLogic::CheckAllCollisions() {
 				if (enemy->IsDead())
 					continue;
 				Vector3 enemyPos = enemy->GetPosition();
+				Vector3 diffFromPlayer = enemyPos - playerPos;
+
+				if (Math::Length(diffFromPlayer) > kScreenDamageRadius) {
+					continue; // 画面外の敵にはダメージを与えない
+				}
+
 				float enemyRadius = enemy->GetRadius();
 				if (Math::Length(enemyPos - bulletPos) <= bulletRadius + enemyRadius) {
 					enemy->TakeDamage(bulletDamage);
@@ -791,7 +900,8 @@ void GameLogic::CheckAllCollisions() {
 			}
 			return false;
 		};
-		if (checkBulletCollision(enemies_) || checkBulletCollision(enemies2_) || checkBulletCollision(enemies3_) || checkBulletCollision(enemies4_)) { // ★ 修正: Enemy4を追加 ★
+		if (checkBulletCollision(enemies_) || checkBulletCollision(enemies2_) || checkBulletCollision(enemies3_) || checkBulletCollision(enemies4_) ||
+		    checkBulletCollision(enemies5_)) { // ★ 修正: Enemy5を追加 ★
 			hit = true;
 		}
 		if (hit) {
@@ -837,6 +947,13 @@ void GameLogic::CheckAllCollisions() {
 				if (enemy->IsDead())
 					continue;
 				Vector3 enemyPos = enemy->GetPosition();
+
+				Vector3 diffFromPlayer = enemyPos - playerPos;
+				// ★★★ 追記: 画面内チェック ★★★
+				if (Math::Length(diffFromPlayer) > kScreenDamageRadius) {
+					continue; // 画面外の敵にはダメージを与えない
+				}
+
 				float enemyRadius = enemy->GetRadius();
 				if (Math::Length(enemyPos - boomerangPos) <= boomerangRadius + enemyRadius) {
 					enemy->TakeDamage(boomerangDamage);
@@ -846,7 +963,8 @@ void GameLogic::CheckAllCollisions() {
 			}
 			return false;
 		};
-		if (checkBoomerangCollision(enemies_) || checkBoomerangCollision(enemies2_) || checkBoomerangCollision(enemies3_) || checkBoomerangCollision(enemies4_)) { // ★ 修正: Enemy4を追加 ★
+		if (checkBoomerangCollision(enemies_) || checkBoomerangCollision(enemies2_) || checkBoomerangCollision(enemies3_) || checkBoomerangCollision(enemies4_) ||
+		    checkBoomerangCollision(enemies5_)) { // ★ 修正: Enemy5を追加 ★
 			hit = true;
 		}
 		if (hit) {
@@ -874,6 +992,14 @@ void GameLogic::CheckAllCollisions() {
 				if (enemy->IsDead())
 					continue;
 				Vector3 enemyPos = enemy->GetPosition();
+
+				Vector3 diffFromPlayer = enemyPos - playerPos;
+				// ★★★ 追記: 画面内チェック ★★★
+				if (Math::Length(diffFromPlayer) > kScreenDamageRadius) {
+					continue; // 画面外の敵にはダメージを与えない
+				}
+				// ★★★ 追記ここまで ★★★
+
 				float enemyRadius = enemy->GetRadius();
 				if (Math::Length(enemyPos - missilePos) <= missileRadius + enemyRadius) {
 					enemy->TakeDamage(missileDamage);
@@ -883,7 +1009,8 @@ void GameLogic::CheckAllCollisions() {
 			}
 			return false;
 		};
-		if (checkMissileCollision(enemies_) || checkMissileCollision(enemies2_) || checkMissileCollision(enemies3_) || checkMissileCollision(enemies4_)) { // ★ 修正: Enemy4を追加 ★
+		if (checkMissileCollision(enemies_) || checkMissileCollision(enemies2_) || checkMissileCollision(enemies3_) || checkMissileCollision(enemies4_) ||
+		    checkMissileCollision(enemies5_)) { // ★ 修正: Enemy5を追加 ★
 			hit = true;
 		}
 		if (hit) {
@@ -933,7 +1060,7 @@ void GameLogic::CheckAllCollisions() {
 void GameLogic::SpawnEnemy() {
 
 	// ★ 修正: Enemy3, Enemy4の最大数も考慮に入れる ★
-	if (enemies_.size() + enemies2_.size() + enemies3_.size() + enemies4_.size() >= kMaxEnemies + kMaxEnemies2 + kMaxEnemies3 + kMaxEnemies4) {
+	if (enemies_.size() + enemies2_.size() + enemies3_.size() + enemies4_.size() + enemies5_.size() >= kMaxEnemies + kMaxEnemies2 + kMaxEnemies3 + kMaxEnemies4 + kMaxEnemies5) {
 		return;
 	}
 
@@ -948,20 +1075,57 @@ void GameLogic::SpawnEnemy() {
 	} while (distance < kMinSpawnDistance);
 
 	// ★ 修正: 敵のタイプをランダムに決定する範囲をスコアによって変更 ★
-	int maxType = 2; // スコアが1000未満の場合: 0: Enemy, 1: Enemy2, 2: Enemy3
-	if (score_ >= 1000) {
-		maxType = 3; // スコアが1000点以上の場合: 0, 1, 2, 3 (Enemy4を含む)
+	int maxType = 0; // デフォルトはEnemy (type=0) のみ
+
+	// スコアによるアンロック判定
+	const int kScoreUnlockEnemy3 = 1000;
+	const int kScoreUnlockEnemy2 = 1300;
+	const int kScoreUnlockEnemy5 = 600; // Enemy5の出現スコア
+
+	// スコアに応じて maxType を設定 (0-4)
+	if (score_ >= kScoreUnlockEnemy2) {
+		maxType = 4; // E, E2, E3, E4, E5
+	} else if (score_ >= kScoreUnlockEnemy3) {
+		maxType = 4; // E, E3, E4, E5 (E2はロック)
+	} else if (score_ >= kScoreUnlockEnemy5) {
+		maxType = 4; // E, E3, E4, E5 (E2はロック)
+	} else {
+		maxType = 0; // E のみ
 	}
 
 	std::uniform_int_distribution<int> distType(0, maxType);
 	int type = distType(engine);
+
+	// ★★★ 追記: スコアによるタイプアップグレード (出現率の増加) ★★★
+	const int kScoreUpgradeInterval = 1000;
+	int upgradeTiers = score_ / kScoreUpgradeInterval; // 1000点ごとに+1
+	const int kMaxUpgrades = 3;
+
+	if (upgradeTiers > kMaxUpgrades) {
+		upgradeTiers = kMaxUpgrades;
+	}
+
+	// 1000点ごとに、50%の確率で、選択されたタイプを一段階上げる試行を繰り返す
+	for (int i = 0; i < upgradeTiers; ++i) {
+		std::uniform_real_distribution<float> prob(0.0f, 1.0f);
+		if (prob(engine) < 0.5f) { // 50%の確率でアップグレード
+			if (type < maxType) {
+				type++;
+			}
+		}
+	}
+	// ★★★ 追記ここまで ★★★
+
+	// Enemy2とEnemy5の出現制御のためのフラグ
+	bool spawnEnemy2Allowed = score_ >= kScoreUnlockEnemy2;
+	bool spawnEnemy5Allowed = score_ >= kScoreUnlockEnemy5;
 
 	// 敵のタイプを決定
 	if (type == 0 && enemies_.size() < kMaxEnemies) {
 		Enemy* newEnemy = new Enemy(randomPos);
 		newEnemy->Initialize();
 		enemies_.push_back(newEnemy);
-	} else if (type == 1 && enemies2_.size() < kMaxEnemies2) {
+	} else if (type == 1 && spawnEnemy2Allowed && enemies2_.size() < kMaxEnemies2) {
 		Enemy2* newEnemy2 = new Enemy2(randomPos);
 		newEnemy2->Initialize();
 		enemies2_.push_back(newEnemy2);
@@ -969,15 +1133,18 @@ void GameLogic::SpawnEnemy() {
 		Enemy3* newEnemy3 = new Enemy3(randomPos);
 		newEnemy3->Initialize();
 		enemies3_.push_back(newEnemy3);
-	} else if (type == 3 && enemies4_.size() < kMaxEnemies4) { // スコア1000点以上でのみtype=3が選ばれる
+	} else if (type == 3 && enemies4_.size() < kMaxEnemies4) {
 		Enemy4* newEnemy4 = new Enemy4(randomPos);
 		newEnemy4->Initialize();
 		enemies4_.push_back(newEnemy4);
+	} else if (type == 4 && spawnEnemy5Allowed && enemies5_.size() < kMaxEnemies5) {
+		Enemy5* newEnemy5 = new Enemy5(randomPos);
+		newEnemy5->Initialize();
+		enemies5_.push_back(newEnemy5);
 	} else {
-		// 生成できなかった場合は、空いている敵の枠を探すか、生成をスキップ
+		// 生成できなかった場合はスキップ
 	}
 }
-
 
 // ----------------------------------------------------
 // GameLogic::SpawnWine (Wineのランダム生成関数)
@@ -1077,7 +1244,6 @@ void GameLogic::ApplySkill(SkillType skill) {
 
 	audio_->PlayWave(soundHandleLevelUp_);
 
-
 	switch (skill) {
 	case SkillType::kBook: {
 		const int kBookMaxLevel = 5;
@@ -1117,7 +1283,7 @@ void GameLogic::ApplySkill(SkillType skill) {
 		player_->SetBulletLevel(newLevel);
 	} break;
 	case SkillType::kHeart:
-		player_->Heal(30);
+		player_->Heal(100);
 
 		audio_->PlayWave(soundHandleHeal_);
 		break;
@@ -1177,6 +1343,9 @@ void GameLogic::DrawObjects(const Camera& camera) {
 	}
 	for (Enemy4* enemy4 : enemies4_) { // ★ 追記 ★
 		enemy4->Draw(camera);
+	}
+	for (Enemy5* enemy5 : enemies5_) {
+		enemy5->Draw(camera);
 	}
 	// ★ 追記: 敵弾の描画 ★
 	for (EnemyBullet* enemyBullet : enemyBullets_) {
@@ -1256,7 +1425,6 @@ void GameLogic::DrawSkillSelectionUI(KamataEngine::Sprite* skillCursorSprite, Ka
 	skillCursorSprite->SetPosition(cursorDrawPos);
 	skillCursorSprite->Draw();
 
-
 	for (int i = 0; i < 3; ++i) {
 		KamataEngine::Sprite* optionSprite = skillOptionSprites[i];
 		optionSprite->Draw();
@@ -1266,7 +1434,6 @@ void GameLogic::DrawSkillSelectionUI(KamataEngine::Sprite* skillCursorSprite, Ka
 		uint32_t iconHandle = skillTextureHandles_[static_cast<int>(type)];
 
 		KamataEngine::Sprite* iconSprite = skillIconSprites_[i];
-
 
 		iconSprite->SetTextureHandle(iconHandle);
 
@@ -1284,7 +1451,7 @@ void GameLogic::DrawSkillSelectionUI(KamataEngine::Sprite* skillCursorSprite, Ka
 
 		KamataEngine::Vector2 optionPos = optionSprite->GetPosition();
 		KamataEngine::Vector2 iconPos = {
-		    optionPos.x + 0.0f,                                                 // オプションの左端から少し右
+		    optionPos.x + 0.0f,                                                   // オプションの左端から少し右
 		    optionPos.y + (optionSprite->GetSize().y - currentIconSize.y) / 15.0f // 中央揃え
 		};
 

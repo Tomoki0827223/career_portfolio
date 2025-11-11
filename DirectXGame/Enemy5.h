@@ -7,16 +7,15 @@
 
 using namespace KamataEngine;
 
-class Enemy2 { // Enemy2に名前を変更
+class Enemy5 {
 public:
-	Enemy2(const Vector3& position);
-	~Enemy2();
+	Enemy5(const Vector3& position);
+	~Enemy5();
 
 	void Initialize();
 	// プレイヤーの位置を受け取り、追尾・更新を行う
 	void Update(const Vector3& playerPosition);
 	void Draw(const Camera& camera);
-
 
 	// 衝突判定/被弾判定用
 	Vector3 GetPosition() const { return worldTransform.translation_; }
@@ -26,21 +25,12 @@ public:
 	// ダメージ処理
 	void TakeDamage(int damage);
 
-	// ★ 追記: 弾発射用 ★
-	bool CanShoot() const { return shotTimer_ >= kShotInterval; }
-	void ResetShotTimer() { shotTimer_ = 0; }
-	Vector3 GetShotPosition() const { return worldTransform.translation_; }
-
 private:
-	// 敵のステータス
-	const float kMoveSpeed = 0.1f;
+	// 敵のステータス (Enemyより強化)
+	const float kMoveSpeed = 0.15f; // ★ 速度を0.15fに強化 ★
 	const float radius_ = 1.0f;
-	const int kMaxHp = 20; // ★ HPを4に変更 (4回攻撃で倒せるように)
+	const int kMaxHp = 30; // ★ HPを30に強化 ★
 	int currentHp_ = kMaxHp;
-
-	// ★ 追記: 弾発射用のタイマーと定数 (連射型のため短く設定) ★
-	int shotTimer_ = 0;
-	const int kShotInterval = 45; // 0.75秒に1回発射 (60FPS想定で45フレーム)
 
 	// モデルとワールド変換
 	Model* model_ = nullptr;

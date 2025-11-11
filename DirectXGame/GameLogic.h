@@ -6,6 +6,7 @@
 #include "Enemy2.h"
 #include "Enemy3.h"
 #include "Enemy4.h"
+#include "Enemy5.h"
 #include "Experience.h"
 #include "KamataEngine.h"
 #include "Minion.h"
@@ -40,8 +41,7 @@ enum class SkillType {
 
 class GameLogic {
 public:
-	// GameSceneから必要な依存オブジェクトを受け取る
-	GameLogic(Player* player, BIt_Map_Font* font, KamataEngine::Sprite* hpBar, KamataEngine::Sprite* hpBarBase);
+	GameLogic(Player* player, BIt_Map_Font* font, KamataEngine::Sprite* hpBar, KamataEngine::Sprite* hpBarBase, KamataEngine::Sprite* expBar, KamataEngine::Sprite* expBarBase);
 	~GameLogic();
 
 	void Initialize();
@@ -79,6 +79,7 @@ private:
 	std::vector<Enemy2*> enemies2_;
 	std::vector<Enemy3*> enemies3_;
 	std::vector<Enemy4*> enemies4_;
+	std::vector<Enemy5*> enemies5_;
 	std::vector<EnemyBullet*> enemyBullets_;
 	std::vector<Experience*> experiences_;
 
@@ -87,6 +88,10 @@ private:
 	BIt_Map_Font* font_ = nullptr;
 	KamataEngine::Sprite* hpBar_ = nullptr;
 	KamataEngine::Sprite* hpBarBase_ = nullptr;
+	// ★★★ 追記: EXPバーのスプライト ★★★
+	KamataEngine::Sprite* expBar_ = nullptr;
+	KamataEngine::Sprite* expBarBase_ = nullptr;
+	// -----------------------------------
 
 	int score_ = 0;
 
@@ -100,12 +105,13 @@ private:
 	const int kMissileSpawnInterval = 90;
 	int missileSpawnTimer_ = 0;
 
-	const int kMaxEnemies = 20;
+	const int kMaxEnemies = 30;
 	int enemySpawnTimer_ = 0;
 	const int kEnemySpawnInterval = 120;
-	const int kMaxEnemies2 = 5;
-	const int kMaxEnemies3 = 5; // ★ 追記: Enemy3の最大数を仮で設定 ★
-	const int kMaxEnemies4 = 5; // ★ 追記: Enemy4の最大数を仮で設定 ★
+	const int kMaxEnemies2 = 10;
+	const int kMaxEnemies3 = 10; // ★ 追記: Enemy3の最大数を仮で設定 ★
+	const int kMaxEnemies4 = 10; // ★ 追記: Enemy4の最大数を仮で設定 ★
+	const int kMaxEnemies5 = 10;
 	const int kMaxEnemyBullets = 50;
 
 	// レベルアップシステム関連 (GameSceneから移動)

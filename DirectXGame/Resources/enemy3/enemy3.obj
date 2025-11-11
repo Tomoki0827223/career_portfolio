@@ -1,6 +1,6 @@
 # Blender 4.5.2 LTS
 # www.blender.org
-mtllib enemy.mtl
+mtllib enemy3.mtl
 o Cube.001
 v -0.199238 0.035028 0.199238
 v -0.253268 0.612433 0.253268

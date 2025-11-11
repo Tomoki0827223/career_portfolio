@@ -6,7 +6,7 @@ Enemy3::~Enemy3() { delete model_; }
 
 void Enemy3::Initialize() {
 	// 敵モデルとして"cube"を使用
-	model_ = Model::CreateFromOBJ("enemy");
+	model_ = Model::CreateFromOBJ("enemy3");
 
 	worldTransform.Initialize();
 	worldTransform.scale_ = {2.0f, 2.0f, 2.0f}; // ★ 敵のサイズを2倍に ★

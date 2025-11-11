@@ -1,12 +1,12 @@
-#include "Enemy2.h" // ヘッダーをEnemy2.hに変更
+#include "Enemy5.h"
 
-Enemy2::Enemy2(const Vector3& position) { worldTransform.translation_ = position; }
+Enemy5::Enemy5(const Vector3& position) { worldTransform.translation_ = position; }
 
-Enemy2::~Enemy2() { delete model_; }
+Enemy5::~Enemy5() { delete model_; }
 
-void Enemy2::Initialize() {
-	// 敵モデルとして"cube"を使用
-	model_ = Model::CreateFromOBJ("enemy"); // ★ モデルを"cube"に変更 ★
+void Enemy5::Initialize() {
+	// 敵モデルとして"enemy"を使用 (必要に応じて別のモデルに変更してください)
+	model_ = Model::CreateFromOBJ("enemy2");
 
 	worldTransform.Initialize();
 	worldTransform.scale_ = {2.0f, 2.0f, 2.0f};
@@ -15,14 +15,9 @@ void Enemy2::Initialize() {
 	worldTransform.UpdateMatarix();
 }
 
-void Enemy2::Update(const Vector3& playerPosition) {
+void Enemy5::Update(const Vector3& playerPosition) {
 	if (isDead_) {
 		return;
-	}
-
-	// ★ 追記: 弾発射タイマーの更新 ★
-	if (shotTimer_ < kShotInterval) {
-		shotTimer_++;
 	}
 
 	// プレイヤーへの方向ベクトルを計算
@@ -30,14 +25,14 @@ void Enemy2::Update(const Vector3& playerPosition) {
 
 	// 正規化して移動 (追尾)
 	Vector3 direction = Math::Normalize(diff);
-	worldTransform.translation_ += direction * kMoveSpeed;
+	worldTransform.translation_ += direction * kMoveSpeed; // kMoveSpeed (0.15f) を適用
 
 	// 移動を反映
 	worldTransform.TransferMatrix();
 	worldTransform.UpdateMatarix();
 }
 
-void Enemy2::Draw(const Camera& camera) {
+void Enemy5::Draw(const Camera& camera) {
 	if (isDead_) {
 		return;
 	}
@@ -51,7 +46,7 @@ void Enemy2::Draw(const Camera& camera) {
 	Model::PostDraw();
 }
 
-void Enemy2::TakeDamage(int damage) {
+void Enemy5::TakeDamage(int damage) {
 	currentHp_ -= damage;
 	if (currentHp_ <= 0) {
 		currentHp_ = 0;

@@ -77,6 +77,11 @@ private:
 	uint32_t hpBarBaseTexture_ = 0;
 	uint32_t hpBarTexture_ = 0;
 
+	uint32_t sousaTextureHandle_ = 0;
+	uint32_t sousaTextureHandle2_ = 0;
+	KamataEngine::Sprite* sousaSprite_ = nullptr;
+	KamataEngine::Sprite* sousaSprite2_ = nullptr;
+
 	// ゲームオーバーフラグ (GameSceneに残す - シーン遷移制御のため)
 	bool isGameOver_ = false;
 

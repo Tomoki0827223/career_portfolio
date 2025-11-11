@@ -45,6 +45,11 @@ void GameScene::Initialize() {
 	const Vector2 kHpBarPos = {30.0f, 30.0f};
 	const Vector2 kHpBarSize = {200.0f, 20.0f};
 
+	sousaTextureHandle_ = KamataEngine::TextureManager::Load("sousa.png");
+	sousaTextureHandle2_ = KamataEngine::TextureManager::Load("sousa2.png");
+	sousaSprite_ = KamataEngine::Sprite::Create(sousaTextureHandle_, {1040.0f, 650.0f});
+	sousaSprite2_ = KamataEngine::Sprite::Create(sousaTextureHandle2_, {1040.0f, 680.0f});
+
 	hpBarBase_ = KamataEngine::Sprite::Create(hpBarBaseTexture_, kHpBarPos);
 	hpBarBase_->SetSize(kHpBarSize);
 	hpBar_ = KamataEngine::Sprite::Create(hpBarTexture_, kHpBarPos);

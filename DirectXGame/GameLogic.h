@@ -17,6 +17,7 @@
 #include <vector>
 #include <string> // ★ 追加: std::string, std::to_string 用
 #include <cmath>  // ★ 追加: std::pow 用
+#include "2d/ImGuiManager.h"
 
 using namespace KamataEngine;
 
@@ -51,9 +52,14 @@ public:
 	void UpdateSkillSelection();
 	void DrawSkillSelectionUI(KamataEngine::Sprite* skillCursorSprite, KamataEngine::Sprite* skillOptionSprites[], KamataEngine::Sprite* skillScreenBackground);
 
+#ifdef _DEBUG
+	void DrawImGui();
+#endif
+
 	// 描画に必要なテクスチャハンドルをGameSceneへ渡すためのGetter
 	// スキルアイコンのテクスチャハンドル配列を返す
 	const uint32_t* GetSkillTextureHandles() const { return skillTextureHandles_; }
+
 
 private:
 	// GameSceneから移動したオブジェクト管理
@@ -110,7 +116,10 @@ private:
 
 	uint32_t skillTextureHandles_[static_cast<int>(SkillType::kSkillCount)] = {};
 	KamataEngine::Sprite* skillIconSprites_[3] = {};
-	const KamataEngine::Vector2 kIconSize_ = {256.0f, 222.0f};
+
+#ifdef _DEBUG
+	KamataEngine::Vector2 iconSize_ = {64.0f, 64.0f};
+#endif
 	
 	// 新しいテクスチャのハンドル
 	uint32_t boomerangTextureHandle_ = 0;

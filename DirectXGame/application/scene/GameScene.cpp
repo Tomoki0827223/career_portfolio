@@ -51,7 +51,7 @@ void GameScene::Initialize() {
 	hpBar_->SetSize(kHpBarSize);
 
 	// スキル選択画面用スプライトの初期化 (GameSceneに残すUI要素)
-	whiteTextureHandle_ = KamataEngine::TextureManager::Load("sample.png");
+	whiteTextureHandle_ = KamataEngine::TextureManager::Load("white1x1.png");
 	skillScreenBackground_ = KamataEngine::Sprite::Create(whiteTextureHandle_, {0, 0});
 	skillScreenBackground_->SetSize({1280.0f, 720.0f});
 	skillScreenBackground_->SetColor({0.0f, 0.0f, 0.0f, 0.8f});
@@ -154,4 +154,21 @@ void GameScene::Draw() {
 
 	// 6. 2D描画の終了
 	Sprite::PostDraw();
+
+	// ★★★ 修正: ImGui描画処理の統合を_DEBUGで囲む ★★★
+#ifdef _DEBUG
+	KamataEngine::ImGuiManager* imGuiManager = KamataEngine::ImGuiManager::GetInstance();
+
+	// 1. ImGui受付開始
+	imGuiManager->Begin();
+
+	// 2. ImGuiウィンドウの定義
+	gameLogic_->DrawImGui();
+
+	// 3. ImGui受付終了
+	imGuiManager->End();
+
+	// 4. 描画コマンドの実行
+	imGuiManager->Draw();
+#endif // _DEBUG
 }

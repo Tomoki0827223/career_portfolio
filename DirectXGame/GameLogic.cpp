@@ -112,7 +112,10 @@ void GameLogic::Initialize() {
 	isLevelUpPending_ = false;
 	selectedSkillIndex_ = 0;
 
-	// ★★★ スキルアイコンテクスチャのロードと割り当て ★★★
+#ifdef _DEBUG
+	// ユーザーが指定した初期サイズをここで設定します
+	iconSize_ = {256.0f, 222.0f};
+#endif
 
 
 	// 既存スキルのテクスチャロード (アップロードされたファイル名と対応)
@@ -126,10 +129,18 @@ void GameLogic::Initialize() {
 	skillTextureHandles_[static_cast<int>(SkillType::kMinion)] = KamataEngine::TextureManager::Load("Sukill/player.png");  // Resources/player/player.png を想定
 	skillTextureHandles_[static_cast<int>(SkillType::kMissile)] = KamataEngine::TextureManager::Load("Sukill/Bullet.png"); // Resources/Bullet/Bullet.png を想定
 
+	// ★★★ 修正: アイコン描画用スプライトの初期化 (iconSize_ を使用) ★★★
 	uint32_t initialTextureHandle = KamataEngine::TextureManager::Load("sample.png");
 	for (int i = 0; i < 3; ++i) {
+		// 初期化時に正しいサイズを設定
 		skillIconSprites_[i] = KamataEngine::Sprite::Create(initialTextureHandle, {0, 0});
-		skillIconSprites_[i]->SetSize(kIconSize_);
+
+#ifdef _DEBUG
+		skillIconSprites_[i]->SetSize(iconSize_);
+#else
+		// Releaseビルド時は固定サイズを設定（または初期値のまま）
+		skillIconSprites_[i]->SetSize({400.0f, 108.0f});
+#endif
 	}
 }
 
@@ -891,6 +902,31 @@ void GameLogic::DrawObjects(const Camera& camera) {
 	}
 }
 
+#ifdef _DEBUG
+void GameLogic::DrawImGui() {
+
+	// デバッグウィンドウの開始
+	if (ImGui::Begin("GameLogic Debug", nullptr, ImGuiWindowFlags_MenuBar)) {
+
+		ImGui::Text("Skill Icon Settings");
+		ImGui::Separator();
+
+		// ImGui::SliderFloat2 で iconSize_ を操作
+		ImGui::SliderFloat2("Icon Size", &iconSize_.x, 10.0f, 400.0f, "Width: %.1f, Height: %.1f");
+
+		ImGui::Separator();
+		ImGui::Text("Level Up");
+		ImGui::Text("Player Level: %d", level_);
+		ImGui::Text("Current Exp: %d / %d", currentExp_, requiredExp_);
+		if (ImGui::Button("FORCE LEVEL UP")) {
+			StartLevelUp();
+		}
+
+		ImGui::End();
+	}
+}
+#endif // _DEBUG
+
 // ----------------------------------------------------
 // GameLogic::DrawSkillSelectionUI (スキル選択UI描画)
 // ----------------------------------------------------
@@ -914,32 +950,38 @@ void GameLogic::DrawSkillSelectionUI(KamataEngine::Sprite* skillCursorSprite, Ka
 	skillCursorSprite->Draw();
 
 
-	// 3. 3つの選択肢の背景と文字列を描画
 	for (int i = 0; i < 3; ++i) {
 		KamataEngine::Sprite* optionSprite = skillOptionSprites[i];
 		optionSprite->Draw();
 
 		SkillType type = currentSkillOptions_[i];
 
-		// ★★★ アイコン描画処理 ★★★
 		uint32_t iconHandle = skillTextureHandles_[static_cast<int>(type)];
 
-		// 既存のスプライトを再利用して設定を変更
 		KamataEngine::Sprite* iconSprite = skillIconSprites_[i];
 
-		// 【修正】SetTexture を SetTextureHandle に変更
+
 		iconSprite->SetTextureHandle(iconHandle);
-		iconSprite->SetSize(kIconSize_);
+
+		// ★★★ 修正: iconSize_ の利用を_DEBUGで保護 ★★★
+		KamataEngine::Vector2 currentIconSize;
+#ifdef _DEBUG
+		// デバッグ時はスライダーで設定されたサイズを適用
+		iconSprite->SetSize(iconSize_);
+		currentIconSize = iconSize_;
+#else
+		// Release時は固定サイズを使用
+		iconSprite->SetSize({400.0f, 100.0f});
+		currentIconSize = {64.0f, 64.0f};
+#endif
 
 		KamataEngine::Vector2 optionPos = optionSprite->GetPosition();
 		KamataEngine::Vector2 iconPos = {
-		    optionPos.x + 10.0f,                                            // オプションの左端から少し右
-		    optionPos.y + (optionSprite->GetSize().y - kIconSize_.y) / 2.0f // 中央揃え
+		    optionPos.x + 0.0f,                                                 // オプションの左端から少し右
+		    optionPos.y + (optionSprite->GetSize().y - currentIconSize.y) / 15.0f // 中央揃え
 		};
 
 		iconSprite->SetPosition(iconPos);
 		iconSprite->Draw();
-
-		// ... (後略: スキル情報取得ロジックは削除されたまま)
 	}
 }

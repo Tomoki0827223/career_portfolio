@@ -10,7 +10,7 @@ Missile::Missile(const Vector3& position, const Vector3& targetPosition) {
 Missile::~Missile() { delete model_; }
 
 void Missile::Initialize() {
-	model_ = Model::CreateFromOBJ("Bullet"); // Bulletと同じモデルを使用
+	model_ = Model::CreateFromOBJ("Missile"); // Bulletと同じモデルを使用
 	worldTransform.Initialize();
 	worldTransform.scale_ = {0.8f, 0.8f, 0.8f};
 	worldTransform.translation_.z = 0.0f;

@@ -49,6 +49,7 @@ public:
 
 	// 外部（GameScene）から状態を取得するためのGetter
 	bool IsLevelUpPending() const { return isLevelUpPending_; }
+	int selectedSkillIndex_ = 0;
 
 	// スキル選択画面の制御処理 (GameSceneからUI更新のため呼び出される)
 	void UpdateSkillSelection();
@@ -106,7 +107,6 @@ private:
 	const float kExpScale = 1.2f;
 
 	bool isLevelUpPending_ = false;
-	int selectedSkillIndex_ = 0;
 	std::vector<SkillType> currentSkillOptions_;
 
 	// 内部処理 (GameSceneから移動)
@@ -140,4 +140,5 @@ private:
 	uint32_t soundHandleBoomerangShot_ = 0; // Boomerang発射音
 	uint32_t soundHandleMissileShot_ = 0;   // Missile発射音
 	uint32_t soundHandleMinionShot_ = 0;    // Minion攻撃音
+	uint32_t soundHandlePlayerAttack_ = 0; //プレイヤー攻撃音
 };

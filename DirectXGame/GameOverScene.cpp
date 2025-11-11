@@ -17,27 +17,23 @@ GameOverScene::~GameOverScene() {
 	if (retrySprite_) {
 		delete retrySprite_;
 	}
-	if (titleSprite_) {
-		delete titleSprite_;
-	}
+	// delete titleSprite_ は、Initialize()から titleSprite_ の生成を削除したため不要
+	// delete titleSprite_; // ★削除: titleSpriteの解放を削除
 	if (cursorSprite_) {
 		delete cursorSprite_;
 	}
 }
 
-
-
 void GameOverScene::Initialize() {
 	input_ = KamataEngine::Input::GetInstance();
 	isFinished_ = false;
 	isRetrySelected_ = false;
-	selectedOption_ = 0; // 初期選択はリトライ
+	selectedOption_ = 0; // 初期選択はリトライ (この値は実質使われなくなる)
 
 	// 既存のテクスチャをロード
 	// white1x1.pngは真っ白なテクスチャとして、sample.pngはUIのベースとして利用
 	whiteTexture_ = KamataEngine::TextureManager::Load("white1x1.png");
 	optionTexture_ = KamataEngine::TextureManager::Load("R.png");
-
 
 	// 1. 全画面背景スプライトの生成 (背景一枚の代わり)
 	backgroundSprite_ = KamataEngine::Sprite::Create(whiteTexture_, {0, 0});
@@ -53,6 +49,7 @@ void GameOverScene::Initialize() {
 	const Vector2 kCenterPos = {kWindowWidth / 2.0f, kWindowHeight / 2.0f};
 
 	// リトライ (選択肢 0)
+	// リトライボタンを画面中央付近に配置
 	Vector2 retryPos = {kCenterPos.x - kOptionSize.x / 2.0f, kCenterPos.y + 50.0f};
 	retrySprite_ = KamataEngine::Sprite::Create(optionTexture_, retryPos);
 	// ★修正: 生成失敗時のnullptrチェックを追加★
@@ -62,13 +59,15 @@ void GameOverScene::Initialize() {
 	}
 
 	// タイトルへ (選択肢 1)
+	// titleSprite_ の生成を削除し、リトライのみに固定
+	/*
 	Vector2 titlePos = {retryPos.x, retryPos.y + kOptionSize.y + 20.0f};
 	titleSprite_ = KamataEngine::Sprite::Create(optionTexture_, titlePos);
-	// ★修正: 生成失敗時のnullptrチェックを追加★
 	if (titleSprite_) {
-		titleSprite_->SetSize(kOptionSize);
-		titleSprite_->SetColor({0.2f, 0.2f, 0.2f, 1.0f});
+	    titleSprite_->SetSize(kOptionSize);
+	    titleSprite_->SetColor({0.2f, 0.2f, 0.2f, 1.0f});
 	}
+	*/
 
 	// 3. 選択カーソル/ハイライトスプライトの生成
 	cursorSprite_ = KamataEngine::Sprite::Create(whiteTexture_, {0, 0});
@@ -85,23 +84,26 @@ void GameOverScene::Update() {
 	}
 
 	// 上キー/下キーで選択肢を移動
+	// ★削除: 選択肢をリトライに固定するため、キー入力による移動ロジックを削除
+	/*
 	if (input_->TriggerKey(DIK_W) || input_->TriggerKey(DIK_UP)) {
-		selectedOption_ = (selectedOption_ - 1 + 2) % 2;
+	    selectedOption_ = (selectedOption_ - 1 + 2) % 2;
 	}
 	if (input_->TriggerKey(DIK_S) || input_->TriggerKey(DIK_DOWN)) {
-		selectedOption_ = (selectedOption_ + 1) % 2;
+	    selectedOption_ = (selectedOption_ + 1) % 2;
 	}
+	*/
 
 	// 決定キー (スペースキーやエンターキー)
 	if (input_->TriggerKey(DIK_SPACE) || input_->TriggerKey(DIK_RETURN)) {
 		isFinished_ = true;
-		isRetrySelected_ = (selectedOption_ == 0); // 0がリトライ
+		isRetrySelected_ = true; // ★修正: 常にリトライを選択したことにする
 		return;
 	}
-	
+
 	// カーソルの位置を更新
-	// ★修正: ターゲットとカーソルが有効かチェック★
-	Sprite* targetSprite = (selectedOption_ == 0) ? retrySprite_ : titleSprite_;
+	// 選択肢がリトライに固定されたため、常に retrySprite_ をターゲットにする
+	Sprite* targetSprite = retrySprite_; // ★修正: targetSpriteをretrySprite_に固定
 
 	if (targetSprite && cursorSprite_) {
 		Vector2 targetCenter = targetSprite->GetPosition();
@@ -127,18 +129,21 @@ void GameOverScene::Draw() {
 		backgroundSprite_->Draw();
 	}
 
-	// 2. 選択肢を描画
+	// 2. 選択肢を描画 (リトライのみ)
 	if (retrySprite_) {
 		retrySprite_->Draw();
 	}
+	// titleSprite_ の描画を削除
+	/*
 	if (titleSprite_) {
-		titleSprite_->Draw();
+	    titleSprite_->Draw();
 	}
+	*/
 
 	// 3. カーソルを描画 (ハイライト)
 	if (cursorSprite_) {
 		cursorSprite_->Draw();
 	}
-	
+
 	Sprite::PostDraw();
 }

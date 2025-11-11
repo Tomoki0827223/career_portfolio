@@ -49,7 +49,21 @@ public:
 	int GetDeadTimer() const { return deadTimer_; }
 	int GetMaxDeadTime() const { return kMaxDeadTime_; }
 
+	// ★追加: スキル選択中かどうかを設定するsetter ★
+	void SetIsSkillSelecting(bool isSelecting) { isSkillSelecting_ = isSelecting; }
+
+	// ★追加: Audioインスタンスと攻撃SEハンドルを設定するメソッド ★
+	void SetAudio(Audio* audio, uint32_t seHandle) {
+		audio_ = audio;
+		attackSeHandle_ = seHandle;
+	}
+
 private:
+
+	// ★追加: Audio関連 ★
+	Audio* audio_ = nullptr;
+	uint32_t attackSeHandle_ = 0;
+
 	// パーティクル3Dモデルデータ
 	Model* modelPlayer_ = nullptr;
 
@@ -73,6 +87,8 @@ private:
 	bool isDead_ = false;         // 死亡フラグ
 	int deadTimer_ = 0;           // 死亡モーションのタイマー
 	const int kMaxDeadTime_ = 60; // 死亡モーションの総フレーム数 (1秒間)
+
+	bool isSkillSelecting_ = false;
 
 	// ★追加: 新しいスキルレベル ★
 	int bookLevel_ = 0;

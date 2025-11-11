@@ -39,7 +39,7 @@ private:
 
 	bool isFinished_ = false;      // シーン遷移フラグ
 	bool isRetrySelected_ = false; // リトライ選択フラグ
-	int selectedOption_ = 0;       // 0: リトライ, 1: タイトルへ
+	int selectedOption_ = 0;       // 0: リトライ, 1: タイトルへ (上下キーの処理を削除したため、この値は常に0のままになります)
 
 	uint32_t whiteTexture_ = 0;
 	uint32_t optionTexture_ = 0;
@@ -47,6 +47,6 @@ private:
 	// ★ UI要素を分離したスプライト ★
 	KamataEngine::Sprite* backgroundSprite_ = nullptr; // 背景一枚
 	KamataEngine::Sprite* retrySprite_ = nullptr;      // リトライボタン
-	KamataEngine::Sprite* titleSprite_ = nullptr;      // タイトルへボタン
-	KamataEngine::Sprite* cursorSprite_ = nullptr;     // 選択カーソル/ハイライト
+	// KamataEngine::Sprite* titleSprite_ = nullptr;      // ★削除: タイトルへボタンの宣言を削除
+	KamataEngine::Sprite* cursorSprite_ = nullptr; // 選択カーソル/ハイライト
 };

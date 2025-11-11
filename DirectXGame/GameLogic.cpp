@@ -14,7 +14,18 @@ std::uniform_real_distribution<float> dist(-MAP_HALF_RANGE, MAP_HALF_RANGE);
 // GameScene.cppから移動
 const float PI = 3.14159265358979323846f;
 
-GameLogic::GameLogic(Player* player, BIt_Map_Font* font, KamataEngine::Sprite* hpBar, KamataEngine::Sprite* hpBarBase) : player_(player), font_(font), hpBar_(hpBar), hpBarBase_(hpBarBase) {}
+GameLogic::GameLogic(Player* player, BIt_Map_Font* font, KamataEngine::Sprite* hpBar, KamataEngine::Sprite* hpBarBase) : player_(player), font_(font), hpBar_(hpBar), hpBarBase_(hpBarBase) {
+	// Audioインスタンスの取得とサウンドのロードをGameLogicで行う
+	audio_ = KamataEngine::Audio::GetInstance(); //
+	// 敵死亡時の効果音 (既存)
+	soundHandleEnemyDie_ = audio_->LoadWave("audio/se/enemyDie.wav"); //
+	// ★追加: プレイヤーの攻撃音をロード ★
+	soundHandlePlayerAttack_ = audio_->LoadWave("audio/se/panti.wav"); //
+
+	// ★追加: PlayerにAudioインスタンスと攻撃音ハンドルを渡す ★
+	player_->SetAudio(audio_, soundHandlePlayerAttack_); //
+}
+
 
 GameLogic::~GameLogic() {
 	// 全ての動的オブジェクトの解放
@@ -145,8 +156,8 @@ void GameLogic::Initialize() {
 
 	// 新規スキルのテクスチャ (一時的に既存のテクスチャを割り当て。必要に応じて変更してください)
 	skillTextureHandles_[static_cast<int>(SkillType::kBoomerang)] = KamataEngine::TextureManager::Load("Sukill/axe.png");  // Resources/axe/axe.png を想定
-	skillTextureHandles_[static_cast<int>(SkillType::kMinion)] = KamataEngine::TextureManager::Load("Sukill/player.png");  // Resources/player/player.png を想定
-	skillTextureHandles_[static_cast<int>(SkillType::kMissile)] = KamataEngine::TextureManager::Load("Sukill/Bullet.png"); // Resources/Bullet/Bullet.png を想定
+	skillTextureHandles_[static_cast<int>(SkillType::kMinion)] = KamataEngine::TextureManager::Load("Sukill/Minion.png");  // Resources/player/player.png を想定
+	skillTextureHandles_[static_cast<int>(SkillType::kMissile)] = KamataEngine::TextureManager::Load("Sukill/Missile.png"); // Resources/Bullet/Bullet.png を想定
 
 	// ★★★ 修正: アイコン描画用スプライトの初期化 (iconSize_ を使用) ★★★
 	uint32_t initialTextureHandle = KamataEngine::TextureManager::Load("sample.png");

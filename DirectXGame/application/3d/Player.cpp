@@ -78,11 +78,20 @@ void Player::Update() {
 		worldTransform.translation_.x += speed;
 	}
 
-	// 攻撃入力 (追加)
-	// スペースキーで攻撃開始
+	// SPACEキーで攻撃
 	if (input_->TriggerKey(DIK_SPACE) && !isAttacking_) {
 		isAttacking_ = true;
-		attackTimer_ = kMaxAttackTime_; // 10フレームの間、攻撃判定を有効にする
+		attackTimer_ = kMaxAttackTime_;
+
+		// ★追加: 攻撃開始時に効果音を鳴らす ★
+		if (audio_ && attackSeHandle_ != 0) { //
+			audio_->PlayWave(attackSeHandle_, false);
+		}
+	}
+
+	// ★追加: スキル選択中は移動・攻撃処理をスキップ ★
+	if (isSkillSelecting_) { //
+		return;
 	}
 
 	// 攻撃処理 (追加)

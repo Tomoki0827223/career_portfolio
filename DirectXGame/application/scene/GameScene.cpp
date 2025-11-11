@@ -47,8 +47,8 @@ void GameScene::Initialize() {
 
 	sousaTextureHandle_ = KamataEngine::TextureManager::Load("sousa.png");
 	sousaTextureHandle2_ = KamataEngine::TextureManager::Load("sousa2.png");
-	sousaSprite_ = KamataEngine::Sprite::Create(sousaTextureHandle_, {1040.0f, 650.0f});
-	sousaSprite2_ = KamataEngine::Sprite::Create(sousaTextureHandle2_, {1040.0f, 680.0f});
+	sousaSprite_ = KamataEngine::Sprite::Create(sousaTextureHandle_, {1040.0f, 400.0f});
+	sousaSprite2_ = KamataEngine::Sprite::Create(sousaTextureHandle2_, {1040.0f, 500.0f});
 
 	hpBarBase_ = KamataEngine::Sprite::Create(hpBarBaseTexture_, kHpBarPos);
 	hpBarBase_->SetSize(kHpBarSize);
@@ -100,6 +100,8 @@ void GameScene::Update() {
 		}
 		return;
 	}
+
+	player_->SetIsSkillSelecting(gameLogic_->IsLevelUpPending()); //
 
 	// ------------------------------------
 	// GameLogicの更新処理
@@ -154,6 +156,9 @@ void GameScene::Draw() {
 		// ★★★ GameLogicにUI要素を渡して描画させる ★★★
 		gameLogic_->DrawSkillSelectionUI(skillCursorSprite_, skillOptionSprites_, skillScreenBackground_);
 	}
+
+	sousaSprite_->Draw();
+	sousaSprite2_->Draw();
 
 	font_->Draw();
 

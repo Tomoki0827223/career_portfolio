@@ -29,7 +29,7 @@ public:
 
 private:
 	const float kMoveSpeed = 0.6f;
-	const float kHomingRate = 0.05f; // 追尾率 (大きいほど急カーブ)
+	const float kHomingRate = 0.06f; // 追尾率 (大きいほど急カーブ)
 	const float radius_ = 0.4f;      // 弾の判定半径
 	int damage_ = 3;                 // ダメージ量 (既存のBulletより高めに設定)
 

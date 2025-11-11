@@ -1,8 +1,13 @@
 #include "Player.h"
 #include "KamataEngine.h"
 #include <random>
+#include <cmath>
 
 using namespace KamataEngine;
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846f
+#endif
 
 Player::~Player() {
 
@@ -35,6 +40,7 @@ void Player::Initialize() {
 
 void Player::Update() {
 	const float speed = 0.5f;
+	Vector3 moveVector = {0.0f, 0.0f, 0.0f};
 
 	// ★ 死亡している場合は、移動・攻撃処理をスキップし、死亡モーションのみ実行 ★
 	if (isDead_) {
@@ -67,16 +73,50 @@ void Player::Update() {
 	// 入力取得 (移動処理)
 	if (input_->PushKey(DIK_W)) {
 		worldTransform.translation_.y += speed;
+		moveVector.y += 1.0f; // 方向ベクトルを記録
 	}
 	if (input_->PushKey(DIK_S)) {
 		worldTransform.translation_.y -= speed;
+		moveVector.y -= 1.0f; // 方向ベクトルを記録
 	}
 	if (input_->PushKey(DIK_A)) {
 		worldTransform.translation_.x -= speed;
+		moveVector.x -= 1.0f; // 方向ベクトルを記録
 	}
 	if (input_->PushKey(DIK_D)) {
 		worldTransform.translation_.x += speed;
+		moveVector.x += 1.0f; // 方向ベクトルを記録
 	}
+
+	// ★ プレイヤーの旋回処理 (ここから追加) ★
+	// 移動ベクトルがある場合にのみ回転
+	if (moveVector.x != 0.0f || moveVector.y != 0.0f) {
+		// Y軸回転角度を計算 (Yaw): atan2(X成分, Z成分)
+		// 現在のコードではW/SでY軸を動かしていますが、3Dモデルの正面はZ軸が基準となることが多いため、
+		// 移動Y成分をZ成分として扱い、Y軸周りの回転を計算します。
+		float targetRotationY = std::atan2(moveVector.x, moveVector.y);
+
+		// 現在のY軸回転角度を取得
+		float currentRotationY = worldTransform.rotation_.y;
+
+		// 角度の差分を計算
+		float diff = targetRotationY - currentRotationY;
+
+		// 角度の最短経路を計算 (最短距離で回転させるための処理: -PI から PI の範囲に正規化)
+		if (diff > M_PI) {
+			diff -= 2.0f * M_PI;
+		} else if (diff < -M_PI) {
+			diff += 2.0f * M_PI;
+		}
+
+		// 補間（緩やかに回転させる）
+		const float rotateSpeed = 0.2f; // 回転速度 (0.0f〜1.0fで調整してください)
+		currentRotationY += diff * rotateSpeed;
+
+		// 回転を適用
+		worldTransform.rotation_.y = currentRotationY;
+	}
+	// ---------------------------------------------
 
 	// SPACEキーで攻撃
 	if (input_->TriggerKey(DIK_SPACE) && !isAttacking_) {

@@ -1,5 +1,9 @@
 #include "Missile.h"
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846f
+#endif
+
 Missile::Missile(const Vector3& position, const Vector3& targetPosition) {
 	worldTransform.translation_ = position;
 	// 初期速度はターゲットへ向かう方向
@@ -48,6 +52,24 @@ void Missile::Update(const Vector3& targetPosition) {
 	// 4. 進行方向に向ける回転を更新
 	float angle = std::atan2(velocity_.x, velocity_.y);
 	worldTransform.rotation_.z = angle;
+
+	worldTransform.TransferMatrix();
+	worldTransform.UpdateMatarix();
+	// ★ 追加: 旋回を強調するために、機体を傾ける (オプション) ★
+	// desiredVelocity (目標方向) と velocity (現在方向) の差分が回転の傾きになる
+	// 差が大きければ大きく傾ける
+	float velocityDiffAngle = std::atan2(desiredVelocity.x, desiredVelocity.y) - angle;
+	// 角度の最短経路を計算 (-PI から PI の範囲に正規化)
+	if (velocityDiffAngle > M_PI) {
+		velocityDiffAngle -= 2.0f * M_PI;
+	} else if (velocityDiffAngle < -M_PI) {
+		velocityDiffAngle += 2.0f * M_PI;
+	}
+
+	// 角度差に応じてX軸を傾ける (Y軸が上方向だと仮定)
+	// 角度差に係数をかけて傾きを調整 (例: 0.5f)
+	worldTransform.rotation_.x = velocityDiffAngle * 0.5f;
+	// ----------------------------------------------------
 
 	worldTransform.TransferMatrix();
 	worldTransform.UpdateMatarix();

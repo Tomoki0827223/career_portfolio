@@ -161,6 +161,7 @@
     <ClCompile Include="application\scene\GameScene.cpp" />
     <ClCompile Include="application\ui\Graph.cpp" />
     <ClCompile Include="Book.cpp" />
+    <ClCompile Include="Boomerang.cpp" />
     <ClCompile Include="Bullet.cpp" />
     <ClCompile Include="Enemy.cpp" />
     <ClCompile Include="Enemy2.cpp" />
@@ -170,6 +171,8 @@
     <ClCompile Include="application\3d\Stage.cpp" />
     <ClCompile Include="application\scene\TitleScnce.cpp" />
     <ClCompile Include="application\scene\TutorialScene.cpp" />
+    <ClCompile Include="Minion.cpp" />
+    <ClCompile Include="Missile.cpp" />
     <ClCompile Include="Wine.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -280,10 +283,13 @@
     <ClInclude Include="application\scene\TitleScnce.h" />
     <ClInclude Include="application\scene\TutorialScene.h" />
     <ClInclude Include="Book.h" />
+    <ClInclude Include="Boomerang.h" />
     <ClInclude Include="Bullet.h" />
     <ClInclude Include="Enemy.h" />
     <ClInclude Include="Enemy2.h" />
     <ClInclude Include="GameOverScene.h" />
+    <ClInclude Include="Minion.h" />
+    <ClInclude Include="Missile.h" />
     <ClInclude Include="Wine.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -27,6 +27,9 @@ void Player::Initialize() {
 	bookLevel_ = 0;
 	bulletLevel_ = 0;
 	wineLevel_ = 0;
+	boomerangLevel_ = 0;
+	minionLevel_ = 0;
+	missileLevel_ = 0;
 	// ------------------------------------
 }
 

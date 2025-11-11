@@ -10,7 +10,10 @@
 #include "KamataEngine.h"
 #include "Player.h"
 #include "Stage.h"
-#include "Wine.h"             // ★追加
+#include "Wine.h"
+#include "Boomerang.h"
+#include "Minion.h"
+#include "Missile.h"
 #include "math/MathUtility.h" // ★ これを追加する ★
 #include <algorithm>
 #include <random>
@@ -20,10 +23,15 @@ using namespace KamataEngine;
 
 // ★ レベルアップ後のスキル選択肢の定義 (修正) ★
 enum class SkillType {
-	kBook,      // Book: プレイヤーの周りを回る攻撃
-	kBullet,    // Bullet: 自動で敵に撃つ
-	kHeart,     // Heart: HP回復 (既存のkHealの代替)
-	kWine,      // Wine: ランダムドロップアイテムの出現
+	kBook,   // Book: プレイヤーの周りを回る攻撃
+	kBullet, // Bullet: 自動で敵に撃つ
+	kHeart,  // Heart: HP回復 (既存のkHealの代替)
+	kWine,   // Wine: ランダムドロップアイテムの出現
+	// ★★★ 新規追加するスキル ★★★
+	kBoomerang, // Boomerang: 投擲して戻ってくる攻撃
+	kMinion,    // Minion: 味方を召喚
+	kMissile,   // Missile: ホーミングミサイルを発射
+	// -----------------------------
 	kSkillCount // スキル数のカウント用
 };
 
@@ -89,6 +97,18 @@ private:
 	const int kWineSpawnInterval = 600; // 600フレーム (10秒) ごとに生成
 	int wineSpawnTimer_ = 0;
 	// ------------------------------------
+
+	// ★★★ 新規追加するスキルオブジェクトの管理 ★★★
+	std::vector<Boomerang*> boomerangs_;
+	const int kBoomerangSpawnInterval = 180; // 3秒ごとに発射
+	int boomerangSpawnTimer_ = 0;
+
+	std::vector<Minion*> minions_;
+
+	std::vector<Missile*> missiles_;
+	const int kMissileSpawnInterval = 90; // 1.5秒ごとに発射
+	int missileSpawnTimer_ = 0;
+	// -------------------------------------------------
 
 	// HPバー用のスプライト (追加)
 	KamataEngine::Sprite* hpBarBase_ = nullptr;

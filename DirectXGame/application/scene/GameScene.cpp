@@ -9,6 +9,8 @@ const float MAP_HALF_RANGE = 50.0f;
 std::uniform_real_distribution<float> dist(-MAP_HALF_RANGE, MAP_HALF_RANGE);
 } // namespace
 
+const float PI = 3.14159265358979323846f;
+
 GameScene::~GameScene() {
 	delete stage_;
 	delete player_;
@@ -46,11 +48,26 @@ GameScene::~GameScene() {
 		delete book;
 	}
 	books_.clear();
+	
 	for (Wine* wine : wines_) {
 		delete wine;
 	}
 	wines_.clear();
+	
 	// ------------------------------------
+	// ★★★ 新規追加するスキルオブジェクトの解放 ★★★
+	for (Boomerang* boomerang : boomerangs_) {
+		delete boomerang;
+	}
+	boomerangs_.clear();
+	for (Minion* minion : minions_) {
+		delete minion;
+	}
+	minions_.clear();
+	for (Missile* missile : missiles_) {
+		delete missile;
+	}
+	missiles_.clear();
 
 	// ★ スキル選択画面用スプライトの解放 (追加) ★
 	delete skillScreenBackground_;
@@ -98,6 +115,24 @@ void GameScene::Initialize() {
 	bulletSpawnTimer_ = 0;
 	wineSpawnTimer_ = 0;
 	// ------------------------------------
+	// ★★★ 新規追加するスキルオブジェクトのクリアと初期化 ★★★
+	for (Boomerang* boomerang : boomerangs_) {
+		delete boomerang;
+	}
+	boomerangs_.clear();
+	boomerangSpawnTimer_ = 0;
+
+	for (Minion* minion : minions_) {
+		delete minion;
+	}
+	minions_.clear();
+
+	for (Missile* missile : missiles_) {
+		delete missile;
+	}
+	missiles_.clear();
+	missileSpawnTimer_ = 0;
+	// -----------------------------------------------------------
 
 	// graph_ = new Graph();
 	// graph_->Initialize();
@@ -271,6 +306,36 @@ void GameScene::ApplySkill(SkillType skill) {
 		int newLevel = player_->GetWineLevel() + 1;
 		player_->SetWineLevel(newLevel);
 	} break;
+		// ★★★ 新規追加するスキル ★★★
+	case SkillType::kBoomerang: {
+		// Boomerangスキルレベルを上げる
+		int newLevel = player_->GetBoomerangLevel() + 1;
+		player_->SetBoomerangLevel(newLevel);
+	} break;
+	case SkillType::kMinion: {
+		// Minionスキルレベルを上げる
+		int newLevel = player_->GetMinionLevel() + 1;
+		player_->SetMinionLevel(newLevel);
+
+		// Minionを一旦クリアしてから再生成
+		for (Minion* minion : minions_) {
+			delete minion;
+		}
+		minions_.clear();
+
+		// レベル数に応じてMinionを生成
+		for (int i = 0; i < newLevel; ++i) {
+			Minion* newMinion = new Minion(i, newLevel);
+			newMinion->Initialize();
+			minions_.push_back(newMinion);
+		}
+	} break;
+	case SkillType::kMissile: {
+		// Missileスキルレベルを上げる
+		int newLevel = player_->GetMissileLevel() + 1;
+		player_->SetMissileLevel(newLevel);
+	} break;
+	// -------------------------------------
 	default:
 		break;
 	}
@@ -505,6 +570,97 @@ void GameScene::CheckAllCollisions() {
 		}
 	}
 	// ------------------------------------
+	// ------------------------------------
+	// ★★★ 新規追加: Boomerang vs 敵 の衝突判定 ★★★
+	// ------------------------------------
+	for (auto itB = boomerangs_.begin(); itB != boomerangs_.end();) {
+		Boomerang* boomerang = *itB;
+		if (boomerang->IsDead()) {
+			delete boomerang;
+			itB = boomerangs_.erase(itB);
+			continue;
+		}
+
+		Vector3 boomerangPos = boomerang->GetPosition();
+		float boomerangRadius = boomerang->GetRadius();
+		int boomerangDamage = boomerang->GetDamage();
+		bool hit = false;
+
+		auto checkBoomerangCollision = [&](auto& enemies_list) -> bool {
+			for (auto enemy : enemies_list) {
+				if (enemy->IsDead())
+					continue;
+
+				Vector3 enemyPos = enemy->GetPosition();
+				float enemyRadius = enemy->GetRadius();
+
+				if (Math::Length(enemyPos - boomerangPos) <= boomerangRadius + enemyRadius) {
+					enemy->TakeDamage(boomerangDamage);
+					boomerang->Hit(); // 敵に当たったら消滅
+					return true;
+				}
+			}
+			return false;
+		};
+
+		if (checkBoomerangCollision(enemies_) || checkBoomerangCollision(enemies2_)) {
+			hit = true;
+		}
+
+		if (hit) {
+			delete boomerang;
+			itB = boomerangs_.erase(itB);
+		} else {
+			++itB;
+		}
+	}
+	// -------------------------------------------------
+
+	// ------------------------------------
+	// ★★★ 新規追加: Missile vs 敵 の衝突判定 ★★★
+	// ------------------------------------
+	for (auto itM = missiles_.begin(); itM != missiles_.end();) {
+		Missile* missile = *itM;
+		if (missile->IsDead()) {
+			delete missile;
+			itM = missiles_.erase(itM);
+			continue;
+		}
+
+		Vector3 missilePos = missile->GetPosition();
+		float missileRadius = missile->GetRadius();
+		int missileDamage = missile->GetDamage();
+		bool hit = false;
+
+		auto checkMissileCollision = [&](auto& enemies_list) -> bool {
+			for (auto enemy : enemies_list) {
+				if (enemy->IsDead())
+					continue;
+
+				Vector3 enemyPos = enemy->GetPosition();
+				float enemyRadius = enemy->GetRadius();
+
+				if (Math::Length(enemyPos - missilePos) <= missileRadius + enemyRadius) {
+					enemy->TakeDamage(missileDamage);
+					missile->Die(); // Missileは敵に当たったら消滅
+					return true;
+				}
+			}
+			return false;
+		};
+
+		if (checkMissileCollision(enemies_) || checkMissileCollision(enemies2_)) {
+			hit = true;
+		}
+
+		if (hit) {
+			delete missile;
+			itM = missiles_.erase(itM);
+		} else {
+			++itM;
+		}
+	}
+	// -------------------------------------------------
 }
 
 void GameScene::Update() {
@@ -780,6 +936,223 @@ void GameScene::Update() {
 			++itB;
 		}
 	}
+	// ------------------------------------
+	// ★★★ 新規追加: Boomerang の自動生成と更新 ★★★
+	if (player_->GetBoomerangLevel() >= 1) {
+		boomerangSpawnTimer_++;
+		const int kMinBoomerangInterval = 30;
+		int currentBoomerangInterval = kBoomerangSpawnInterval / (std::max)(1, player_->GetBoomerangLevel());
+		currentBoomerangInterval = (std::max)(currentBoomerangInterval, kMinBoomerangInterval);
+
+		if (boomerangSpawnTimer_ >= currentBoomerangInterval) {
+
+			Vector3 velocity;
+			// 投擲方向を最も近い敵、またはランダムな方向に決定
+			// (既存のBullet生成ロジックを流用し、敵がいれば敵へ、いなければランダム方向)
+			auto findNearestEnemy = [&]() -> std::pair<Vector3, float> {
+				float minDistanceSq = 1e10f;
+				Vector3 targetPos = playerPos;
+				auto checkEnemy = [&](auto& enemies_list) {
+					for (auto enemy : enemies_list) {
+						if (enemy->IsDead())
+							continue;
+						float distance = Math::Length(enemy->GetPosition() - playerPos);
+						float distanceSq = distance * distance;
+						if (distanceSq < minDistanceSq) {
+							minDistanceSq = distanceSq;
+							targetPos = enemy->GetPosition();
+						}
+					}
+				};
+				checkEnemy(enemies_);
+				checkEnemy(enemies2_);
+				return {targetPos, minDistanceSq};
+			};
+
+			auto [targetPos, minDistanceSq] = findNearestEnemy();
+
+			if (minDistanceSq < 1e9f) {
+				velocity = targetPos - playerPos;
+			} else {
+				std::uniform_real_distribution<float> angleDist(0.0f, PI * 2.0f);
+				float randomAngle = angleDist(engine);
+				velocity.x = std::cos(randomAngle);
+				velocity.y = std::sin(randomAngle);
+			}
+
+			Boomerang* newBoomerang = new Boomerang(playerPos, velocity);
+			newBoomerang->Initialize();
+			boomerangs_.push_back(newBoomerang);
+
+			boomerangSpawnTimer_ = 0;
+		}
+	}
+
+	// Boomerangの更新 (プレイヤーの位置を渡す)
+	for (Boomerang* boomerang : boomerangs_) {
+		boomerang->Update(playerPos);
+	}
+	// -----------------------------------------------------
+
+	// ------------------------------------
+	// ★★★ 新規追加: Minion の更新と攻撃 ★★★
+	// ------------------------------------
+	for (Minion* minion : minions_) {
+		minion->Update(playerPos);
+	}
+
+	// Minionの攻撃 (Minionの数だけ、最も近い敵にBulletを発射)
+	if (player_->GetMinionLevel() >= 1) {
+		for (Minion* minion : minions_) {
+			if (minion->CanAttack()) {
+				// Minionから最も近い敵を検索
+				auto findNearestEnemy = [&]() -> std::pair<Vector3, float> {
+					float minDistanceSq = 1e10f;
+					Vector3 targetPos = playerPos;
+					// ... (敵検索ロジックはBoomerangと共通のため省略)
+					auto checkEnemy = [&](auto& enemies_list) {
+						for (auto enemy : enemies_list) {
+							if (enemy->IsDead())
+								continue;
+							float distance = Math::Length(enemy->GetPosition() - minion->GetPosition());
+							float distanceSq = distance * distance;
+
+							if (distanceSq < minDistanceSq) {
+								minDistanceSq = distanceSq;
+								targetPos = enemy->GetPosition();
+							}
+						}
+					};
+					checkEnemy(enemies_);
+					checkEnemy(enemies2_);
+					return {targetPos, minDistanceSq};
+				};
+
+				auto [targetPos, minDistanceSq] = findNearestEnemy();
+
+				// 敵がいればMinionの位置からBulletを生成
+				if (minDistanceSq < 1e9f) {
+					Vector3 velocity = targetPos - minion->GetPosition();
+
+					Bullet* newBullet = new Bullet(minion->GetPosition(), velocity);
+					// Minionのレベルに応じてダメージを変更
+					newBullet->SetDamage(minion->GetDamage() + player_->GetMinionLevel() / 2);
+					newBullet->Initialize();
+					bullets_.push_back(newBullet); // 既存のbullets_リストに追加
+				}
+
+				minion->ResetAttackTimer();
+			}
+		}
+	}
+	// -----------------------------------------------------
+
+	// ------------------------------------
+	// ★★★ 新規追加: Missile の自動生成と更新 ★★★
+	if (player_->GetMissileLevel() >= 1) {
+		missileSpawnTimer_++;
+		const int kMinMissileInterval = 20;
+		int currentMissileInterval = kMissileSpawnInterval / (std::max)(1, player_->GetMissileLevel());
+		currentMissileInterval = (std::max)(currentMissileInterval, kMinMissileInterval);
+
+		if (missileSpawnTimer_ >= currentMissileInterval) {
+
+			// Missileは必ず最も近い敵をターゲットにする (生成時の初期方向とUpdateでのホーミングに使う)
+			auto findNearestEnemy = [&]() -> std::pair<Vector3, float> {
+				float minDistanceSq = 1e10f;
+				Vector3 targetPos = playerPos;
+				// ... (敵検索ロジックはBoomerangと共通のため省略)
+				auto checkEnemy = [&](auto& enemies_list) {
+					for (auto enemy : enemies_list) {
+						if (enemy->IsDead())
+							continue;
+						float distance = Math::Length(enemy->GetPosition() - playerPos);
+						float distanceSq = distance * distance;
+						if (distanceSq < minDistanceSq) {
+							minDistanceSq = distanceSq;
+							targetPos = enemy->GetPosition();
+						}
+					}
+				};
+				checkEnemy(enemies_);
+				checkEnemy(enemies2_);
+				return {targetPos, minDistanceSq};
+			};
+
+			auto [targetPos, minDistanceSq] = findNearestEnemy();
+
+			// 敵がいればMissileを生成
+			if (minDistanceSq < 1e9f) {
+				Missile* newMissile = new Missile(playerPos, targetPos); // ターゲット位置を初期設定に利用
+				newMissile->Initialize();
+				missiles_.push_back(newMissile);
+			}
+
+			missileSpawnTimer_ = 0;
+		}
+	}
+
+	// Missileの更新 (最も近い敵の位置を渡してホーミングさせる)
+	auto findNearestEnemyForMissileHoming = [&]() -> Vector3 {
+		// (敵検索ロジックはBoomerangと共通のため省略)
+		float minDistanceSq = 1e10f;
+		Vector3 targetPos = playerPos;
+		auto checkEnemy = [&](auto& enemies_list) {
+			for (auto enemy : enemies_list) {
+				if (enemy->IsDead())
+					continue;
+
+				float distance = Math::Length(enemy->GetPosition() - playerPos);
+				float distanceSq = distance * distance;
+
+				if (distanceSq < minDistanceSq) {
+					minDistanceSq = distanceSq;
+					targetPos = enemy->GetPosition();
+				}
+			}
+		};
+
+		checkEnemy(enemies_);
+		checkEnemy(enemies2_);
+		return targetPos;
+	};
+	Vector3 nearestEnemyPos = findNearestEnemyForMissileHoming();
+
+	for (Missile* missile : missiles_) {
+		missile->Update(nearestEnemyPos);
+	}
+	// -----------------------------------------------------
+
+	// 衝突判定の実行
+	CheckAllCollisions();
+
+	// ... (中略: 経験値アイテム、敵の削除処理)
+
+	// ------------------------------------
+	// ★★★ 新規追加: Boomerangの削除処理 ★★★
+	for (auto itB = boomerangs_.rbegin(); itB != boomerangs_.rend();) {
+		Boomerang* boomerang = *itB;
+		if (boomerang->IsDead()) {
+			delete boomerang;
+			itB = std::vector<Boomerang*>::reverse_iterator(boomerangs_.erase(std::next(itB).base()));
+		} else {
+			++itB;
+		}
+	}
+	// -----------------------------------------
+
+	// ------------------------------------
+	// ★★★ 新規追加: Missileの削除処理 ★★★
+	for (auto itM = missiles_.rbegin(); itM != missiles_.rend();) {
+		Missile* missile = *itM;
+		if (missile->IsDead()) {
+			delete missile;
+			itM = std::vector<Missile*>::reverse_iterator(missiles_.erase(std::next(itM).base()));
+		} else {
+			++itM;
+		}
+	}
+	// -----------------------------------------
 }
 
 /**
@@ -829,6 +1202,21 @@ void GameScene::Draw() {
 	// ★追加: Book (周回攻撃) の描画 ★
 	for (Book* book : books_) {
 		book->Draw(camera_);
+	}
+
+	// ★★★ 新規追加: Boomerangの描画 ★★★
+	for (Boomerang* boomerang : boomerangs_) {
+		boomerang->Draw(camera_);
+	}
+
+	// ★★★ 新規追加: Minionの描画 ★★★
+	for (Minion* minion : minions_) {
+		minion->Draw(camera_);
+	}
+
+	// ★★★ 新規追加: Missileの描画 ★★★
+	for (Missile* missile : missiles_) {
+		missile->Draw(camera_);
 	}
 
 	// 3. 3D描画の終了

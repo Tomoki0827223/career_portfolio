@@ -34,6 +34,12 @@ public:
 	void SetBulletLevel(int level) { bulletLevel_ = level; }
 	int GetWineLevel() const { return wineLevel_; }
 	void SetWineLevel(int level) { wineLevel_ = level; }
+	int GetBoomerangLevel() const { return boomerangLevel_; }
+	void SetBoomerangLevel(int level) { boomerangLevel_ = level; }
+	int GetMinionLevel() const { return minionLevel_; }
+	void SetMinionLevel(int level) { minionLevel_ = level; }
+	int GetMissileLevel() const { return missileLevel_; }
+	void SetMissileLevel(int level) { missileLevel_ = level; }
 	// ------------------------------------
 
 	// ★ 死亡関連 (修正) ★
@@ -73,4 +79,9 @@ private:
 	int bulletLevel_ = 0;
 	int wineLevel_ = 0;
 	// ------------------------------------
+
+	// ★★★ 新規追加するスキルレベルのメンバ変数 ★★★
+	int boomerangLevel_ = 0;
+	int minionLevel_ = 0;
+	int missileLevel_ = 0;
 };

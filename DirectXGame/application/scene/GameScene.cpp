@@ -62,6 +62,7 @@ GameScene::~GameScene() {
 
 void GameScene::Initialize() {
 
+
 	// ★追加: リトライに備え、敵と経験値のリストを確実にクリアする★
 	// 敵の解放
 	for (Enemy* enemy : enemies_) {

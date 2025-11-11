@@ -26,6 +26,8 @@ public:
 	// 攻撃関連 (追加)
 	bool IsAttacking() const { return isAttacking_; }        // 攻撃中か
 	float GetAttackRadius() const { return kAttackRadius_; } // 近接攻撃の判定半径
+	int GetDefense() const { return defense_; }
+	void SetDefense(int defense) { defense_ = defense; }
 
 	// ★追加: スキルレベルのGetter/Setter ★
 	int GetBookLevel() const { return bookLevel_; }
@@ -74,8 +76,10 @@ private:
 	WorldTransform worldTransform;
 
 	// HP (追加)
-	const int kMaxHp_ = 100; // 最大HPを10に設定
+	const int kMaxHp_ = 350; // 最大HPを10に設定
 	int currentHp_ = kMaxHp_;
+
+	int defense_ = 0;
 
 	// 攻撃関連 (追加)
 	bool isAttacking_ = false;

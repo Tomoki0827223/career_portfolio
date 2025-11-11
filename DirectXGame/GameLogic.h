@@ -4,6 +4,8 @@
 #include "Bullet.h"
 #include "Enemy.h"
 #include "Enemy2.h"
+#include "Enemy3.h"
+#include "Enemy4.h"
 #include "Experience.h"
 #include "KamataEngine.h"
 #include "Minion.h"
@@ -18,6 +20,7 @@
 #include <string> // ★ 追加: std::string, std::to_string 用
 #include <cmath>  // ★ 追加: std::pow 用
 #include "2d/ImGuiManager.h"
+#include "EnemyBullet.h"
 
 #include "audio/Audio.h"
 
@@ -74,6 +77,9 @@ private:
 	std::vector<Missile*> missiles_;
 	std::vector<Enemy*> enemies_;
 	std::vector<Enemy2*> enemies2_;
+	std::vector<Enemy3*> enemies3_;
+	std::vector<Enemy4*> enemies4_;
+	std::vector<EnemyBullet*> enemyBullets_;
 	std::vector<Experience*> experiences_;
 
 	// 依存オブジェクト
@@ -98,6 +104,9 @@ private:
 	int enemySpawnTimer_ = 0;
 	const int kEnemySpawnInterval = 120;
 	const int kMaxEnemies2 = 5;
+	const int kMaxEnemies3 = 5; // ★ 追記: Enemy3の最大数を仮で設定 ★
+	const int kMaxEnemies4 = 5; // ★ 追記: Enemy4の最大数を仮で設定 ★
+	const int kMaxEnemyBullets = 50;
 
 	// レベルアップシステム関連 (GameSceneから移動)
 	int level_ = 1;

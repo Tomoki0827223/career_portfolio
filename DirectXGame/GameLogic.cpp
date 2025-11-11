@@ -32,7 +32,7 @@ GameLogic::~GameLogic() {
 	for (Experience* exp : experiences_) {
 		delete exp;
 	}
-	experiences_.clear();
+experiences_.clear();
 	for (Enemy* enemy : enemies_) {
 		delete enemy;
 	}
@@ -41,6 +41,18 @@ GameLogic::~GameLogic() {
 		delete enemy2;
 	}
 	enemies2_.clear();
+	for (Enemy3* enemy3 : enemies3_) {
+		delete enemy3;
+	}
+	enemies3_.clear();
+	for (Enemy4* enemy4 : enemies4_) { // ★ 追記 ★
+		delete enemy4;
+	}
+	enemies4_.clear(); // ★ 追記 ★
+	for (EnemyBullet* enemyBullet : enemyBullets_) { // ★ 追記: 敵弾の解放 ★
+		delete enemyBullet;
+	}
+	enemyBullets_.clear(); // ★ 追記: 敵弾の解放 ★
 	for (Bullet* bullet : bullets_) {
 		delete bullet;
 	}
@@ -85,6 +97,18 @@ void GameLogic::Initialize() {
 		delete enemy2;
 	}
 	enemies2_.clear();
+	for (Enemy3* enemy2 : enemies3_) {
+		delete enemy2;
+	}
+	enemies3_.clear();
+	for (Enemy4* enemy4 : enemies4_) { // ★ 追記 ★
+		delete enemy4;
+	}
+	enemies4_.clear(); // ★ 追記 ★
+	for (EnemyBullet* enemyBullet : enemyBullets_) { // ★ 追記: 敵弾の解放 ★
+		delete enemyBullet;
+	}
+	enemyBullets_.clear(); // ★ 追記: 敵弾の解放 ★
 	for (Bullet* bullet : bullets_) {
 		delete bullet;
 	}
@@ -201,7 +225,8 @@ void GameLogic::Update() {
 
 	// 敵の生成
 	enemySpawnTimer_++;
-	if (enemies_.size() + enemies2_.size() < kMaxEnemies + kMaxEnemies2 && enemySpawnTimer_ >= kEnemySpawnInterval) {
+	// ★ 修正: Enemy3とEnemy4の最大数も考慮に入れる ★
+	if (enemies_.size() + enemies2_.size() + enemies3_.size() + enemies4_.size() < kMaxEnemies + kMaxEnemies2 + kMaxEnemies3 + kMaxEnemies4 && enemySpawnTimer_ >= kEnemySpawnInterval) {
 		SpawnEnemy();
 		enemySpawnTimer_ = 0;
 	}
@@ -223,6 +248,54 @@ void GameLogic::Update() {
 	}
 	for (Enemy2* enemy2 : enemies2_) {
 		enemy2->Update(playerPos);
+	}
+	for (Enemy3* enemy3 : enemies3_) {
+		enemy3->Update(playerPos);
+
+		// ★ 追記: Enemy3の発射ロジック (Enemy4と同一) ★
+		if (enemy3->CanShoot() && enemyBullets_.size() < kMaxEnemyBullets) {
+			enemy3->ResetShotTimer();
+
+			// プレイヤーへの方向ベクトルを計算
+			Vector3 diff = playerPos - enemy3->GetShotPosition();
+			Vector3 direction = Math::Normalize(diff);
+
+			// 速度を設定
+			// kEnemyBulletSpeedは下記で定義されているため、ここでは流用
+			const float kEnemyBulletSpeed = 2.0f;
+			Vector3 velocity = direction * kEnemyBulletSpeed;
+
+			// 弾を生成
+			EnemyBullet* newBullet = new EnemyBullet(enemy3->GetShotPosition(), velocity);
+			newBullet->SetDamage(10); // ★ Enemy3の弾はダメージ1に設定 (Enemy4の弾と差別化) ★
+			newBullet->Initialize();
+			enemyBullets_.push_back(newBullet);
+		}
+	}
+	for (Enemy4* enemy4 : enemies4_) {
+		enemy4->Update(playerPos);
+
+		// ★ 追記: Enemy4の発射ロジック ★
+		if (enemy4->CanShoot() && enemyBullets_.size() < kMaxEnemyBullets) {
+			enemy4->ResetShotTimer();
+
+			// プレイヤーへの方向ベクトルを計算
+			Vector3 diff = playerPos - enemy4->GetShotPosition();
+			Vector3 direction = Math::Normalize(diff);
+
+			// 速度を設定
+			const float kEnemyBulletSpeed = 2.0f;
+			Vector3 velocity = direction * kEnemyBulletSpeed;
+
+			// 弾を生成
+			EnemyBullet* newBullet = new EnemyBullet(enemy4->GetShotPosition(), velocity);
+			newBullet->SetDamage(70); // ★ Enemy4の弾はダメージ3に設定 ★
+			newBullet->Initialize();
+			enemyBullets_.push_back(newBullet);
+		}
+	}
+	for (EnemyBullet* enemyBullet : enemyBullets_) {
+		enemyBullet->Update();
 	}
 
 	// Book (周回攻撃) の更新
@@ -255,6 +328,8 @@ void GameLogic::Update() {
 				};
 				checkEnemy(enemies_);
 				checkEnemy(enemies2_);
+				checkEnemy(enemies3_);
+				checkEnemy(enemies4_);
 				return {targetPos, minDistanceSq};
 			};
 
@@ -301,6 +376,8 @@ void GameLogic::Update() {
 				};
 				checkEnemy(enemies_);
 				checkEnemy(enemies2_);
+				checkEnemy(enemies3_);
+				checkEnemy(enemies4_);
 				return {targetPos, minDistanceSq};
 			};
 
@@ -351,6 +428,8 @@ void GameLogic::Update() {
 					};
 					checkEnemy(enemies_);
 					checkEnemy(enemies2_);
+					checkEnemy(enemies3_);
+					checkEnemy(enemies4_);
 					return {targetPos, minDistanceSq};
 				};
 
@@ -395,6 +474,8 @@ void GameLogic::Update() {
 				};
 				checkEnemy(enemies_);
 				checkEnemy(enemies2_);
+				checkEnemy(enemies3_);
+				checkEnemy(enemies4_);
 				return {targetPos, minDistanceSq};
 			};
 
@@ -428,6 +509,8 @@ void GameLogic::Update() {
 		};
 		checkEnemy(enemies_);
 		checkEnemy(enemies2_);
+		checkEnemy(enemies3_);
+		checkEnemy(enemies4_);
 		return targetPos;
 	};
 	Vector3 nearestEnemyPos = findNearestEnemyForMissileHoming();
@@ -445,6 +528,31 @@ void GameLogic::Update() {
 	}
 	for (Wine* wine : wines_) {
 		wine->Update(playerPos);
+	}
+
+	// GameLogic.cpp の Update() 内 - 敵弾の削除処理
+	// ★ 追記: 敵弾の削除処理 ★
+	for (auto it = enemyBullets_.rbegin(); it != enemyBullets_.rend();) {
+		EnemyBullet* enemyBullet = *it;
+		if (enemyBullet->IsDead()) {
+			delete enemyBullet;
+			// 正しいイテレータの再設定:
+			// eraseには「削除したい要素を指す」順方向イテレータが必要。
+			// reverse_iteratorの `it` が指す要素を削除するには、
+			// `std::next(it).base()` または `it.base()` の調整が必要。
+
+			// C++の標準的な書き方 (std::next(it).base()を使用):
+			// (std::next(it) は「削除したい要素の次」を指す逆イテレータ)
+			// (std::next(it).base() は「削除したい要素」を指す順方向イテレータ)
+			auto forward_it = std::next(it).base();
+			forward_it = enemyBullets_.erase(forward_it);
+
+			// eraseの戻り値 (forward_it) は「削除された要素の次」を指す。
+			// これを逆イテレータに変換すると、「削除された要素の直前」を指す逆イテレータになる。
+			it = std::vector<EnemyBullet*>::reverse_iterator(forward_it);
+		} else {
+			++it;
+		}
 	}
 
 	// アイテムの削除処理 (取得/死亡判定) とレベルアップ判定
@@ -510,6 +618,44 @@ void GameLogic::Update() {
 			++it;
 		}
 	}
+	for (auto it = enemies3_.rbegin(); it != enemies3_.rend();) {
+		Enemy3* enemy3 = *it; // 変数名を enemy3 に修正 (元のファイルでは enemy2 になっていた)
+		if (enemy3->IsDead()) {
+
+			audio_->PlayWave(soundHandleEnemyDie_);
+
+			Vector3 dropPosition = enemy3->GetPosition();
+			int dropCount = kEnemy2DropCount;
+			for (int i = 0; i < dropCount; ++i) {
+				Experience* newExp = new Experience(dropPosition);
+				newExp->Initialize();
+				experiences_.push_back(newExp);
+			}
+			delete enemy3;
+			it = std::vector<Enemy3*>::reverse_iterator(enemies3_.erase(std::next(it).base()));
+		} else {
+			++it;
+		}
+	}
+	for (auto it = enemies4_.rbegin(); it != enemies4_.rend();) { // ★ 追記 ★
+		Enemy4* enemy4 = *it;
+		if (enemy4->IsDead()) {
+
+			audio_->PlayWave(soundHandleEnemyDie_);
+
+			Vector3 dropPosition = enemy4->GetPosition();
+			int dropCount = kEnemy2DropCount;
+			for (int i = 0; i < dropCount; ++i) {
+				Experience* newExp = new Experience(dropPosition);
+				newExp->Initialize();
+				experiences_.push_back(newExp);
+			}
+			delete enemy4;
+			it = std::vector<Enemy4*>::reverse_iterator(enemies4_.erase(std::next(it).base()));
+		} else {
+			++it;
+		}
+	}
 
 	// 弾/スキルの削除処理
 	for (auto itB = bullets_.rbegin(); itB != bullets_.rend();) {
@@ -566,22 +712,35 @@ void GameLogic::CheckAllCollisions() {
 		};
 		checkPlayerAttackCollision(enemies_);
 		checkPlayerAttackCollision(enemies2_);
+		checkPlayerAttackCollision(enemies3_);
+		checkPlayerAttackCollision(enemies4_);
 	}
 
 	// 2. 敵 vs プレイヤー (敵からの接触ダメージ)
-	for (Enemy* enemy : enemies_) {
-		if (enemy->IsDead() || player_->GetCurrentHp() <= 0)
-			continue;
-		Vector3 enemyPos = enemy->GetPosition();
-		float enemyRadius = enemy->GetRadius();
-		Vector3 diff = enemyPos - playerPos;
-		float distance = Math::Length(diff);
-		if (distance <= playerBodyRadius + enemyRadius) {
-			player_->TakeDamage(1);
-
-			audio_->PlayWave(soundHandleDamage_);
+	// ★ 修正: 全ての敵リストに対して衝突判定を行うように汎用化 ★
+	auto checkEnemyPlayerCollision = [&](auto& enemies_list) {
+		for (auto enemy : enemies_list) {
+			if (enemy->IsDead() || player_->GetCurrentHp() <= 0)
+				continue;
+			Vector3 enemyPos = enemy->GetPosition();
+			float enemyRadius = enemy->GetRadius();
+			Vector3 diff = enemyPos - playerPos;
+			float distance = Math::Length(diff);
+			if (distance <= playerBodyRadius + enemyRadius) {
+				int damageToTake = 1 - player_->GetDefense(); // 1ダメージから防御力を引く
+				if (damageToTake < 1) {                       // ダメージは最低1 (あるいは0) に設定
+					damageToTake = 1;                         // 常に最低1ダメージは受けるようにする（必要に応じて0に調整）
+				}
+				player_->TakeDamage(damageToTake); // ★ 修正: 軽減されたダメージを使用 ★
+				audio_->PlayWave(soundHandleDamage_);
+			}
 		}
-	}
+	};
+	// 全ての敵タイプに対して実行
+	checkEnemyPlayerCollision(enemies_);
+	checkEnemyPlayerCollision(enemies2_);
+	checkEnemyPlayerCollision(enemies3_);
+	checkEnemyPlayerCollision(enemies4_);
 
 	// 3. Book (周回攻撃) vs 敵 の衝突判定
 	for (Book* book : books_) {
@@ -601,6 +760,9 @@ void GameLogic::CheckAllCollisions() {
 		};
 		checkEnemyCollision(enemies_);
 		checkEnemyCollision(enemies2_);
+		checkEnemyCollision(enemies3_);
+		checkEnemyCollision(enemies4_);
+
 	}
 
 	// 4. Bullet (オート攻撃) vs 敵 の衝突判定
@@ -629,7 +791,7 @@ void GameLogic::CheckAllCollisions() {
 			}
 			return false;
 		};
-		if (checkBulletCollision(enemies_) || checkBulletCollision(enemies2_)) {
+		if (checkBulletCollision(enemies_) || checkBulletCollision(enemies2_) || checkBulletCollision(enemies3_) || checkBulletCollision(enemies4_)) { // ★ 修正: Enemy4を追加 ★
 			hit = true;
 		}
 		if (hit) {
@@ -684,7 +846,7 @@ void GameLogic::CheckAllCollisions() {
 			}
 			return false;
 		};
-		if (checkBoomerangCollision(enemies_) || checkBoomerangCollision(enemies2_)) {
+		if (checkBoomerangCollision(enemies_) || checkBoomerangCollision(enemies2_) || checkBoomerangCollision(enemies3_) || checkBoomerangCollision(enemies4_)) { // ★ 修正: Enemy4を追加 ★
 			hit = true;
 		}
 		if (hit) {
@@ -721,7 +883,7 @@ void GameLogic::CheckAllCollisions() {
 			}
 			return false;
 		};
-		if (checkMissileCollision(enemies_) || checkMissileCollision(enemies2_)) {
+		if (checkMissileCollision(enemies_) || checkMissileCollision(enemies2_) || checkMissileCollision(enemies3_) || checkMissileCollision(enemies4_)) { // ★ 修正: Enemy4を追加 ★
 			hit = true;
 		}
 		if (hit) {
@@ -731,6 +893,38 @@ void GameLogic::CheckAllCollisions() {
 			++itM;
 		}
 	}
+
+	// 8. ★ 追記: 敵弾 vs プレイヤー の衝突判定 ★
+	for (auto itEB = enemyBullets_.begin(); itEB != enemyBullets_.end();) {
+		EnemyBullet* enemyBullet = *itEB;
+		if (enemyBullet->IsDead() || player_->GetCurrentHp() <= 0) {
+			++itEB;
+			continue;
+		}
+
+		Vector3 enemyBulletPos = enemyBullet->GetPosition();
+		float enemyBulletRadius = enemyBullet->GetRadius();
+		Vector3 diff = enemyBulletPos - playerPos;
+		float distance = Math::Length(diff);
+
+		if (distance <= playerBodyRadius + enemyBulletRadius) {
+			// 衝突! プレイヤーにダメージを与え、弾を削除
+			int baseDamage = enemyBullet->GetDamage();
+			int damageToTake = baseDamage - player_->GetDefense(); // 弾のダメージから防御力を引く
+
+			if (damageToTake < 1) { // ダメージは最低1 (あるいは0) に設定
+				damageToTake = 1;   // 常に最低1ダメージは受けるようにする（必要に応じて0に調整）
+			}
+
+			player_->TakeDamage(damageToTake);    // ★ 修正: 軽減されたダメージを使用 ★
+			audio_->PlayWave(soundHandleDamage_); // ダメージ音 (既存のものを流用)
+
+			enemyBullet->SetIsDead(true); // 弾を削除リストに入れる
+			itEB = enemyBullets_.erase(itEB);
+		} else {
+			++itEB;
+		}
+	}
 }
 
 // ----------------------------------------------------
@@ -738,7 +932,8 @@ void GameLogic::CheckAllCollisions() {
 // ----------------------------------------------------
 void GameLogic::SpawnEnemy() {
 
-	if (enemies_.size() + enemies2_.size() >= kMaxEnemies + kMaxEnemies2) {
+	// ★ 修正: Enemy3, Enemy4の最大数も考慮に入れる ★
+	if (enemies_.size() + enemies2_.size() + enemies3_.size() + enemies4_.size() >= kMaxEnemies + kMaxEnemies2 + kMaxEnemies3 + kMaxEnemies4) {
 		return;
 	}
 
@@ -752,17 +947,37 @@ void GameLogic::SpawnEnemy() {
 		distance = Math::Length(randomPos - playerPos);
 	} while (distance < kMinSpawnDistance);
 
-	std::uniform_int_distribution<int> distType(0, 3); // 0: Enemy2, 1-3: Enemy1
-	if (enemies2_.size() < kMaxEnemies2 && distType(engine) == 0) {
-		Enemy2* newEnemy2 = new Enemy2(randomPos);
-		newEnemy2->Initialize();
-		enemies2_.push_back(newEnemy2);
-	} else if (enemies_.size() < kMaxEnemies) {
+	// ★ 修正: 敵のタイプをランダムに決定する範囲をスコアによって変更 ★
+	int maxType = 2; // スコアが1000未満の場合: 0: Enemy, 1: Enemy2, 2: Enemy3
+	if (score_ >= 1000) {
+		maxType = 3; // スコアが1000点以上の場合: 0, 1, 2, 3 (Enemy4を含む)
+	}
+
+	std::uniform_int_distribution<int> distType(0, maxType);
+	int type = distType(engine);
+
+	// 敵のタイプを決定
+	if (type == 0 && enemies_.size() < kMaxEnemies) {
 		Enemy* newEnemy = new Enemy(randomPos);
 		newEnemy->Initialize();
 		enemies_.push_back(newEnemy);
+	} else if (type == 1 && enemies2_.size() < kMaxEnemies2) {
+		Enemy2* newEnemy2 = new Enemy2(randomPos);
+		newEnemy2->Initialize();
+		enemies2_.push_back(newEnemy2);
+	} else if (type == 2 && enemies3_.size() < kMaxEnemies3) {
+		Enemy3* newEnemy3 = new Enemy3(randomPos);
+		newEnemy3->Initialize();
+		enemies3_.push_back(newEnemy3);
+	} else if (type == 3 && enemies4_.size() < kMaxEnemies4) { // スコア1000点以上でのみtype=3が選ばれる
+		Enemy4* newEnemy4 = new Enemy4(randomPos);
+		newEnemy4->Initialize();
+		enemies4_.push_back(newEnemy4);
+	} else {
+		// 生成できなかった場合は、空いている敵の枠を探すか、生成をスキップ
 	}
 }
+
 
 // ----------------------------------------------------
 // GameLogic::SpawnWine (Wineのランダム生成関数)
@@ -862,20 +1077,39 @@ void GameLogic::ApplySkill(SkillType skill) {
 
 	audio_->PlayWave(soundHandleLevelUp_);
 
+
 	switch (skill) {
 	case SkillType::kBook: {
-		int newLevel = player_->GetBookLevel() + 1;
-		player_->SetBookLevel(newLevel);
-		for (Book* book : books_) {
-			delete book;
-		}
-		books_.clear();
-		for (int i = 0; i < newLevel; ++i) {
-			Book* newBook = new Book();
-			newBook->Initialize();
-			books_.push_back(newBook);
+		const int kBookMaxLevel = 5;
+		int currentLevel = player_->GetBookLevel();
 
-			audio_->PlayWave(soundHandleBookSpawn_);
+		if (currentLevel >= kBookMaxLevel) {
+			// 上限に達した場合: Bookのダメージを上げる
+			for (Book* book : books_) {
+				book->SetDamage(book->GetDamage() + 1);
+			}
+		} else {
+			int newLevel = currentLevel + 1;
+			player_->SetBookLevel(newLevel);
+
+			// ★★★ 修正箇所: Bookレベルに応じて防御力を設定 ★★★
+			// レベルNで防御力 N * 20 に設定
+			player_->SetDefense(newLevel * 20);
+
+			// Bookオブジェクトの再生成
+			for (Book* book : books_) {
+				delete book;
+			}
+			books_.clear();
+			for (int i = 0; i < newLevel; ++i) {
+				Book* newBook = new Book();
+				newBook->Initialize();
+				// Bookのダメージをレベルに応じて設定 (レベルNでNダメージ)
+				newBook->SetDamage(newLevel);
+				books_.push_back(newBook);
+
+				audio_->PlayWave(soundHandleBookSpawn_);
+			}
 		}
 	} break;
 	case SkillType::kBullet: {
@@ -937,6 +1171,16 @@ void GameLogic::DrawObjects(const Camera& camera) {
 	}
 	for (Enemy2* enemy2 : enemies2_) {
 		enemy2->Draw(camera);
+	}
+	for (Enemy3* enemy3 : enemies3_) { // 変数名を enemy3 に修正
+		enemy3->Draw(camera);
+	}
+	for (Enemy4* enemy4 : enemies4_) { // ★ 追記 ★
+		enemy4->Draw(camera);
+	}
+	// ★ 追記: 敵弾の描画 ★
+	for (EnemyBullet* enemyBullet : enemyBullets_) {
+		enemyBullet->Draw(camera);
 	}
 
 	// Bulletの描画

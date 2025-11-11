@@ -1,23 +1,33 @@
-#include "Enemy2.h" // ヘッダーをEnemy2.hに変更
+#include "Enemy3.h"
 
-Enemy2::Enemy2(const Vector3& position) { worldTransform.translation_ = position; }
+Enemy3::Enemy3(const Vector3& position) { worldTransform.translation_ = position; }
 
-Enemy2::~Enemy2() { delete model_; }
+Enemy3::~Enemy3() { delete model_; }
 
-void Enemy2::Initialize() {
+void Enemy3::Initialize() {
 	// 敵モデルとして"cube"を使用
-	model_ = Model::CreateFromOBJ("enemy"); // ★ モデルを"cube"に変更 ★
+	model_ = Model::CreateFromOBJ("enemy");
 
 	worldTransform.Initialize();
-	worldTransform.scale_ = {2.0f, 2.0f, 2.0f};
+	worldTransform.scale_ = {2.0f, 2.0f, 2.0f}; // ★ 敵のサイズを2倍に ★
 
 	worldTransform.translation_.z = 0.0f; // Z座標を固定
 	worldTransform.UpdateMatarix();
 }
 
-void Enemy2::Update(const Vector3& playerPosition) {
+///**
+// * @brief 敵の更新。プレイヤーを追尾するロジックを実装。
+// * @param playerPosition プレイヤーの現在位置
+// */
+
+void Enemy3::Update(const Vector3& playerPosition) {
 	if (isDead_) {
 		return;
+	}
+
+	// ★ 追記: 弾発射タイマーの更新 ★
+	if (shotTimer_ < kShotInterval) {
+		shotTimer_++;
 	}
 
 	// プレイヤーへの方向ベクトルを計算
@@ -32,7 +42,7 @@ void Enemy2::Update(const Vector3& playerPosition) {
 	worldTransform.UpdateMatarix();
 }
 
-void Enemy2::Draw(const Camera& camera) {
+void Enemy3::Draw(const Camera& camera) {
 	if (isDead_) {
 		return;
 	}
@@ -46,7 +56,7 @@ void Enemy2::Draw(const Camera& camera) {
 	Model::PostDraw();
 }
 
-void Enemy2::TakeDamage(int damage) {
+void Enemy3::TakeDamage(int damage) {
 	currentHp_ -= damage;
 	if (currentHp_ <= 0) {
 		currentHp_ = 0;

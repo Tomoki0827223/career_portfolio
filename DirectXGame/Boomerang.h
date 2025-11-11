@@ -22,7 +22,7 @@ public:
 	Vector3 GetPosition() const { return worldTransform.translation_; }
 	float GetRadius() const { return radius_; }
 	bool IsDead() const { return isDead_; }
-	void Hit() { isDead_ = true; } // 敵に当たったら消滅
+	void Hit() { /* isDead_ = true; */ } // 敵に当たったら消滅
 
 	void SetDamage(int damage) { damage_ = damage; }
 	int GetDamage() const { return damage_; }
@@ -31,7 +31,7 @@ private:
 	const float kMaxDistance = 15.0f; // プレイヤーからの最大飛距離
 	const float kMoveSpeed = 0.8f;    // 移動速度
 	const float radius_ = 0.5f;       // 判定半径
-	int damage_ = 1;                  // ダメージ量
+	int damage_ = 15;                  // ダメージ量
 
 	Model* model_ = nullptr;
 	WorldTransform worldTransform;

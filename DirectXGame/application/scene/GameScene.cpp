@@ -946,6 +946,7 @@ void GameScene::Update() {
 
 		if (boomerangSpawnTimer_ >= currentBoomerangInterval) {
 
+
 			Vector3 velocity;
 			// 投擲方向を最も近い敵、またはランダムな方向に決定
 			// (既存のBullet生成ロジックを流用し、敵がいれば敵へ、いなければランダム方向)

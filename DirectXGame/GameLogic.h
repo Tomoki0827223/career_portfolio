@@ -19,6 +19,8 @@
 #include <cmath>  // ★ 追加: std::pow 用
 #include "2d/ImGuiManager.h"
 
+#include "audio/Audio.h"
+
 using namespace KamataEngine;
 
 // GameScene.h から移動: レベルアップ後のスキル選択肢の定義
@@ -125,4 +127,17 @@ private:
 	uint32_t boomerangTextureHandle_ = 0;
 	uint32_t minionTextureHandle_ = 0;
 	uint32_t missileTextureHandle_ = 0;
+
+	KamataEngine::Audio* audio_ = nullptr;
+	uint32_t soundHandleEnemyDie_ = 0;      // 敵撃破音
+	uint32_t soundHandleLevelUp_ = 0;       // レベルアップファンファーレ
+	uint32_t soundHandleSelectCursor_ = 0;  // スキル選択カーソル移動音
+	uint32_t soundHandleSkillDecide_ = 0;   // スキル決定音
+	uint32_t soundHandleBulletShot_ = 0;    // Bullet発射音
+	uint32_t soundHandleDamage_ = 0;        // プレイヤー被弾音
+	uint32_t soundHandleHeal_ = 0;          // 回復音 (Wine取得/Heartスキル)
+	uint32_t soundHandleBookSpawn_ = 0;     // Book生成音
+	uint32_t soundHandleBoomerangShot_ = 0; // Boomerang発射音
+	uint32_t soundHandleMissileShot_ = 0;   // Missile発射音
+	uint32_t soundHandleMinionShot_ = 0;    // Minion攻撃音
 };

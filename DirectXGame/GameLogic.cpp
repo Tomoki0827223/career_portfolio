@@ -117,6 +117,25 @@ void GameLogic::Initialize() {
 	iconSize_ = {256.0f, 222.0f};
 #endif
 
+	// ★★★ Audioの初期化とサウンドロード ★★★
+	audio_ = KamataEngine::Audio::GetInstance(); // Audioシングルトンインスタンスの取得
+
+	// 既存のWAVファイルを割り当て（ファイルがResourcesフォルダにある前提）
+	soundHandleLevelUp_ = audio_->LoadWave("audio/se/Levelup.wav");      // レベルアップファンファーレ
+	soundHandleSelectCursor_ = audio_->LoadWave("audio/se/mokugyo.wav"); // スキル選択カーソル移動音
+
+	// 他の効果音は、一旦既存の音源を仮で割り当てます。
+	// 実際に使用する際は、適切なWAVファイル名に置き換えてください。
+	// 例: soundHandleEnemyDie_ = audio_->LoadWave("enemy_die.wav");
+	soundHandleEnemyDie_ = audio_->LoadWave("audio/se/enemyDie.wav");
+	soundHandleSkillDecide_ = audio_->LoadWave("audio/se/enter.wav");
+	soundHandleBulletShot_ = audio_->LoadWave("audio/se/shot.wav");
+	soundHandleDamage_ = audio_->LoadWave("audio/se/damege.wav");
+	soundHandleHeal_ = audio_->LoadWave("audio/se/heal01.wav");
+	soundHandleBookSpawn_ = audio_->LoadWave("audio/se/Book01.wav");
+	soundHandleBoomerangShot_ = audio_->LoadWave("audio/se/bumeran.wav");
+	soundHandleMissileShot_ = audio_->LoadWave("audio/se/hanabi.wav");
+	soundHandleMinionShot_ = audio_->LoadWave("audio/se/Inspiration.wav");
 
 	// 既存スキルのテクスチャロード (アップロードされたファイル名と対応)
 	skillTextureHandles_[static_cast<int>(SkillType::kBook)] = KamataEngine::TextureManager::Load("Sukill/book.png");  //
@@ -235,6 +254,8 @@ void GameLogic::Update() {
 				Bullet* newBullet = new Bullet(playerPos, velocity);
 				newBullet->Initialize();
 				bullets_.push_back(newBullet);
+
+				audio_->PlayWave(soundHandleBulletShot_);
 			}
 			bulletSpawnTimer_ = 0;
 		}
@@ -286,6 +307,8 @@ void GameLogic::Update() {
 			Boomerang* newBoomerang = new Boomerang(playerPos, velocity);
 			newBoomerang->Initialize();
 			boomerangs_.push_back(newBoomerang);
+
+			audio_->PlayWave(soundHandleBoomerangShot_);
 			boomerangSpawnTimer_ = 0;
 		}
 	}
@@ -328,6 +351,8 @@ void GameLogic::Update() {
 					newBullet->SetDamage(minion->GetDamage() + player_->GetMinionLevel() / 2);
 					newBullet->Initialize();
 					bullets_.push_back(newBullet);
+
+					audio_->PlayWave(soundHandleMinionShot_);
 				}
 				minion->ResetAttackTimer();
 			}
@@ -368,6 +393,8 @@ void GameLogic::Update() {
 				Missile* newMissile = new Missile(playerPos, targetPos);
 				newMissile->Initialize();
 				missiles_.push_back(newMissile);
+
+				audio_->PlayWave(soundHandleMissileShot_);
 			}
 			missileSpawnTimer_ = 0;
 		}
@@ -436,6 +463,9 @@ void GameLogic::Update() {
 	for (auto it = enemies_.rbegin(); it != enemies_.rend();) {
 		Enemy* enemy = *it;
 		if (enemy->IsDead()) {
+
+			audio_->PlayWave(soundHandleEnemyDie_);
+
 			Vector3 dropPosition = enemy->GetPosition();
 			int dropCount = distCount1(engine);
 			for (int i = 0; i < dropCount; ++i) {
@@ -453,6 +483,9 @@ void GameLogic::Update() {
 	for (auto it = enemies2_.rbegin(); it != enemies2_.rend();) {
 		Enemy2* enemy2 = *it;
 		if (enemy2->IsDead()) {
+
+			audio_->PlayWave(soundHandleEnemyDie_);
+
 			Vector3 dropPosition = enemy2->GetPosition();
 			int dropCount = kEnemy2DropCount;
 			for (int i = 0; i < dropCount; ++i) {
@@ -534,6 +567,8 @@ void GameLogic::CheckAllCollisions() {
 		float distance = Math::Length(diff);
 		if (distance <= playerBodyRadius + enemyRadius) {
 			player_->TakeDamage(1);
+
+			audio_->PlayWave(soundHandleDamage_);
 		}
 	}
 
@@ -601,6 +636,9 @@ void GameLogic::CheckAllCollisions() {
 		float wineRadius = wine->GetRadius();
 		if (Math::Length(winePos - playerPos) <= playerBodyRadius + wineRadius) {
 			player_->Heal(wine->GetHealAmount());
+
+			audio_->PlayWave(soundHandleHeal_);
+
 			wine->Die();
 			delete wine;
 			itW = wines_.erase(itW);
@@ -784,13 +822,20 @@ void GameLogic::UpdateSkillSelection() {
 	// 上キー/下キーで選択肢を移動
 	if (input->TriggerKey(DIK_W) || input->TriggerKey(DIK_UP)) {
 		selectedSkillIndex_ = (selectedSkillIndex_ - 1 + optionCount) % optionCount;
+
+		audio_->PlayWave(soundHandleSelectCursor_);
 	}
 	if (input->TriggerKey(DIK_S) || input->TriggerKey(DIK_DOWN)) {
 		selectedSkillIndex_ = (selectedSkillIndex_ + 1) % optionCount;
+
+		audio_->PlayWave(soundHandleSelectCursor_);
 	}
 
 	// 決定キー (スペースキーやエンターキー) でスキルを適用し、ゲームを再開
 	if (input->TriggerKey(DIK_SPACE) || input->TriggerKey(DIK_RETURN)) {
+
+		audio_->PlayWave(soundHandleSkillDecide_);
+
 		ApplySkill(currentSkillOptions_[selectedSkillIndex_]);
 		isLevelUpPending_ = false;
 
@@ -803,6 +848,9 @@ void GameLogic::UpdateSkillSelection() {
 // GameLogic::ApplySkill (スキル適用処理)
 // ----------------------------------------------------
 void GameLogic::ApplySkill(SkillType skill) {
+
+	audio_->PlayWave(soundHandleLevelUp_);
+
 	switch (skill) {
 	case SkillType::kBook: {
 		int newLevel = player_->GetBookLevel() + 1;
@@ -815,6 +863,8 @@ void GameLogic::ApplySkill(SkillType skill) {
 			Book* newBook = new Book();
 			newBook->Initialize();
 			books_.push_back(newBook);
+
+			audio_->PlayWave(soundHandleBookSpawn_);
 		}
 	} break;
 	case SkillType::kBullet: {
@@ -823,6 +873,8 @@ void GameLogic::ApplySkill(SkillType skill) {
 	} break;
 	case SkillType::kHeart:
 		player_->Heal(30);
+
+		audio_->PlayWave(soundHandleHeal_);
 		break;
 	case SkillType::kWine: {
 		int newLevel = player_->GetWineLevel() + 1;

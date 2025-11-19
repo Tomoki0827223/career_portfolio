@@ -103,10 +103,16 @@ void GameScene::Update() {
 		player_->Die();
 	}
 
-	// ゲームオーバー中の処理 (GameSceneに残す)
-	if (isGameOver_) {
-		if (player_->IsDead() && player_->GetDeadTimer() > player_->GetMaxDeadTime()) {
-			// シーン遷移ロジック
+	if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_K) && !isGameClear_) {
+		isGameClear_ = true;
+	}
+
+	// ゲームオーバー中またはゲームクリア中はメインロジックをスキップ
+	if (isGameOver_ || isGameClear_) { // ★修正: isGameClear_のチェックを追加
+		if (isGameOver_) {
+			if (player_->IsDead() && player_->GetDeadTimer() > player_->GetMaxDeadTime()) {
+				// シーン遷移ロジック
+			}
 		}
 		return;
 	}

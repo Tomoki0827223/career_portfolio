@@ -41,6 +41,11 @@ public:
 	// ★追加: ゲームオーバーフラグをリセットするためのpublicメソッド
 	void ResetGameOverFlag() { isGameOver_ = false; }
 
+	// ★★★ 追加: ゲームクリアフラグ ★★★
+	bool IsGameClear() const { return isGameClear_; }
+	// ★★★ 追加: ゲームクリアフラグをリセットするためのpublicメソッド ★★★
+	void ResetGameClearFlag() { isGameClear_ = false; }
+
 private:
 	uint32_t textureHandle_ = 0;
 
@@ -93,6 +98,8 @@ private:
 
 	// ゲームオーバーフラグ (GameSceneに残す - シーン遷移制御のため)
 	bool isGameOver_ = false;
+
+	bool isGameClear_ = false;
 
 	// スキル選択画面用スプライト (GameSceneに残す - 描画用UI要素)
 	KamataEngine::Sprite* skillScreenBackground_ = nullptr; // 半透明の背景

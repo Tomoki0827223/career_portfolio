@@ -14,6 +14,7 @@
 #include "Player.h"
 #include "Stage.h"
 #include "Wine.h"
+#include "Particle.h"
 // ★★★ GameLogicの定義をインクルード ★★★
 #include "GameLogic.h"
 #include "math/MathUtility.h"
@@ -23,9 +24,6 @@
 
 
 using namespace KamataEngine;
-
-// ★ レベルアップ後のスキル選択肢の定義はGameLogic.hへ移動 ★
-// enum class SkillType { ... }; // 削除
 
 class GameScene {
 public:
@@ -40,6 +38,8 @@ public:
 	bool IsGameOver() const { return isGameOver_; }
 	// ★追加: ゲームオーバーフラグをリセットするためのpublicメソッド
 	void ResetGameOverFlag() { isGameOver_ = false; }
+
+	void ParticleBorn(Vector3 position);
 
 private:
 	uint32_t textureHandle_ = 0;
@@ -111,4 +111,13 @@ private:
 	void DrawEXPBar();
 	// 敵のランダム生成関数、Wineのランダム生成関数 (GameLogicへ移動したため削除)
 	// スキル関連関数 (GameLogicへ移動したため削除)
+
+	// 3Dモデルの生成
+	Model* modelParticle_ = nullptr;
+	// パーティクル
+	Particle* particle_ = nullptr;
+	// ワールド変形
+	WorldTransform worldTransform_;
+
+	std::list<Particle*> particles_; // パーティクルのリスト
 };

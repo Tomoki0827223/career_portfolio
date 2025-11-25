@@ -1,6 +1,11 @@
 #include "GameScene.h"
 #include <random>
 
+
+std::random_device seedGenerator;
+std::mt19937 randomEngine(seedGenerator()); // メルセンヌツイスタの初期化
+std::uniform_real_distribution<float> distribution(-1.0f, 1.0f);
+
 GameScene::~GameScene() {
 	delete gameLogic_; // ★★★ GameLogicの解放 ★★★
 	delete stage_;
@@ -21,6 +26,7 @@ GameScene::~GameScene() {
 	for (int i = 0; i < 3; ++i) {
 		delete skillOptionSprites_[i];
 	}
+
 }
 
 void GameScene::Initialize() {
@@ -36,6 +42,8 @@ void GameScene::Initialize() {
 	player_ = new Player();
 	player_->Initialize();
 	playerModel_ = Model::CreateFromOBJ("block_4");
+
+	modelParticle_ = Model::CreateFromOBJ("block_4");
 
 	font_ = new BIt_Map_Font();
 	font_->Initialize();
@@ -113,6 +121,12 @@ void GameScene::Update() {
 
 	player_->SetIsSkillSelecting(gameLogic_->IsLevelUpPending()); //
 
+	// ★★★ 追記: テストとしてスペースキーでパーティクルを生成 ★★★
+	if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_SPACE)) {
+		// プレイヤーの位置を取得し、その位置でパーティクルを発生させる
+		ParticleBorn(player_->GetPosition());
+	}
+
 	// ------------------------------------
 	// GameLogicの更新処理
 	// ------------------------------------
@@ -126,6 +140,16 @@ void GameScene::Update() {
 	stage_->Update();
 	// ★★★ メインのゲームロジックと衝突判定を呼び出す ★★★
 	gameLogic_->Update();
+
+	// ★★★ 追記: パーティクルの更新処理 ★★★
+	particles_.remove_if([](Particle* particle) {
+		particle->Update();
+		if (particle->IsFinished()) {
+			delete particle;
+			return true;
+		}
+		return false;
+	});
 }
 
 /**
@@ -154,6 +178,10 @@ void GameScene::Draw() {
 
 	// ★★★ GameLogicが管理するオブジェクトの描画 ★★★
 	gameLogic_->DrawObjects(camera_);
+
+	for (Particle* particle : particles_) {
+		particle->Draw(&camera_); // camera_はオブジェクトなのでアドレスを渡す
+	}
 
 	// 3. 3D描画の終了
 	Model::PostDraw();
@@ -197,4 +225,21 @@ void GameScene::Draw() {
 	// 4. 描画コマンドの実行
 	imGuiManager->Draw();
 #endif // _DEBUG
+}
+
+void GameScene::ParticleBorn(Vector3 position) {
+
+	for (int i = 0; i < 50; i++) {
+		Particle* particle = new Particle();
+		Vector3 velocity = {distribution(randomEngine), distribution(randomEngine), 0}; // ランダムな速度を生成
+		// Normalize(velocity); // 古い記述
+		MathUtility::Normalize(velocity); // ★修正: スコープを明示
+
+		// あいまいだった演算子の行は、using namespaceを削除したことで解消されます。
+		velocity = velocity * distribution(randomEngine); // ランダムな速度を生成
+		velocity = velocity * 1.0f;                       // スピードを調整
+
+		particle->Initialize(modelParticle_, position, velocity);
+		particles_.push_back(particle);
+	}
 }

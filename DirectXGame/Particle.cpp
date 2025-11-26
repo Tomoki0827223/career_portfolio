@@ -3,8 +3,9 @@
 
 using namespace MathUtility;
 
-void Particle::Initialize(Model* model, Vector3 position, Vector3 velocity) {
-	//assert(model);
+// ★修正: damage と isWineParticle を引数に追加
+void Particle::Initialize(Model* model, Vector3 position, Vector3 velocity, int damage, bool isWineParticle) {
+	// assert(model);
 	model_ = model;
 	velocity_ = velocity; // 速度を初期化
 	worldTransform_.Initialize();
@@ -15,6 +16,13 @@ void Particle::Initialize(Model* model, Vector3 position, Vector3 velocity) {
 
 	objectcolor_.Initialize();
 	color_ = {1, 1, 0, 1}; // RGBA形式で色を指定
+
+	// ★追記
+	damage_ = damage;
+	isWineParticle_ = isWineParticle;
+	if (isWineParticle_) {
+		color_ = {0.5f, 0.0f, 0.5f, 1.0f}; // ワイン色（仮）
+	}
 }
 
 void Particle::Update() {

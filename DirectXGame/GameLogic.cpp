@@ -15,8 +15,9 @@ const float kScreenDamageRadius = 20.0f; // プレイヤー中心から15.0f以�
 // GameScene.cppから移動
 const float PI = 3.14159265358979323846f;
 
-GameLogic::GameLogic(Player* player, BIt_Map_Font* font, KamataEngine::Sprite* hpBar, KamataEngine::Sprite* hpBarBase, KamataEngine::Sprite* expBar, KamataEngine::Sprite* expBarBase)
-    : player_(player), font_(font), hpBar_(hpBar), hpBarBase_(hpBarBase), expBar_(expBar), expBarBase_(expBarBase) {
+GameLogic::GameLogic(
+    Player* player, BIt_Map_Font* font, KamataEngine::Sprite* hpBar, KamataEngine::Sprite* hpBarBase, KamataEngine::Sprite* expBar, KamataEngine::Sprite* expBarBase, Model* wineParticleModel) // ★修正
+    : player_(player), font_(font), hpBar_(hpBar), hpBarBase_(hpBarBase), expBar_(expBar), expBarBase_(expBarBase), wineParticleModel_(wineParticleModel) {
 
 	// Audioインスタンスの取得とサウンドのロードをGameLogicで行う
 	audio_ = KamataEngine::Audio::GetInstance(); //
@@ -592,9 +593,37 @@ void GameLogic::Update() {
 	for (Experience* exp : experiences_) {
 		exp->Update(playerPos);
 	}
+	// ★★★ 追記: Wineアイテムの更新とパーティクル生成 ★★★
 	for (Wine* wine : wines_) {
 		wine->Update(playerPos);
+
+		// Wineが存在する場合、一定確率でパーティクルを投げる
+		if (!wine->IsDead()) {
+			std::uniform_real_distribution<float> probDist(0.0f, 1.0f);
+			// Wineレベルに応じてパーティクル発生率を決定 (仮: レベル1で1/60、レベル最大で1/10)
+			float spawnProb = (float)player_->GetWineLevel() / 60.0f;
+			if (probDist(engine) < spawnProb) {
+				// Wineの位置からランダムな方向に投げる（プレイヤー位置へのホーミングはしない）
+				std::uniform_real_distribution<float> angleDist(0.0f, PI * 2.0f);
+				float randomAngle = angleDist(engine);
+				Vector3 velocity;
+				velocity.x = std::cos(randomAngle);
+				velocity.y = std::sin(randomAngle);
+
+				// 速度を調整
+				velocity = Math::Normalize(velocity) * 1.5f;
+
+				Particle* newParticle = new Particle();
+				// ダメージは Wine レベルに応じて設定
+				int particleDamage = 5 + player_->GetWineLevel() * 2;
+
+				// Wine Particle として初期化し、newWineParticles_ に追加
+				newParticle->Initialize(wineParticleModel_, wine->GetPosition(), velocity, particleDamage, true);
+				newWineParticles_.push_back(newParticle);
+			}
+		}
 	}
+	// ★★★ 追記ここまで ★★★
 
 	// GameLogic.cpp の Update() 内 - 敵弾の削除処理
 	// ★ 追記: 敵弾の削除処理 ★
@@ -1021,37 +1050,62 @@ void GameLogic::CheckAllCollisions() {
 		}
 	}
 
-	// 8. ★ 追記: 敵弾 vs プレイヤー の衝突判定 ★
-	for (auto itEB = enemyBullets_.begin(); itEB != enemyBullets_.end();) {
-		EnemyBullet* enemyBullet = *itEB;
-		if (enemyBullet->IsDead() || player_->GetCurrentHp() <= 0) {
-			++itEB;
+
+	// 8. ★ 追記: Wine Particle vs 敵 の衝突判定 ★
+	// GameSceneに渡す前の newWineParticles_ リストに対して判定を行う
+	for (auto itP = newWineParticles_.begin(); itP != newWineParticles_.end();) {
+		Particle* particle = *itP;
+		// Wine Particle でなければスキップ
+		if (!particle->IsWineParticle()) {
+			++itP;
 			continue;
 		}
 
-		Vector3 enemyBulletPos = enemyBullet->GetPosition();
-		float enemyBulletRadius = enemyBullet->GetRadius();
-		Vector3 diff = enemyBulletPos - playerPos;
-		float distance = Math::Length(diff);
+		// ★★★ 修正: worldTransform_.translation_ ではなく GetPosition() を使用する ★★★
+		Vector3 particlePos = particle->GetPosition();
+		// ★★★ 修正箇所ここまで ★★★
 
-		if (distance <= playerBodyRadius + enemyBulletRadius) {
-			// 衝突! プレイヤーにダメージを与え、弾を削除
-			int baseDamage = enemyBullet->GetDamage();
-			int damageToTake = baseDamage - player_->GetDefense(); // 弾のダメージから防御力を引く
+		float particleRadius = particle->GetRadius();
+		int particleDamage = particle->GetDamage();
+		bool hit = false;
 
-			if (damageToTake < 1) { // ダメージは最低1 (あるいは0) に設定
-				damageToTake = 1;   // 常に最低1ダメージは受けるようにする（必要に応じて0に調整）
+		auto checkParticleCollision = [&](auto& enemies_list) -> bool {
+			for (auto enemy : enemies_list) {
+				if (enemy->IsDead())
+					continue;
+				Vector3 enemyPos = enemy->GetPosition();
+
+				Vector3 diffFromPlayer = enemyPos - playerPos;
+				// 画面外チェック (他の攻撃と同様)
+				if (Math::Length(diffFromPlayer) > kScreenDamageRadius) {
+					continue;
+				}
+
+				float enemyRadius = enemy->GetRadius();
+				if (Math::Length(enemyPos - particlePos) <= particleRadius + enemyRadius) {
+					enemy->TakeDamage(particleDamage);
+					particle->isFinished_ = true; // 衝突したらパーティクルを終了させる
+					return true;
+				}
 			}
+			return false;
+		};
 
-			player_->TakeDamage(damageToTake);    // ★ 修正: 軽減されたダメージを使用 ★
-			audio_->PlayWave(soundHandleDamage_); // ダメージ音 (既存のものを流用)
+		// 全ての敵タイプに対して判定
+		if (checkParticleCollision(enemies_) || checkParticleCollision(enemies2_) || checkParticleCollision(enemies3_) || checkParticleCollision(enemies4_) ||
+		    checkParticleCollision(enemies5_)) {
+			hit = true;
+		}
 
-			enemyBullet->SetIsDead(true); // 弾を削除リストに入れる
-			itEB = enemyBullets_.erase(itEB);
+		if (hit) {
+			// 衝突によりisFinished_ = true になったパーティクルを削除
+			delete particle;
+			itP = newWineParticles_.erase(itP);
 		} else {
-			++itEB;
+			++itP;
 		}
 	}
+	// ★ 追記ここまで ★
 }
 
 // ----------------------------------------------------

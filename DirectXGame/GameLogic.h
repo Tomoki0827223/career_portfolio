@@ -22,6 +22,7 @@
 #include <cmath>  // ★ 追加: std::pow 用
 #include "2d/ImGuiManager.h"
 #include "EnemyBullet.h"
+#include "Particle.h"
 
 #include "audio/Audio.h"
 
@@ -41,7 +42,9 @@ enum class SkillType {
 
 class GameLogic {
 public:
-	GameLogic(Player* player, BIt_Map_Font* font, KamataEngine::Sprite* hpBar, KamataEngine::Sprite* hpBarBase, KamataEngine::Sprite* expBar, KamataEngine::Sprite* expBarBase);
+	// ★修正: コンストラクタに Wine Particle モデルを追加
+	GameLogic(
+	    Player* player, BIt_Map_Font* font, KamataEngine::Sprite* hpBar, KamataEngine::Sprite* hpBarBase, KamataEngine::Sprite* expBar, KamataEngine::Sprite* expBarBase, Model* wineParticleModel);
 	~GameLogic();
 
 	void Initialize();
@@ -57,6 +60,9 @@ public:
 	// スキル選択画面の制御処理 (GameSceneからUI更新のため呼び出される)
 	void UpdateSkillSelection();
 	void DrawSkillSelectionUI(KamataEngine::Sprite* skillCursorSprite, KamataEngine::Sprite* skillOptionSprites[], KamataEngine::Sprite* skillScreenBackground);
+
+	// ★追記: GameSceneに Wine Particle を渡すためのゲッター
+	std::list<Particle*> GetNewWineParticles() { return std::move(newWineParticles_); }
 
 #ifdef _DEBUG
 	void DrawImGui();
@@ -82,6 +88,10 @@ private:
 	std::vector<Enemy5*> enemies5_;
 	std::vector<EnemyBullet*> enemyBullets_;
 	std::vector<Experience*> experiences_;
+
+	// ★追記: Wine Particle の管理
+	std::list<Particle*> newWineParticles_; // GameSceneに渡すための新しいWine Particle
+	Model* wineParticleModel_ = nullptr;    // Wine Particle のモデル
 
 	// 依存オブジェクト
 	Player* player_ = nullptr;

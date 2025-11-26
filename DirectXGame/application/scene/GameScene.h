@@ -112,12 +112,16 @@ private:
 	// 敵のランダム生成関数、Wineのランダム生成関数 (GameLogicへ移動したため削除)
 	// スキル関連関数 (GameLogicへ移動したため削除)
 
-	// 3Dモデルの生成
-	Model* modelParticle_ = nullptr;
-	// パーティクル
-	Particle* particle_ = nullptr;
+	
 	// ワールド変形
 	WorldTransform worldTransform_;
+
+	// 3Dモデルの生成
+	Model* modelParticle_ = nullptr;
+	// ★追記: Wine Particle 用のモデル
+	Model* modelWineParticle_ = nullptr;
+	// パーティクル
+	Particle* particle_ = nullptr;
 
 	std::list<Particle*> particles_; // パーティクルのリスト
 };

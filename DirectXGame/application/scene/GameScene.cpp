@@ -44,6 +44,8 @@ void GameScene::Initialize() {
 	playerModel_ = Model::CreateFromOBJ("block_4");
 
 	modelParticle_ = Model::CreateFromOBJ("block_4");
+	// ★追記: Wine Particle 用のモデルロード
+	modelWineParticle_ = Model::CreateFromOBJ("wine");
 
 	font_ = new BIt_Map_Font();
 	font_->Initialize();
@@ -94,7 +96,7 @@ void GameScene::Initialize() {
 
 	// ★★★ GameLogicの生成と初期化 ★★★
 	// GameLogicに依存オブジェクト (Player, Font, HPBar, EXPBar) を渡す
-	gameLogic_ = new GameLogic(player_, font_, hpBar_, hpBarBase_, expBar_, expBarBase_); // ★ 修正: EXPバーを渡す ★
+	gameLogic_ = new GameLogic(player_, font_, hpBar_, hpBarBase_, expBar_, expBarBase_, modelWineParticle_);
 	gameLogic_->Initialize();
 }
 
@@ -121,12 +123,6 @@ void GameScene::Update() {
 
 	player_->SetIsSkillSelecting(gameLogic_->IsLevelUpPending()); //
 
-	// ★★★ 追記: テストとしてスペースキーでパーティクルを生成 ★★★
-	if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_SPACE)) {
-		// プレイヤーの位置を取得し、その位置でパーティクルを発生させる
-		ParticleBorn(player_->GetPosition());
-	}
-
 	// ------------------------------------
 	// GameLogicの更新処理
 	// ------------------------------------
@@ -140,6 +136,12 @@ void GameScene::Update() {
 	stage_->Update();
 	// ★★★ メインのゲームロジックと衝突判定を呼び出す ★★★
 	gameLogic_->Update();
+	
+	// ★★★ 追記: GameLogicから発生した Wine パーティクルの受け取りと統合 ★★★
+	// GameLogicからWineパーティクルリストを取得して統合
+	std::list<Particle*> newWineParticles = gameLogic_->GetNewWineParticles();
+	particles_.splice(particles_.end(), newWineParticles);
+	// ★★★ 追記ここまで ★★★
 
 	// ★★★ 追記: パーティクルの更新処理 ★★★
 	particles_.remove_if([](Particle* particle) {
@@ -239,7 +241,8 @@ void GameScene::ParticleBorn(Vector3 position) {
 		velocity = velocity * distribution(randomEngine); // ランダムな速度を生成
 		velocity = velocity * 1.0f;                       // スピードを調整
 
-		particle->Initialize(modelParticle_, position, velocity);
+		// ★修正: ダメージを0、Wine Particle フラグを false で初期化
+		particle->Initialize(modelParticle_, position, velocity, 0, false);
 		particles_.push_back(particle);
 	}
 }

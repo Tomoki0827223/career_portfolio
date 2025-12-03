@@ -160,7 +160,7 @@ void GameLogic::Initialize() {
 
 #ifdef _DEBUG
 	// ユーザーが指定した初期サイズをここで設定します
-	iconSize_ = {256.0f, 222.0f};
+	iconSize_ = {400.0f, 108.0f};
 #endif
 
 	// ★★★ Audioの初期化とサウンドロード ★★★

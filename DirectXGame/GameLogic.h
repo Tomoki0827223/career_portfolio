@@ -145,7 +145,7 @@ private:
 	KamataEngine::Sprite* skillIconSprites_[3] = {};
 
 #ifdef _DEBUG
-	KamataEngine::Vector2 iconSize_ = {64.0f, 64.0f};
+	KamataEngine::Vector2 iconSize_ = {400.0f, 108.0f};
 #endif
 	
 	// 新しいテクスチャのハンドル

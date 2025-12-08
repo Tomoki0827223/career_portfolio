@@ -3,13 +3,18 @@
 #include <algorithm>
 #include <iostream>
 
-void CameraController::Initialize() { camera_.Initialize(); }
+void CameraController::Initialize() {
+	viewProjection_.Initialize();
+	// ★修正点: 初期化をVector3コンストラクタを使用して行う (C3079対策)
+	targetOffset_ = Vector3(0.0f, 0.0f, -15.0f);
+}
 
 void CameraController::Update() {
 	if (!target_) {
 		return;
 	}
 
+	// WorldTransformとVector3の型がPlayer.hで正しく定義されていることが前提
 	const WorldTransform& targetWorldTransform = target_->GetWorldTransform();
 	const Vector3& targetVelocity = target_->GetVelocity();
 
@@ -25,19 +30,19 @@ void CameraController::Update() {
 	targetPosition_.y = (std::min)(targetPosition_.y, targetWorldTransform.translation_.y + margin_.top);
 
 	// 座標補間によりゆったり追従
-	camera_.translation_ = Lerp(camera_.translation_, targetPosition_, kInterpolationRate);
+	viewProjection_.translation_ = Lerp(viewProjection_.translation_, targetPosition_, kInterpolationRate); // Lerpの呼び出しに問題がないことを確認
 
 	// 移動範囲制限
-	camera_.translation_.x = (std::max)(camera_.translation_.x, movableArea_.left);
-	camera_.translation_.x = (std::min)(camera_.translation_.x, movableArea_.right);
-	camera_.translation_.y = (std::max)(camera_.translation_.y, movableArea_.bottom);
-	camera_.translation_.y = (std::min)(camera_.translation_.y, movableArea_.top);
+	viewProjection_.translation_.x = (std::max)(viewProjection_.translation_.x, movableArea_.left);
+	viewProjection_.translation_.x = (std::min)(viewProjection_.translation_.x, movableArea_.right);
+	viewProjection_.translation_.y = (std::max)(viewProjection_.translation_.y, movableArea_.bottom);
+	viewProjection_.translation_.y = (std::min)(viewProjection_.translation_.y, movableArea_.top);
 
 	// 行列を更新する
-	camera_.UpdateMatrix();
+	viewProjection_.UpdateMatrix();
 
 	// デバッグ出力
-	std::cerr << "Camera Position: (" << camera_.translation_.x << ", " << camera_.translation_.y << ", " << camera_.translation_.z << ")" << std::endl;
+	std::cerr << "Camera Position: (" << viewProjection_.translation_.x << ", " << viewProjection_.translation_.y << ", " << viewProjection_.translation_.z << ")" << std::endl;
 }
 
 void CameraController::Reset() {
@@ -47,9 +52,9 @@ void CameraController::Reset() {
 
 	const WorldTransform& targetWorldTransform = target_->GetWorldTransform();
 
-	camera_.translation_.x = targetWorldTransform.translation_.x + targetOffset_.x;
-	camera_.translation_.y = targetWorldTransform.translation_.y + targetOffset_.y;
-	camera_.translation_.z = targetWorldTransform.translation_.z + targetOffset_.z;
+	viewProjection_.translation_.x = targetWorldTransform.translation_.x + targetOffset_.x;
+	viewProjection_.translation_.y = targetWorldTransform.translation_.y + targetOffset_.y;
+	viewProjection_.translation_.z = targetWorldTransform.translation_.z + targetOffset_.z;
 
-	camera_.UpdateMatrix();
+	viewProjection_.UpdateMatrix();
 }

@@ -16,6 +16,8 @@ public:
 
 	// プレイヤーの位置を取得するためのgetter
 	Vector3 GetPosition() const { return worldTransform.translation_; }
+	const WorldTransform& GetWorldTransform() const { return worldTransform_; } // メンバ変数名に合わせて適宜修正
+	const Vector3& GetVelocity() const { return velocity_; }                    // メンバ変数名に合わせて適宜修正
 
 	// HP関連 (追加)
 	int GetCurrentHp() const { return currentHp_; }       // 現在HPを取得
@@ -104,4 +106,7 @@ private:
 	int boomerangLevel_ = 0;
 	int minionLevel_ = 0;
 	int missileLevel_ = 0;
+
+	WorldTransform worldTransform_; // これらのメンバ変数がprivateにあると仮定
+	Vector3 velocity_;              // これらのメンバ変数がprivateにあると仮定
 };

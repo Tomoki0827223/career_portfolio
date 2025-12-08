@@ -1,8 +1,8 @@
 #pragma once
 
-#include "math/MathUtility.h"
+#include "3d/Camera.h"
+#include "math/MathUtility.h" // Lerpのために必要
 #include "math/Vector3.h"
-#include "3D/Camera.h"
 
 class Player;
 
@@ -16,11 +16,12 @@ public:
 	};
 
 	// 座標補間割合
-	static inline const float kInterpolationRate = 0.1f; // 補間率を設定
-	static inline const float kVelocityBias = 30.0f;     // 速度バイアス
+	static inline const float kInterpolationRate = 0.1f;
+	static inline const float kVelocityBias = 30.0f;
 
-	Rect movableArea_ = {0, 100, 0, 100};
-	Rect margin_ = {0, 0, 0, 0}; // 各方向へのマージンを追加
+	// インクラス初期化をfloat型で明示し、互換性を高める
+	Rect movableArea_ = {0.0f, 100.0f, 0.0f, 100.0f};
+	Rect margin_ = {0.0f, 0.0f, 0.0f, 0.0f};
 	Player* target_ = nullptr;
 
 	void Initialize();
@@ -28,13 +29,15 @@ public:
 	void Reset();
 
 	void SetMovableArea(const Rect& area) { movableArea_ = area; }
-	void SetMargin(const Rect& margin) { margin_ = margin; } // マージン設定メソッドを追加
+	void SetMargin(const Rect& margin) { margin_ = margin; }
 	void setTarget(Player* target) { target_ = target; }
 
-	const Camera& GetViewProjection() const { return camera_; }
+	// ViewProjectionを返すメソッド
+	const ViewProjection& GetViewProjection() const { return viewProjection_; }
 
 private:
-	Camera camera_;
-	Vector3 targetOffset_ = {0, 0, -15.0f};
-	Vector3 targetPosition_; // 目標座標を追加
+	ViewProjection viewProjection_;
+	// ★修正点: targetOffset_の初期化を削除し、宣言のみにする
+	Vector3 targetOffset_;
+	Vector3 targetPosition_;
 };

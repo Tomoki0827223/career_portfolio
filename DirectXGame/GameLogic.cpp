@@ -30,60 +30,54 @@ GameLogic::GameLogic(Player* player, BIt_Map_Font* font, KamataEngine::Sprite* h
 }
 
 GameLogic::~GameLogic() {
-	// 全ての動的オブジェクトの解放
-	for (Experience* exp : experiences_) {
-		delete exp;
-	}
-	experiences_.clear();
-	for (Enemy* enemy : enemies_) {
-		delete enemy;
-	}
-	enemies_.clear();
-	for (Enemy2* enemy2 : enemies2_) {
-		delete enemy2;
-	}
-	enemies2_.clear();
-	for (Enemy3* enemy3 : enemies3_) {
-		delete enemy3;
-	}
-	enemies3_.clear();
-	for (Enemy4* enemy4 : enemies4_) { // ★ 追記 ★
-		delete enemy4;
-	}
-	enemies4_.clear(); // ★ 追記 ★
-	for (Enemy5* enemy5 : enemies5_) {
-		delete enemy5;
-	}
-	enemies5_.clear();
-	for (EnemyBullet* enemyBullet : enemyBullets_) { // ★ 追記: 敵弾の解放 ★
-		delete enemyBullet;
-	}
-	enemyBullets_.clear(); // ★ 追記: 敵弾の解放 ★
-	for (Bullet* bullet : bullets_) {
-		delete bullet;
-	}
-	bullets_.clear();
-	for (Book* book : books_) {
-		delete book;
+	// 1. リスト内の全オブジェクトを解放
+	for (Book* obj : books_) {
+		delete obj;
 	}
 	books_.clear();
-	for (Wine* wine : wines_) {
-		delete wine;
+	for (Bullet* obj : bullets_) {
+		delete obj;
 	}
-	wines_.clear();
-	for (Boomerang* boomerang : boomerangs_) {
-		delete boomerang;
+	bullets_.clear();
+	for (Boomerang* obj : boomerangs_) {
+		delete obj;
 	}
 	boomerangs_.clear();
-	for (Minion* minion : minions_) {
-		delete minion;
+	for (Minion* obj : minions_) {
+		delete obj;
 	}
 	minions_.clear();
-	for (Missile* missile : missiles_) {
-		delete missile;
+	for (Missile* obj : missiles_) {
+		delete obj;
 	}
 	missiles_.clear();
+	for (Wine* obj : wines_) {
+		delete obj;
+	}
+	wines_.clear();
+	for (Enemy* obj : enemies_) {
+		delete obj;
+	}
+	enemies_.clear();
+	for (EnemyBullet* obj : enemyBullets_) {
+		delete obj;
+	}
+	enemyBullets_.clear();
+	for (Experience* obj : experiences_) {
+		delete obj;
+	}
+	experiences_.clear();
 
+	//// 2. GameLogicが所有するモデルの解放 (Model::CreateFromOBJ()がnewで生成する場合)
+	//delete modelBook_;
+	//delete modelBullet_;
+	//delete modelBoomerang_;
+	//delete modelMinion_;
+	//delete modelMissile_;
+	//delete modelExperience_;
+	//delete modelWine_;
+
+	// 3. GameLogicが所有するUI要素の解放
 	for (int i = 0; i < 3; ++i) {
 		delete skillIconSprites_[i];
 	}

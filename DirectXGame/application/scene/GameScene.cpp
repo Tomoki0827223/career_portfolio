@@ -26,7 +26,12 @@ GameScene::~GameScene() {
 	for (int i = 0; i < 3; ++i) {
 		delete skillOptionSprites_[i];
 	}
-
+	
+	// ★★★ 追記: 残っているパーティクルの解放 ★★★
+	for (Particle* particle : particles_) {
+		delete particle;
+	}
+	particles_.clear(); // リスト自体をクリア
 }
 
 void GameScene::Initialize() {

@@ -87,6 +87,7 @@ void GameScene::Initialize() {
 	const KamataEngine::Vector2 kOptionSize = {400.0f, 100.0f};
 	const KamataEngine::Vector2 kBasePos = {440.0f, 180.0f};
 
+
 	for (int i = 0; i < 3; ++i) {
 		skillOptionSprites_[i] = KamataEngine::Sprite::Create(whiteTextureHandle_, {kBasePos.x, kBasePos.y + i * 120.0f});
 		skillOptionSprites_[i]->SetSize(kOptionSize);

@@ -179,6 +179,7 @@
     <ClCompile Include="Minion.cpp" />
     <ClCompile Include="Missile.cpp" />
     <ClCompile Include="Particle.cpp" />
+    <ClCompile Include="PlayerFollowCamera.cpp" />
     <ClCompile Include="Wine.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -302,6 +303,7 @@
     <ClInclude Include="Minion.h" />
     <ClInclude Include="Missile.h" />
     <ClInclude Include="Particle.h" />
+    <ClInclude Include="PlayerFollowCamera.h" />
     <ClInclude Include="Wine.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

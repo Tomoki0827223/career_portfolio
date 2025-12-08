@@ -9,6 +9,10 @@ using namespace KamataEngine;
 #define M_PI 3.14159265358979323846f
 #endif
 
+// ★★★ 追記: マップ境界線の定義 (3860x3860 / 2.0f = 1930.0f) ★★★
+const float kMapHalfSize = 3860.0f / 2.0f; // 1930.0f
+// ----------------------------------------------------
+
 Player::~Player() {
 
 	delete modelPlayer_;
@@ -87,6 +91,22 @@ void Player::Update() {
 		worldTransform.translation_.x += speed;
 		moveVector.x += 1.0f; // 方向ベクトルを記録
 	}
+
+	// ★★★ 追記: プレイヤーの移動制限（境界線チェック）ロジック ★★★
+	// X軸の制限
+	if (worldTransform.translation_.x < -kMapHalfSize) {
+		worldTransform.translation_.x = -kMapHalfSize;
+	} else if (worldTransform.translation_.x > kMapHalfSize) {
+		worldTransform.translation_.x = kMapHalfSize;
+	}
+
+	// Y軸の制限
+	if (worldTransform.translation_.y < -kMapHalfSize) {
+		worldTransform.translation_.y = -kMapHalfSize;
+	} else if (worldTransform.translation_.y > kMapHalfSize) {
+		worldTransform.translation_.y = kMapHalfSize;
+	}
+	// ------------------------------------------------------------------
 
 	// ★ プレイヤーの旋回処理 (ここから追加) ★
 	// 移動ベクトルがある場合にのみ回転

@@ -16,6 +16,7 @@ GameScene::~GameScene() {
 	delete hpBarBase_;
 	delete hpBar_;
 	delete expBarBase_;
+	delete camera_;
 	delete expBar_;
 	// GameLogicへ移動したリストの解放処理は削除
 
@@ -41,7 +42,8 @@ void GameScene::Initialize() {
 	stage_->Initialize();
 	stage_->Update();
 
-	camera_.Initialize();
+	camera_ = new PlayerFollowCamera();
+	camera_->Initialize(player_);
 	worldTransform.Initialize();
 
 	player_ = new Player();
@@ -107,6 +109,10 @@ void GameScene::Update() {
 
 	// プレイヤーの更新 (GameSceneに残す)
 	player_->Update();
+	if (camera_) {
+		// ★この行が確実に呼ばれていることを確認 ★
+		camera_->Update();
+	}
 
 	// HP/ゲームオーバー判定と処理 (GameSceneに残す)
 	int currentHp = player_->GetCurrentHp();
@@ -186,10 +192,12 @@ void GameScene::Draw() {
 	player_->Draw();
 
 	// ★★★ GameLogicが管理するオブジェクトの描画 ★★★
-	gameLogic_->DrawObjects(camera_);
+	// ★修正: ポインタをデリファレンスして参照を渡す (*camera_)。
+	gameLogic_->DrawObjects(*camera_);
 
 	for (Particle* particle : particles_) {
-		particle->Draw(&camera_); // camera_はオブジェクトなのでアドレスを渡す
+		// ★修正: ポインタ型になった camera_ をそのまま渡す (PlayerFollowCamera* は Camera* に変換可能)。
+		particle->Draw(camera_);
 	}
 
 	// 3. 3D描画の終了

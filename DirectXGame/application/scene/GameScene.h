@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <random>
 #include <vector>
+#include "PlayerFollowCamera.h"
 
 
 using namespace KamataEngine;
@@ -49,7 +50,8 @@ private:
 	// 3Dモデルデータ
 	Model* model_ = nullptr;
 
-	Camera camera_;
+	PlayerFollowCamera* camera_ = nullptr;
+	//Camera camera_;
 
 	WorldTransform worldTransform;
 

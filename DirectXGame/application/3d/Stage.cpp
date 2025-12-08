@@ -22,21 +22,21 @@ void Stage::Initialize() {
 }
 
 void Stage::Update() {
-	// 1枚目
-	Vector2 pos1 = sprite_->GetPosition();
-	pos1.x -= scrollSpeed_;
-	if (pos1.x <= -1280) {
-		pos1.x = 1280 - scrollSpeed_; // 2枚目の右端にピッタリつなげる
-	}
-	sprite_->SetPosition(pos1);
+	//// 1枚目
+	//Vector2 pos1 = sprite_->GetPosition();
+	//pos1.x -= scrollSpeed_;
+	//if (pos1.x <= -1280) {
+	//	pos1.x = 1280 - scrollSpeed_; // 2枚目の右端にピッタリつなげる
+	//}
+	//sprite_->SetPosition(pos1);
 
-	// 2枚目
-	Vector2 pos2 = sprite2_->GetPosition();
-	pos2.x -= scrollSpeed_;
-	if (pos2.x <= -1280) {
-		pos2.x = 1280 - scrollSpeed_;
-	}
-	sprite2_->SetPosition(pos2);
+	//// 2枚目
+	//Vector2 pos2 = sprite2_->GetPosition();
+	//pos2.x -= scrollSpeed_;
+	//if (pos2.x <= -1280) {
+	//	pos2.x = 1280 - scrollSpeed_;
+	//}
+	//sprite2_->SetPosition(pos2);
 }
 
 void Stage::Draw() {

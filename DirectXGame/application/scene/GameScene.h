@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <random>
 #include <vector>
+#include "CameraController.h"
 
 
 using namespace KamataEngine;
@@ -50,6 +51,7 @@ private:
 	Model* model_ = nullptr;
 
 	Camera camera_;
+	CameraController* cameraController_ = nullptr;
 
 	WorldTransform worldTransform;
 

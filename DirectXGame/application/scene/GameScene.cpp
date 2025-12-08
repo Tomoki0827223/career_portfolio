@@ -42,6 +42,15 @@ void GameScene::Initialize() {
 	stage_->Update();
 
 	camera_.Initialize();
+	// カメラコントローラーの初期化とターゲット設定
+	cameraController_ = new CameraController();
+	cameraController_->Initialize();
+	cameraController_->setTarget(player_); // ここでプレイヤーを追従対象に設定
+
+	// カメラの移動可能範囲を 0.0 から 3860.0 に設定
+	CameraController::Rect boundary = {0.0f, 3860.0f, 0.0f, 3860.0f};
+	cameraController_->SetMovableArea(boundary);
+
 	worldTransform.Initialize();
 
 	player_ = new Player();
@@ -108,6 +117,18 @@ void GameScene::Update() {
 
 	// プレイヤーの更新 (GameSceneに残す)
 	player_->Update();
+
+	// プレイヤーのワールド座標に境界線 (3860x3860) の制限を適用
+	const float kBoundaryMin = 0.0f;
+	const float kBoundaryMax = 3860.0f;
+
+	// X座標の制限
+	worldTransform_.translation_.x = (std::max)(worldTransform_.translation_.x, kBoundaryMin);
+	worldTransform_.translation_.x = (std::min)(worldTransform_.translation_.x, kBoundaryMax);
+
+	// Y座標の制限
+	worldTransform_.translation_.y = (std::max)(worldTransform_.translation_.y, kBoundaryMin);
+	worldTransform_.translation_.y = (std::min)(worldTransform_.translation_.y, kBoundaryMax);
 
 	// HP/ゲームオーバー判定と処理 (GameSceneに残す)
 	int currentHp = player_->GetCurrentHp();

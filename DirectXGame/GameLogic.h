@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <random>
 #include <vector>
+#include <list>
 #include <string> // ★ 追加: std::string, std::to_string 用
 #include <cmath>  // ★ 追加: std::pow 用
 #include "2d/ImGuiManager.h"
@@ -58,6 +59,11 @@ public:
 	void UpdateSkillSelection();
 	void DrawSkillSelectionUI(KamataEngine::Sprite* skillCursorSprite, KamataEngine::Sprite* skillOptionSprites[], KamataEngine::Sprite* skillScreenBackground);
 
+	// ★追加: 倒された敵の位置リストを取得する関数
+	std::list<Vector3> GetDeadEnemyPositions() const { return deadEnemyPositions_; }
+	// ★追加: 倒された敵の位置リストをクリアする関数
+	void ClearDeadEnemyPositions() { deadEnemyPositions_.clear(); }
+
 #ifdef _DEBUG
 	void DrawImGui();
 #endif
@@ -68,6 +74,10 @@ public:
 
 
 private:
+
+	// ★追加: 倒された敵の位置を保持するリスト
+	std::list<Vector3> deadEnemyPositions_;
+
 	// GameSceneから移動したオブジェクト管理
 	std::vector<Bullet*> bullets_;
 	std::vector<Book*> books_;

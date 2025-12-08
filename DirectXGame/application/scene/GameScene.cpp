@@ -1,6 +1,6 @@
 #include "GameScene.h"
 #include <random>
-
+#include <list>
 
 std::random_device seedGenerator;
 std::mt19937 randomEngine(seedGenerator()); // メルセンヌツイスタの初期化
@@ -121,11 +121,15 @@ void GameScene::Update() {
 
 	player_->SetIsSkillSelecting(gameLogic_->IsLevelUpPending()); //
 
-	// ★★★ 追記: テストとしてスペースキーでパーティクルを生成 ★★★
-	if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_SPACE)) {
-		// プレイヤーの位置を取得し、その位置でパーティクルを発生させる
-		ParticleBorn(player_->GetPosition());
+
+	// ★★★ 追記: 敵の死亡時パーティクル生成処理 ★★★
+	// GameLogicから倒された敵の位置リストを取得し、パーティクルを生成する
+	std::list<Vector3> deadPositions = gameLogic_->GetDeadEnemyPositions();
+	for (const Vector3& position : deadPositions) {
+		ParticleBorn(position);
 	}
+	// パーティクル生成後、リストをクリア
+	gameLogic_->ClearDeadEnemyPositions();
 
 	// ------------------------------------
 	// GameLogicの更新処理
@@ -237,7 +241,7 @@ void GameScene::ParticleBorn(Vector3 position) {
 
 		// あいまいだった演算子の行は、using namespaceを削除したことで解消されます。
 		velocity = velocity * distribution(randomEngine); // ランダムな速度を生成
-		velocity = velocity * 1.0f;                       // スピードを調整
+		velocity = velocity * 0.2f;                       // スピードを調整
 
 		particle->Initialize(modelParticle_, position, velocity);
 		particles_.push_back(particle);

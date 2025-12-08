@@ -16,14 +16,18 @@ public:
     // プレイヤーの位置を受け取り、追尾・更新を行う
     void Update(const Vector3& playerPosition); 
     void Draw(const Camera& camera);
+    
+    // ★追加: 敵の位置を取得するゲッター
+	const Vector3& GetPosition() const { return worldTransform.translation_; }
 
     // 衝突判定/被弾判定用
-    Vector3 GetPosition() const { return worldTransform.translation_; }
+    //Vector3 GetPosition() const { return worldTransform.translation_; }
     float GetRadius() const { return radius_; }
     bool IsDead() const { return isDead_; }
 
     // ダメージ処理
     void TakeDamage(int damage);
+
 
 private:
     // 敵のステータス

@@ -651,6 +651,8 @@ void GameLogic::Update() {
 
 			audio_->PlayWave(soundHandleEnemyDie_);
 
+			deadEnemyPositions_.push_back(enemy->GetPosition());
+
 			Vector3 dropPosition = enemy->GetPosition();
 			int dropCount = distCount1(engine);
 			for (int i = 0; i < dropCount; ++i) {
@@ -671,6 +673,8 @@ void GameLogic::Update() {
 
 			audio_->PlayWave(soundHandleEnemyDie_);
 
+			deadEnemyPositions_.push_back(enemy2->GetPosition());
+
 			Vector3 dropPosition = enemy2->GetPosition();
 			int dropCount = kEnemy2DropCount;
 			for (int i = 0; i < dropCount; ++i) {
@@ -690,6 +694,8 @@ void GameLogic::Update() {
 
 			audio_->PlayWave(soundHandleEnemyDie_);
 
+			deadEnemyPositions_.push_back(enemy3->GetPosition());
+
 			Vector3 dropPosition = enemy3->GetPosition();
 			int dropCount = kEnemy2DropCount;
 			for (int i = 0; i < dropCount; ++i) {
@@ -706,6 +712,8 @@ void GameLogic::Update() {
 	for (auto it = enemies4_.rbegin(); it != enemies4_.rend();) { // ★ 追記 ★
 		Enemy4* enemy4 = *it;
 		if (enemy4->IsDead()) {
+
+			deadEnemyPositions_.push_back(enemy4->GetPosition());
 
 			audio_->PlayWave(soundHandleEnemyDie_);
 
@@ -725,6 +733,8 @@ void GameLogic::Update() {
 	for (auto it = enemies5_.rbegin(); it != enemies5_.rend();) {
 		Enemy5* enemy5 = *it;
 		if (enemy5->IsDead()) {
+
+			deadEnemyPositions_.push_back(enemy5->GetPosition());
 
 			audio_->PlayWave(soundHandleEnemyDie_);
 

@@ -14,7 +14,7 @@ void Particle::Initialize(Model* model, Vector3 position, Vector3 velocity) {
 	worldTransform_.scale_ = {0.2f, 0.2f, 0.2f}; // ワールド変形の大きさを初期化
 
 	objectcolor_.Initialize();
-	color_ = {1, 1, 0, 1}; // RGBA形式で色を指定
+	color_ = {0, 1, 0, 1};
 }
 
 void Particle::Update() {

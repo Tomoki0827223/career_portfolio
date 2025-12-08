@@ -7,6 +7,7 @@ Minion::Minion(int index, int total) : index_(index), total_(total) {}
 
 Minion::~Minion() { delete model_; }
 
+
 void Minion::Initialize() {
 	model_ = Model::CreateFromOBJ("Minion"); // playerモデルを使用
 	worldTransform.Initialize();

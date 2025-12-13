@@ -41,15 +41,23 @@ void GameScene::Initialize() {
 	stage_->Initialize();
 	stage_->Update();
 
-	camera_.Initialize();
-	// カメラコントローラーの初期化とターゲット設定
-	cameraController_ = new CameraController();
-	cameraController_->Initialize();
-	cameraController_->setTarget(player_); // ここでプレイヤーを追従対象に設定
+	// プレイヤーとカメラコントローラーのインスタンスが存在し、CameraControllerが利用可能であると仮定
+	CameraController* cameraController = new CameraController();
+	Vector3 playerInitialPos = player_->GetWorldTransform().translation_;
+	cameraController->Initialize();
+	cameraController->setTarget(player_);
 
-	// カメラの移動可能範囲を 0.0 から 3860.0 に設定
-	CameraController::Rect boundary = {0.0f, 3860.0f, 0.0f, 3860.0f};
-	cameraController_->SetMovableArea(boundary);
+	// マップの境界を (-100, -100) から (100, 100) と仮定し、カメラのZ深度を考慮して調整
+	// カメラのZオフセットが -15.0f のため、この設定はX, Y軸のマップ境界を直接設定しています。
+	// Z軸の範囲も設定が必要ですが、今回はX, Yのマップ移動に焦点を当てます。
+
+	CameraController::Rect mapLimit = {
+	    -100.0f, // left
+	    100.0f,  // right
+	    -100.0f, // bottom
+	    100.0f   // top
+	};
+	cameraController->SetMovableArea(mapLimit);
 
 	worldTransform.Initialize();
 
@@ -117,6 +125,7 @@ void GameScene::Update() {
 
 	// プレイヤーの更新 (GameSceneに残す)
 	player_->Update();
+	cameraController_->Update();
 
 	// プレイヤーのワールド座標に境界線 (3860x3860) の制限を適用
 	const float kBoundaryMin = 0.0f;
@@ -201,19 +210,20 @@ void GameScene::Draw() {
 
 	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
 
-	// 1. 3D描画のセットアップ
+	// 2. 3Dオブジェクトの描画
 	Model::PreDraw();
 
-	// 2. 3Dオブジェクトの描画
-	stage_->Draw();
-	player_->Draw();
+	// CameraControllerから最新のカメラを取得
+	const KamataEngine::Camera& currentCamera = cameraController_->GetViewProjection();
 
-	// ★★★ GameLogicが管理するオブジェクトの描画 ★★★
-	gameLogic_->DrawObjects(camera_);
+	// プレイヤーの描画
+	playerModel_->Draw(player_->GetWorldTransform(), currentCamera);
 
-	for (Particle* particle : particles_) {
-		particle->Draw(&camera_); // camera_はオブジェクトなのでアドレスを渡す
-	}
+	// StageのDrawは2Dなので、この3D描画のブロックから削除し、2D描画に移動していると仮定
+
+	// GameLogic内のオブジェクトの描画
+	// 224行目付近のエラー C2039 を修正: Draw -> DrawObjects
+	gameLogic_->DrawObjects(currentCamera);
 
 	// 3. 3D描画の終了
 	Model::PostDraw();

@@ -6,8 +6,11 @@
 
 class Player;
 
+using namespace KamataEngine;
+
 class CameraController {
 public:
+
 	struct Rect {
 		float left = 0.0f;
 		float right = 1.0f;
@@ -32,11 +35,13 @@ public:
 	void SetMargin(const Rect& margin) { margin_ = margin; }
 	void setTarget(Player* target) { target_ = target; }
 
+	
 	// ViewProjectionを返すメソッド
-	const ViewProjection& GetViewProjection() const { return viewProjection_; }
+	const Camera& GetViewProjection() const { return camera_; }
 
 private:
-	ViewProjection viewProjection_;
+	
+	Camera camera_;
 	// ★修正点: targetOffset_の初期化を削除し、宣言のみにする
 	Vector3 targetOffset_;
 	Vector3 targetPosition_;

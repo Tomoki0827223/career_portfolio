@@ -9,7 +9,7 @@ std::uniform_real_distribution<float> distribution(-1.0f, 1.0f);
 
 GameScene::~GameScene() {
 	delete gameLogic_; // ★★★ GameLogicの解放 ★★★
-	delete stage_;
+	//delete stage_;
 	delete player_;
 	delete playerModel_;
 	delete model_;
@@ -38,9 +38,9 @@ GameScene::~GameScene() {
 void GameScene::Initialize() {
 	// ... (既存の初期化処理はGameSceneに残るUI要素やSceneの初期化のみ)
 
-	stage_ = new Stage();
-	stage_->Initialize();
-	stage_->Update();
+	//stage_ = new Stage();
+	//stage_->Initialize();
+	//stage_->Update();
 
 	camera_.Initialize();
 	worldTransform.Initialize();
@@ -109,6 +109,27 @@ void GameScene::Update() {
 	// プレイヤーの更新 (GameSceneに残す)
 	player_->Update();
 
+	// ---------------------------------------------------------
+	// ★追加: カメラをプレイヤーの位置に合わせる処理 (ここから)
+	// ---------------------------------------------------------
+	// 1. プレイヤーの現在の座標を取得
+	Vector3 playerPos = player_->GetPosition();
+
+	// 2. カメラのX, Y座標をプレイヤーと同じにする
+	camera_.translation_.x = playerPos.x;
+	camera_.translation_.y = playerPos.y;
+
+	// 3. カメラのZ座標（奥行き）を固定する
+	//    ※ -50.0f は Initialize() で設定されている初期値の例です。
+	//    プレイヤーが見えなくなる場合は、値を調整してください (例: -100.0f など)
+	camera_.translation_.z = -50.0f;
+
+	// 4. カメラの行列を更新して反映させる
+	camera_.UpdateMatrix();
+	// ---------------------------------------------------------
+	// ★追加: (ここまで)
+	// ---------------------------------------------------------
+
 	// HP/ゲームオーバー判定と処理 (GameSceneに残す)
 	int currentHp = player_->GetCurrentHp();
 
@@ -148,7 +169,8 @@ void GameScene::Update() {
 		return;
 	}
 
-	stage_->Update();
+	//
+	// stage_->Update();
 	// ★★★ メインのゲームロジックと衝突判定を呼び出す ★★★
 	gameLogic_->Update();
 
@@ -184,7 +206,8 @@ void GameScene::Draw() {
 	Model::PreDraw();
 
 	// 2. 3Dオブジェクトの描画
-	stage_->Draw();
+	
+	//stage_->Draw();
 	player_->Draw();
 
 	// ★★★ GameLogicが管理するオブジェクトの描画 ★★★

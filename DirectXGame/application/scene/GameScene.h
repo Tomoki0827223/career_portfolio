@@ -53,7 +53,7 @@ private:
 
 	WorldTransform worldTransform;
 
-	Stage* stage_ = nullptr;
+	//Stage* stage_ = nullptr;
 
 	Player* player_ = nullptr;
 

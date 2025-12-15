@@ -10,6 +10,7 @@ void CameraController::Initialize() {
 	camera_.Initialize();
 	// ★修正点: 初期化をVector3コンストラクタを使用して行う (C3079対策)
 	targetOffset_ = Vector3(0.0f, 0.0f, -15.0f);
+
 }
 
 void CameraController::Update() {

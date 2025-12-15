@@ -217,7 +217,7 @@ void GameScene::Draw() {
 	Model::PreDraw();
 
 	// CameraControllerから最新のカメラを取得
-	const KamataEngine::Camera& currentCamera = cameraController_->GetViewProjection();
+	const Camera& currentCamera = cameraController_->GetViewProjection();
 
 	// プレイヤーの描画
 	playerModel_->Draw(player_->GetWorldTransform(), currentCamera);

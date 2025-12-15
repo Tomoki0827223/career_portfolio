@@ -36,16 +36,22 @@ GameScene::~GameScene() {
 
 void GameScene::Initialize() {
 	// ... (既存の初期化処理はGameSceneに残るUI要素やSceneの初期化のみ)
+	player_ = new Player();
+	player_->Initialize();
+	playerModel_ = Model::CreateFromOBJ("block_4");
+
 
 	stage_ = new Stage();
 	stage_->Initialize();
 	stage_->Update();
 
+
 	// プレイヤーとカメラコントローラーのインスタンスが存在し、CameraControllerが利用可能であると仮定
-	CameraController* cameraController = new CameraController();
+	// 修正: ローカル変数ではなく、クラスメンバー変数 `cameraController_` を初期化する
+	cameraController_ = new CameraController();
 	Vector3 playerInitialPos = player_->GetWorldTransform().translation_;
-	cameraController->Initialize();
-	cameraController->setTarget(player_);
+	cameraController_->Initialize();
+	cameraController_->setTarget(player_);
 
 	// マップの境界を (-100, -100) から (100, 100) と仮定し、カメラのZ深度を考慮して調整
 	// カメラのZオフセットが -15.0f のため、この設定はX, Y軸のマップ境界を直接設定しています。
@@ -57,13 +63,7 @@ void GameScene::Initialize() {
 	    -100.0f, // bottom
 	    100.0f   // top
 	};
-	cameraController->SetMovableArea(mapLimit);
-
-	worldTransform.Initialize();
-
-	player_ = new Player();
-	player_->Initialize();
-	playerModel_ = Model::CreateFromOBJ("block_4");
+	cameraController_->SetMovableArea(mapLimit); // 修正: ここも `cameraController_` に変更
 
 	modelParticle_ = Model::CreateFromOBJ("block_4");
 
@@ -114,6 +114,9 @@ void GameScene::Initialize() {
 	skillCursorSprite_ = KamataEngine::Sprite::Create(whiteTextureHandle_, {0, 0});
 	skillCursorSprite_->SetSize({kOptionSize.x + 20.0f, kOptionSize.y + 10.0f});
 	skillCursorSprite_->SetColor({1.0f, 1.0f, 0.0f, 0.5f});
+
+	worldTransform.Initialize();
+	worldTransform_.Initialize();
 
 	// ★★★ GameLogicの生成と初期化 ★★★
 	// GameLogicに依存オブジェクト (Player, Font, HPBar, EXPBar) を渡す

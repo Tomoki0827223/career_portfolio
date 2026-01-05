@@ -35,7 +35,7 @@ void Particle::Update() {
 	}
 
 	worldTransform_.translation_.x += velocity_.x; // ワールド変形の位置を初期化
-	worldTransform_.translation_.y += velocity_.y; // ワールド変形の位置を初期化
+	worldTransform_.translation_.y += velocity_.y; // ワールド変形の位置を初期化+
 	worldTransform_.translation_.z += velocity_.z; // ワールド変形の位置を初期化
 	worldTransform_.TransferMatrix();              // ワールド変形の転送
 	worldTransform_.UpdateMatarix();               // ワールド変形の更新

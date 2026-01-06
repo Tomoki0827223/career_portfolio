@@ -6,6 +6,7 @@ Enemy::~Enemy() { delete model_; }
 
 void Enemy::Initialize() {
 	// 敵モデルとして"cube"を使用
+	//model_ = Model::CreateFromOBJ("enemy");
 	model_ = Model::CreateFromOBJ("enemy");
 
 	worldTransform.Initialize();

@@ -3,11 +3,11 @@ name: DebugBuild
 on:
   push:
     branches:
-      - master  # 自分のリポジトリのメインブランチ名に合わせてください（mainなど）
-  workflow_dispatch: # 手動で実行ボタンを押せるようにする設定（スライドより）
+      - camera3  # あなたが今使っているブランチ名
+  workflow_dispatch:
 
 env:
-  # ここを自分のソリューションファイルのパスに書き換えます
+  # ファイル構成から判断して、正しいパスに設定しました
   SOLUTION_FILE_PATH: DirectXGame/DirectXGame.sln
   CONFIGURATION: Debug
 

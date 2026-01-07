@@ -47,4 +47,7 @@ private:
 	WorldTransform worldTransform;
 
 	bool isDead_ = false; // HPが0になったらtrue
+
+	// ★追加: 回転の滑らかさ (0.0f〜1.0f)
+	const float kRotationLerpRate = 0.1f;
 };

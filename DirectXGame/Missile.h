@@ -33,6 +33,10 @@ private:
 	const float radius_ = 0.4f;      // 弾の判定半径
 	int damage_ = 3;                 // ダメージ量 (既存のBulletより高めに設定)
 
+	// ★追加: 旋回の補間率 (0.0f〜1.0f)
+	// 0.1f程度にすると、移動方向に滑らかに向きが変わります
+	const float kRotationLerpRate = 0.5f;
+
 	Model* model_ = nullptr;
 	WorldTransform worldTransform;
 	Vector3 velocity_; // 移動ベクトル (Updateで方向が更新される)

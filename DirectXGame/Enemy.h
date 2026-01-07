@@ -40,5 +40,9 @@ private:
     Model* model_ = nullptr;
     WorldTransform worldTransform;
 
+    // 回転制御用の変数
+	float currentRotationY_ = 0.0f;       // 現在のY軸角度
+	const float kRotationLerpRate = 0.1f; // 回転の滑らかさ（0.0～1.0 小さいほどゆっくり）
+
     bool isDead_ = false; // HPが0になったらtrue
 };

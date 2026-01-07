@@ -26,16 +26,26 @@ void Enemy::Update(const Vector3& playerPosition) {
 		return;
 	}
 
-	// プレイヤーへの方向ベクトルを計算
+	// 1. プレイヤーへの方向ベクトルを計算
 	Vector3 diff = playerPosition - worldTransform.translation_;
 
-	// 正規化して移動 (追尾)
+	// 2. 移動処理 (既存)
 	Vector3 direction = Math::Normalize(diff);
 	worldTransform.translation_ += direction * kMoveSpeed;
 
-	// 移動を反映
-	worldTransform.TransferMatrix();
+	// 3. 【追加】プレイヤーの方を向く回転制御（イージング/補間）
+	// atan2を使って、X軸とZ軸の差分から目標のY軸角度を求める
+	float targetRotationY = std::atan2(diff.x, diff.z);
+
+	// 現在の角度から目標の角度へ滑らかに補間
+	// ※角度の最短補間（360度をまたぐ場合）を考慮する場合はさらなる処理が必要ですが、
+	// シンプルなイージングであれば以下のように記述できます。
+	worldTransform.rotation_.y = (1.0f - kRotationLerpRate) * worldTransform.rotation_.y + kRotationLerpRate * targetRotationY;
+
+	// 4. 行列の更新
 	worldTransform.UpdateMatarix();
+	// TransferMatrixは定数バッファへの転送
+	worldTransform.TransferMatrix();
 }
 
 void Enemy::Draw(const Camera& camera) {

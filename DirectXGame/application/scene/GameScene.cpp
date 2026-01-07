@@ -117,6 +117,7 @@ void GameScene::Update() {
 	}
 
 
+
 	// ゲームオーバー中の処理 (GameSceneに残す)
 	if (isGameOver_) {
 		if (player_->IsDead() && player_->GetDeadTimer() > player_->GetMaxDeadTime()) {

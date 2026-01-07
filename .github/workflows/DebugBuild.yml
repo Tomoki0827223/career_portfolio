@@ -3,11 +3,11 @@ name: DebugBuild
 on:
   push:
     branches:
-      - camera3  # あなたが今使っているブランチ名
+      - camera3  # あなたが今作業しているブランチ名
   workflow_dispatch:
 
 env:
-  # ファイル構成から判断して、正しいパスに設定しました
+  # あなたのフォルダ構成に合わせた正しいパスです
   SOLUTION_FILE_PATH: DirectXGame/DirectXGame.sln
   CONFIGURATION: Debug
 

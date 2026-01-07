@@ -11,6 +11,7 @@ Missile::Missile(const Vector3& position, const Vector3& targetPosition) {
 	velocity_ = Math::Normalize(initialDirection) * kMoveSpeed;
 }
 
+
 Missile::~Missile() { delete model_; }
 
 void Missile::Initialize() {

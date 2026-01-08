@@ -1,27 +1,13 @@
 #pragma once
 #include "BIt_Map_Font.h"
-#include "Book.h" // ★追加
-#include "Boomerang.h"
-#include "Bullet.h" // ★追加
-#include "Enemy.h"  // 追記
-#include "Enemy2.h"
-#include "Experience.h"
-#include "GameOverScene.h"
-#include "Graph.h"
+#include "GameLogic.h"     // GameLogicで敵などを管理しているのでこれがあればOK
+#include "GameOverScene.h" // main.cppで使っているが、ここでのincludeは不要かも（後述）
 #include "KamataEngine.h"
-#include "Minion.h"
-#include "Missile.h"
+#include "Particle.h"
 #include "Player.h"
 #include "Stage.h"
-#include "Wine.h"
-#include "Particle.h"
-// ★★★ GameLogicの定義をインクルード ★★★
-#include "GameLogic.h"
 #include "math/MathUtility.h"
-#include <algorithm>
-#include <random>
 #include <vector>
-
 
 using namespace KamataEngine;
 
@@ -30,94 +16,69 @@ public:
 	~GameScene();
 
 	void Initialize();
-
 	void Update();
-
 	void Draw();
 
 	bool IsGameOver() const { return isGameOver_; }
-	// ★追加: ゲームオーバーフラグをリセットするためのpublicメソッド
+	// ゲームオーバーフラグをリセットするためのpublicメソッド
 	void ResetGameOverFlag() { isGameOver_ = false; }
 
 	void ParticleBorn(Vector3 position);
 
 private:
-	uint32_t textureHandle_ = 0;
+	// HPバー描画関数
+	void DrawHPBar();
+	void DrawEXPBar();
 
+	uint32_t textureHandle_ = 0;
 	KamataEngine::Sprite* sprite_ = nullptr;
 
-	// 3Dモデルデータ
-	Model* model_ = nullptr;
-
+	// カメラ・モデル・ステージ・プレイヤー
 	Camera camera_;
-
-	WorldTransform worldTransform;
+	WorldTransform worldTransform; // worldTransform_ と重複している可能性あり（後述）
 
 	Stage* stage_ = nullptr;
-
 	Player* player_ = nullptr;
-
 	Model* playerModel_ = nullptr;
+	Model* model_ = nullptr;
 
-	// Graph* graph_ = nullptr;
-
+	// フォント
 	BIt_Map_Font* font_ = nullptr;
 
-	// ★★★ GameLogic クラスのインスタンスを追加 ★★★
+	// ★★★ GameLogic クラスのインスタンス ★★★
 	GameLogic* gameLogic_ = nullptr;
 
-	// 経験値アイテムを格納するベクトル (GameLogicへ移動)
-	// const float ATTRACTION_RADIUS = 10.0f; // GameLogicへ移動
-
-	// 敵の管理、スキル関連のオブジェクト管理、タイマー、レベルアップ関連はすべてGameLogicへ移動
-
-	// HPバー用のスプライト (GameSceneに残す)
+	// UI関連
 	KamataEngine::Sprite* hpBarBase_ = nullptr;
 	KamataEngine::Sprite* hpBar_ = nullptr;
 	uint32_t hpBarBaseTexture_ = 0;
 	uint32_t hpBarTexture_ = 0;
-	
 
-	// ★★★ 追記: EXPゲージ用のスプライト ★★★
 	KamataEngine::Sprite* expBarBase_ = nullptr;
 	KamataEngine::Sprite* expBar_ = nullptr;
 	uint32_t expBarBaseTexture_ = 0;
 	uint32_t expBarTexture_ = 0;
-	// EXPバーのテクスチャはHPバーのものを流用します (hpBarBaseTexture_, hpBarTexture_)
-	// ----------------------------------------
 
 	uint32_t sousaTextureHandle_ = 0;
 	uint32_t sousaTextureHandle2_ = 0;
 	KamataEngine::Sprite* sousaSprite_ = nullptr;
 	KamataEngine::Sprite* sousaSprite2_ = nullptr;
 
-	// ゲームオーバーフラグ (GameSceneに残す - シーン遷移制御のため)
+	// ゲームオーバーフラグ
 	bool isGameOver_ = false;
 
-	// スキル選択画面用スプライト (GameSceneに残す - 描画用UI要素)
-	KamataEngine::Sprite* skillScreenBackground_ = nullptr; // 半透明の背景
-	KamataEngine::Sprite* skillOptionSprites_[3] = {};      // 3つの選択肢の背景
-	KamataEngine::Sprite* skillCursorSprite_ = nullptr;     // 選択カーソル
+	// スキル選択画面用UI
+	KamataEngine::Sprite* skillScreenBackground_ = nullptr;
+	KamataEngine::Sprite* skillOptionSprites_[3] = {};
+	KamataEngine::Sprite* skillCursorSprite_ = nullptr;
+	uint32_t whiteTextureHandle_ = 0;
 
-	uint32_t whiteTextureHandle_ = 0; // スプライトの色付けに使う1x1の白テクスチャ
-	// ----------------------------------------
-
-	// 衝突判定関数 (GameLogicへ移動したため削除)
-	// void CheckAllCollisions();
-
-	// HPバー描画関数 (GameSceneに残す - UI描画)
-	void DrawHPBar();
-
-	void DrawEXPBar();
-	// 敵のランダム生成関数、Wineのランダム生成関数 (GameLogicへ移動したため削除)
-	// スキル関連関数 (GameLogicへ移動したため削除)
-
-	// 3Dモデルの生成
+	// パーティクル関連
 	Model* modelParticle_ = nullptr;
-	// パーティクル
-	Particle* particle_ = nullptr;
-	// ワールド変形
-	WorldTransform worldTransform_;
+	Particle* particle_ = nullptr; // 使っていないなら削除可
 
-	std::list<Particle*> particles_; // パーティクルのリスト
+	// GameSceneのメンバ変数にもう一つ `WorldTransform worldTransform_;` がある可能性があります
+	// 上記の `worldTransform` と重複していないか確認推奨
+
+	std::list<Particle*> particles_;
 };

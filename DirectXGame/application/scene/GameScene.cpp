@@ -54,6 +54,7 @@ void GameScene::Initialize() {
 	font_ = new BIt_Map_Font();
 	font_->Initialize();
 
+
 	// HPバーの初期化 (GameSceneに残すUI要素)
 	hpBarBaseTexture_ = KamataEngine::TextureManager::Load("HP.png");
 	hpBarTexture_ = KamataEngine::TextureManager::Load("HPR.png");

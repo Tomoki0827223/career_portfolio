@@ -1,6 +1,9 @@
 #include "GameLogic.h"
 #include <random>
-#include <string> // std::to_string のために必要
+#include <string>
+#include <fstream> // 追加
+#include <sstream> // 追加
+#include <algorithm> // 追加
 
 // GameScene.cppの匿名名前空間内の乱数生成器を移動
 namespace {
@@ -202,6 +205,45 @@ void GameLogic::Initialize() {
 		skillIconSprites_[i]->SetSize({400.0f, 108.0f});
 #endif
 	}
+
+	LoadEnemyPopData();
+}
+
+void GameLogic::LoadEnemyPopData() {
+	enemySpawnList_.clear();
+
+	// ファイルを開く (パスは環境に合わせて調整してください)
+	std::ifstream file("Resources/enemyPop.csv");
+	if (!file.is_open()) {
+		return;
+	}
+
+	std::string line;
+	while (std::getline(file, line)) {
+		// コメント行(//)や空行をスキップ
+		if (line.empty() || line.find("//") == 0) {
+			continue;
+		}
+
+		std::stringstream ss(line);
+		std::string segment;
+		std::vector<std::string> seglist;
+
+		while (std::getline(ss, segment, ',')) {
+			seglist.push_back(segment);
+		}
+
+		if (seglist.size() >= 4) {
+			EnemySpawnData data;
+			data.enemyType = std::stoi(seglist[0]);
+			data.interval = std::stoi(seglist[1]);
+			data.minScore = std::stoi(seglist[2]);
+			data.maxScore = std::stoi(seglist[3]);
+			data.timer = 0; // タイマー初期化
+			enemySpawnList_.push_back(data);
+		}
+	}
+	file.close();
 }
 
 // ----------------------------------------------------
@@ -247,30 +289,17 @@ void GameLogic::Update() {
 	// スコア表示の更新
 	font_->Set(score_);
 
-	// 敵の生成
-	enemySpawnTimer_++;
-
-	// ★★★ 修正: 動的な敵出現間隔の計算 (スコア1000ごとに高速化) ★★★
-	const int kBaseSpawnInterval = 120;
-	const int kScoreInterval = 1000;
-	const float kReductionPerInterval = 0.2f; // 20% 削減
-	const int kMinSpawnInterval = 30;         // 最小30フレーム (0.5秒)
-
-	int intervalTier = score_ / kScoreInterval;
-	float reductionFactor = 1.0f - (intervalTier * kReductionPerInterval);
-
-	if (reductionFactor < (float)kMinSpawnInterval / kBaseSpawnInterval) {
-		reductionFactor = (float)kMinSpawnInterval / kBaseSpawnInterval;
-	}
-
-	int currentEnemyInterval = (int)(kBaseSpawnInterval * reductionFactor);
-	currentEnemyInterval = (std::max)(currentEnemyInterval, kMinSpawnInterval);
-
-	// ★ 修正: kEnemySpawnInterval の代わりに currentEnemyInterval を使用 ★
-	if (enemies_.size() + enemies2_.size() + enemies3_.size() + enemies4_.size() + enemies5_.size() < kMaxEnemies + kMaxEnemies2 + kMaxEnemies3 + kMaxEnemies4 + kMaxEnemies5 &&
-	    enemySpawnTimer_ >= currentEnemyInterval) {
-		SpawnEnemy();
-		enemySpawnTimer_ = 0;
+	// --- 修正後（CSVデータを使う形にする） ---
+	for (auto& spawnData : enemySpawnList_) {
+		// 現在のスコアが範囲内かチェック
+		if (score_ >= spawnData.minScore && score_ <= spawnData.maxScore) {
+			spawnData.timer++;
+			if (spawnData.timer >= spawnData.interval) {
+				// CSVで指定されたタイプの敵を出現させる
+				SpawnEnemy(spawnData.enemyType);
+				spawnData.timer = 0;
+			}
+		}
 	}
 
 	// Wineの生成
@@ -783,6 +812,65 @@ void GameLogic::Update() {
 	}
 }
 
+void GameLogic::SpawnEnemy(int enemyType) {
+	// 敵の上限数チェック
+	int currentTotalEnemies = static_cast<int>(enemies_.size() + enemies2_.size() + enemies3_.size() + enemies4_.size() + enemies5_.size());
+	int maxTotalEnemies = kMaxEnemies + kMaxEnemies2 + kMaxEnemies3 + kMaxEnemies4 + kMaxEnemies5;
+	if (currentTotalEnemies >= maxTotalEnemies)
+		return;
+
+	Vector3 playerPos = player_->GetPosition();
+	Vector3 randomPos;
+	// 座標計算
+	std::uniform_real_distribution<float> angleDist(0.0f, 6.283f);
+	float angle = angleDist(engine);
+	float spawnDist = 50.0f;
+	randomPos.x = playerPos.x + std::cos(angle) * spawnDist;
+	randomPos.y = playerPos.y + std::sin(angle) * spawnDist;
+	randomPos.z = 0.0f;
+
+	// ★★★ ここで switch文 を使って生成していますか？ ★★★
+	switch (enemyType) {
+	case 0:
+		if (enemies_.size() < kMaxEnemies) {
+			Enemy* newEnemy = new Enemy(randomPos);
+			newEnemy->Initialize();
+			enemies_.push_back(newEnemy);
+		}
+		break;
+	case 1:
+		if (enemies2_.size() < kMaxEnemies2) {
+			Enemy2* newEnemy2 = new Enemy2(randomPos);
+			newEnemy2->Initialize();
+			enemies2_.push_back(newEnemy2);
+		}
+		break;
+	case 2:
+		if (enemies3_.size() < kMaxEnemies3) {
+			Enemy3* newEnemy3 = new Enemy3(randomPos);
+			newEnemy3->Initialize();
+			enemies3_.push_back(newEnemy3);
+		}
+		break;
+	case 3:
+		if (enemies4_.size() < kMaxEnemies4) {
+			Enemy4* newEnemy4 = new Enemy4(randomPos);
+			newEnemy4->Initialize();
+			enemies4_.push_back(newEnemy4);
+		}
+		break;
+	case 4:
+		if (enemies5_.size() < kMaxEnemies5) {
+			Enemy5* newEnemy5 = new Enemy5(randomPos);
+			newEnemy5->Initialize();
+			enemies5_.push_back(newEnemy5);
+		}
+		break;
+	default:
+		break;
+	}
+}
+
 // ----------------------------------------------------
 // GameLogic::CheckAllCollisions (衝突判定)
 // ----------------------------------------------------
@@ -971,91 +1059,6 @@ void GameLogic::CheckAllCollisions() {
 		}
 	}
 }
-
-// ----------------------------------------------------
-// GameLogic::SpawnEnemy (敵のランダム生成関数)
-// ----------------------------------------------------
-void GameLogic::SpawnEnemy() {
-	// 修正: 個別の最大数を合計してチェックする。条件式の書き方も修正
-	int currentTotalEnemies = static_cast<int>(enemies_.size() + enemies2_.size() + enemies3_.size() + enemies4_.size() + enemies5_.size());
-	int maxTotalEnemies = kMaxEnemies + kMaxEnemies2 + kMaxEnemies3 + kMaxEnemies4 + kMaxEnemies5;
-
-	if (currentTotalEnemies >= maxTotalEnemies) {
-		return;
-	}
-
-	Vector3 playerPos = player_->GetPosition(); // 最新位置を取得
-	Vector3 randomPos;
-
-	// プレイヤー座標を基準に、円状（画面外）に配置
-	std::uniform_real_distribution<float> angleDist(0.0f, 6.283f);
-	float angle = angleDist(engine);
-	float spawnDist = 50.0f; // カメラの外側
-
-	randomPos.x = playerPos.x + std::cos(angle) * spawnDist;
-	randomPos.y = playerPos.y + std::sin(angle) * spawnDist;
-	randomPos.z = 0.0f;
-
-	// --- 以下、既存の敵タイプ決定ロジック ---
-	int maxType = 0;
-	const int kScoreUnlockEnemy3 = 1000;
-	const int kScoreUnlockEnemy2 = 1300;
-	const int kScoreUnlockEnemy5 = 600;
-
-	if (score_ >= kScoreUnlockEnemy2) {
-		maxType = 4;
-	} else if (score_ >= kScoreUnlockEnemy3) {
-		maxType = 4;
-	} else if (score_ >= kScoreUnlockEnemy5) {
-		maxType = 4;
-	} else {
-		maxType = 0;
-	}
-
-	std::uniform_int_distribution<int> distType(0, maxType);
-	int type = distType(engine);
-
-	// スコアによるアップグレード処理
-	const int kScoreUpgradeInterval = 1000;
-	int upgradeTiers = score_ / kScoreUpgradeInterval;
-	if (upgradeTiers > 3)
-		upgradeTiers = 3;
-
-	for (int i = 0; i < upgradeTiers; ++i) {
-		std::uniform_real_distribution<float> prob(0.0f, 1.0f);
-		if (prob(engine) < 0.5f) {
-			if (type < maxType)
-				type++;
-		}
-	}
-
-	bool spawnEnemy2Allowed = score_ >= kScoreUnlockEnemy2;
-	bool spawnEnemy5Allowed = score_ >= kScoreUnlockEnemy5;
-
-	// randomPos を使用して生成
-	if (type == 0 && enemies_.size() < kMaxEnemies) {
-		Enemy* newEnemy = new Enemy(randomPos);
-		newEnemy->Initialize();
-		enemies_.push_back(newEnemy);
-	} else if (type == 1 && spawnEnemy2Allowed && enemies2_.size() < kMaxEnemies2) {
-		Enemy2* newEnemy2 = new Enemy2(randomPos);
-		newEnemy2->Initialize();
-		enemies2_.push_back(newEnemy2);
-	} else if (type == 2 && enemies3_.size() < kMaxEnemies3) {
-		Enemy3* newEnemy3 = new Enemy3(randomPos);
-		newEnemy3->Initialize();
-		enemies3_.push_back(newEnemy3);
-	} else if (type == 3 && enemies4_.size() < kMaxEnemies4) {
-		Enemy4* newEnemy4 = new Enemy4(randomPos);
-		newEnemy4->Initialize();
-		enemies4_.push_back(newEnemy4);
-	} else if (type == 4 && spawnEnemy5Allowed && enemies5_.size() < kMaxEnemies5) {
-		Enemy5* newEnemy5 = new Enemy5(randomPos);
-		newEnemy5->Initialize();
-		enemies5_.push_back(newEnemy5);
-	}
-}
-
 
 // ----------------------------------------------------
 // GameLogic::SpawnWine (Wineのランダム生成関数)

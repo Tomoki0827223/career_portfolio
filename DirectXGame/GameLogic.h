@@ -40,6 +40,15 @@ enum class SkillType {
 	kSkillCount // スキル数のカウント用
 };
 
+// ★★★ 追記: 敵出現データの構造体 ★★★
+struct EnemySpawnData {
+	int enemyType; // 敵の種類 (0:Enemy, 1:Enemy2, ...)
+	int interval;  // 出現間隔
+	int minScore;  // 出現開始スコア
+	int maxScore;  // 出現終了スコア
+	int timer;     // 出現用タイマー (個別に管理)
+};
+
 class GameLogic {
 public:
 	GameLogic(Player* player, BIt_Map_Font* font, KamataEngine::Sprite* hpBar, KamataEngine::Sprite* hpBarBase, KamataEngine::Sprite* expBar, KamataEngine::Sprite* expBarBase);
@@ -50,6 +59,12 @@ public:
 	void Update();
 	// 3Dオブジェクトの描画処理をGameSceneから呼び出すための関数
 	void DrawObjects(const Camera& camera);
+
+	// ★★★ 追記: CSV読み込み関数 ★★★
+	void LoadEnemyPopData();
+
+	// ★★★ 変更: 引数で敵タイプを指定するように変更 ★★★
+	void SpawnEnemy(int enemyType);
 
 	// 外部（GameScene）から状態を取得するためのGetter
 	bool IsLevelUpPending() const { return isLevelUpPending_; }
@@ -92,6 +107,7 @@ private:
 	std::vector<Enemy5*> enemies5_;
 	std::vector<EnemyBullet*> enemyBullets_;
 	std::vector<Experience*> experiences_;
+	std::vector<EnemySpawnData> enemySpawnList_;
 
 	// 依存オブジェクト
 	Player* player_ = nullptr;
@@ -136,7 +152,6 @@ private:
 
 	// 内部処理 (GameSceneから移動)
 	void CheckAllCollisions();
-	void SpawnEnemy();
 	void SpawnWine();
 	void StartLevelUp();
 	void ApplySkill(SkillType skill);

@@ -1,51 +1,29 @@
 #include "Stage.h"
-#include "GameScene.h"
-#include "KamataEngine.h"
 
-using namespace KamataEngine;
-
-Stage::~Stage() {
-	delete sprite_;
-	delete sprite2_;
-}
-
+Stage::~Stage() { delete model_; }
 
 void Stage::Initialize() {
+	// 地面用の 3D モデルを生成（cube などを大きく引き伸ばして地面にします）
+	model_ = Model::CreateFromOBJ("cube");
+	worldTransform_.Initialize();
 
-	input_ = KamataEngine::Input::GetInstance();
+	// 地面を非常に大きく広げる（ワールドの広さになります）
+	worldTransform_.scale_ = {2000.0f, 1.0f, 2000.0f};
+	// プレイヤーの足元（Y=0）より少し下に配置
+	worldTransform_.translation_ = {0.0f, -2.0f, 0.0f};
 
-	textureHandle_ = TextureManager::Load("scroll_bg.png");
-
-	sprite_ = Sprite::Create(textureHandle_, {0, 0});
-
-	sprite2_ = Sprite::Create(textureHandle_, {1280, 0});
+	worldTransform_.UpdateMatarix();
 }
 
 void Stage::Update() {
-	// 1枚目
-	Vector2 pos1 = sprite_->GetPosition();
-	pos1.x -= scrollSpeed_;
-	if (pos1.x <= -1280) {
-		pos1.x = 1280 - scrollSpeed_; // 2枚目の右端にピッタリつなげる
-	}
-	sprite_->SetPosition(pos1);
-
-	// 2枚目
-	Vector2 pos2 = sprite2_->GetPosition();
-	pos2.x -= scrollSpeed_;
-	if (pos2.x <= -1280) {
-		pos2.x = 1280 - scrollSpeed_;
-	}
-	sprite2_->SetPosition(pos2);
+	// 静止した地面なので TransferMatrix のみ
+	worldTransform_.TransferMatrix();
 }
 
-void Stage::Draw() {
-	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
+void Stage::Draw(const Camera& camera) {
 
-	Sprite::PreDraw(dxCommon->GetCommandList());
-
-	sprite_->Draw();
-	sprite2_->Draw();
-
-	Sprite::PostDraw();
+	Model::PreDraw();
+	// スプライトではなく 3D モデルとして描画
+	model_->Draw(worldTransform_, camera);
+	Model::PreDraw();
 }

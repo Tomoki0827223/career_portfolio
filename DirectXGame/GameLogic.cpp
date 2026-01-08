@@ -9,7 +9,7 @@ std::mt19937 engine(seed_gen());
 // マップの範囲を定義
 const float MAP_HALF_RANGE = 50.0f;
 std::uniform_real_distribution<float> dist(-MAP_HALF_RANGE, MAP_HALF_RANGE);
-const float kScreenDamageRadius = 20.0f; // プレイヤー中心から15.0f以上離れた敵にはダメージを与えない
+const float kScreenDamageRadius = 100.0f; // プレイヤー中心から15.0f以上離れた敵にはダメージを与えない
 } // namespace
 
 // GameScene.cppから移動
@@ -207,6 +207,11 @@ void GameLogic::Initialize() {
 // ----------------------------------------------------
 void GameLogic::Update() {
 	Vector3 playerPos = player_->GetPosition();
+
+	// 全ての敵に対して、現在のプレイヤー座標を渡して更新する
+	for (Enemy* enemy : enemies_) {
+		enemy->Update(playerPos);
+	}
 
 	// HPバーの更新 (GameScene::Updateから移動)
 	int currentHp = player_->GetCurrentHp();
@@ -779,30 +784,27 @@ void GameLogic::Update() {
 // ----------------------------------------------------
 // GameLogic::CheckAllCollisions (衝突判定)
 // ----------------------------------------------------
+
+
 void GameLogic::CheckAllCollisions() {
+	// ループの直前で最新のプレイヤー座標を取得
 	Vector3 playerPos = player_->GetPosition();
 	float playerBodyRadius = 0.5f;
 
-	// 1. プレイヤーの攻撃 vs 敵 (近接攻撃判定)
+	// 1. プレイヤーの近接攻撃判定
 	if (player_->IsAttacking()) {
 		float attackRadius = player_->GetAttackRadius();
 		auto checkPlayerAttackCollision = [&](auto& enemies_list) {
 			for (auto enemy : enemies_list) {
 				if (enemy->IsDead())
 					continue;
+
 				Vector3 enemyPos = enemy->GetPosition();
-
-				Vector3 diffFromPlayer = enemyPos - playerPos;
-				// ★★★ 追記: 画面内チェック ★★★
-				if (Math::Length(diffFromPlayer) > kScreenDamageRadius) {
-					continue; // 画面外の敵にはダメージを与えない
-				}
-				// ★★★ 追記ここまで ★★★
-
-				float enemyRadius = enemy->GetRadius();
-				Vector3 diff = enemyPos - playerPos;
+				Vector3 diff = enemyPos - playerPos; // 移動したプレイヤーとの相対距離
 				float distance = Math::Length(diff);
-				if (distance <= attackRadius + enemyRadius) {
+
+				// プレイヤーの現在地からの距離だけで判定する
+				if (distance <= attackRadius + enemy->GetRadius()) {
 					enemy->TakeDamage(1);
 				}
 			}
@@ -814,26 +816,22 @@ void GameLogic::CheckAllCollisions() {
 		checkPlayerAttackCollision(enemies5_);
 	}
 
-	// 2. 敵 vs プレイヤー (敵からの接触ダメージ)
-	// ★ 修正: 全ての敵リストに対して衝突判定を行うように汎用化 ★
+	// 2. 敵 vs プレイヤー（接触ダメージ）
 	auto checkEnemyPlayerCollision = [&](auto& enemies_list) {
 		for (auto enemy : enemies_list) {
 			if (enemy->IsDead() || player_->GetCurrentHp() <= 0)
 				continue;
-			Vector3 enemyPos = enemy->GetPosition();
-			float enemyRadius = enemy->GetRadius();
-			Vector3 diff = enemyPos - playerPos;
-			float distance = Math::Length(diff);
-			if (distance <= playerBodyRadius + enemyRadius) {
-				int damageToTake = 1 - player_->GetDefense(); // 1ダメージから防御力を引く
-				if (damageToTake < 1) {                       // ダメージは最低1 (あるいは0) に設定
-					damageToTake = 1;                         // 常に最低1ダメージは受けるようにする（必要に応じて0に調整）
-				}
-				player_->TakeDamage(damageToTake); // ★ 修正: 軽減されたダメージを使用 ★
+
+			// プレイヤーの現在地との距離で判定
+			Vector3 diff = enemy->GetPosition() - playerPos;
+			if (Math::Length(diff) <= playerBodyRadius + enemy->GetRadius()) {
+				int damageToTake = (std::max)(1, 1 - player_->GetDefense());
+				player_->TakeDamage(damageToTake);
 				audio_->PlayWave(soundHandleDamage_);
 			}
 		}
 	};
+
 	// 全ての敵タイプに対して実行
 	checkEnemyPlayerCollision(enemies_);
 	checkEnemyPlayerCollision(enemies2_);
@@ -1062,69 +1060,63 @@ void GameLogic::CheckAllCollisions() {
 // GameLogic::SpawnEnemy (敵のランダム生成関数)
 // ----------------------------------------------------
 void GameLogic::SpawnEnemy() {
+	// 修正: 個別の最大数を合計してチェックする。条件式の書き方も修正
+	int currentTotalEnemies = static_cast<int>(enemies_.size() + enemies2_.size() + enemies3_.size() + enemies4_.size() + enemies5_.size());
+	int maxTotalEnemies = kMaxEnemies + kMaxEnemies2 + kMaxEnemies3 + kMaxEnemies4 + kMaxEnemies5;
 
-	// ★ 修正: Enemy3, Enemy4の最大数も考慮に入れる ★
-	if (enemies_.size() + enemies2_.size() + enemies3_.size() + enemies4_.size() + enemies5_.size() >= kMaxEnemies + kMaxEnemies2 + kMaxEnemies3 + kMaxEnemies4 + kMaxEnemies5) {
+	if (currentTotalEnemies >= maxTotalEnemies) {
 		return;
 	}
 
-	const float kMinSpawnDistance = 20.0f;
-	Vector3 playerPos = player_->GetPosition();
+	Vector3 playerPos = player_->GetPosition(); // 最新位置を取得
 	Vector3 randomPos;
-	float distance = 0.0f;
 
-	do {
-		randomPos = {dist(engine), dist(engine), 0.0f};
-		distance = Math::Length(randomPos - playerPos);
-	} while (distance < kMinSpawnDistance);
+	// プレイヤー座標を基準に、円状（画面外）に配置
+	std::uniform_real_distribution<float> angleDist(0.0f, 6.283f);
+	float angle = angleDist(engine);
+	float spawnDist = 50.0f; // カメラの外側
 
-	// ★ 修正: 敵のタイプをランダムに決定する範囲をスコアによって変更 ★
-	int maxType = 0; // デフォルトはEnemy (type=0) のみ
+	randomPos.x = playerPos.x + std::cos(angle) * spawnDist;
+	randomPos.y = playerPos.y + std::sin(angle) * spawnDist;
+	randomPos.z = 0.0f;
 
-	// スコアによるアンロック判定
+	// --- 以下、既存の敵タイプ決定ロジック ---
+	int maxType = 0;
 	const int kScoreUnlockEnemy3 = 1000;
 	const int kScoreUnlockEnemy2 = 1300;
-	const int kScoreUnlockEnemy5 = 600; // Enemy5の出現スコア
+	const int kScoreUnlockEnemy5 = 600;
 
-	// スコアに応じて maxType を設定 (0-4)
 	if (score_ >= kScoreUnlockEnemy2) {
-		maxType = 4; // E, E2, E3, E4, E5
+		maxType = 4;
 	} else if (score_ >= kScoreUnlockEnemy3) {
-		maxType = 4; // E, E3, E4, E5 (E2はロック)
+		maxType = 4;
 	} else if (score_ >= kScoreUnlockEnemy5) {
-		maxType = 4; // E, E3, E4, E5 (E2はロック)
+		maxType = 4;
 	} else {
-		maxType = 0; // E のみ
+		maxType = 0;
 	}
 
 	std::uniform_int_distribution<int> distType(0, maxType);
 	int type = distType(engine);
 
-	// ★★★ 追記: スコアによるタイプアップグレード (出現率の増加) ★★★
+	// スコアによるアップグレード処理
 	const int kScoreUpgradeInterval = 1000;
-	int upgradeTiers = score_ / kScoreUpgradeInterval; // 1000点ごとに+1
-	const int kMaxUpgrades = 3;
+	int upgradeTiers = score_ / kScoreUpgradeInterval;
+	if (upgradeTiers > 3)
+		upgradeTiers = 3;
 
-	if (upgradeTiers > kMaxUpgrades) {
-		upgradeTiers = kMaxUpgrades;
-	}
-
-	// 1000点ごとに、50%の確率で、選択されたタイプを一段階上げる試行を繰り返す
 	for (int i = 0; i < upgradeTiers; ++i) {
 		std::uniform_real_distribution<float> prob(0.0f, 1.0f);
-		if (prob(engine) < 0.5f) { // 50%の確率でアップグレード
-			if (type < maxType) {
+		if (prob(engine) < 0.5f) {
+			if (type < maxType)
 				type++;
-			}
 		}
 	}
-	// ★★★ 追記ここまで ★★★
 
-	// Enemy2とEnemy5の出現制御のためのフラグ
 	bool spawnEnemy2Allowed = score_ >= kScoreUnlockEnemy2;
 	bool spawnEnemy5Allowed = score_ >= kScoreUnlockEnemy5;
 
-	// 敵のタイプを決定
+	// randomPos を使用して生成
 	if (type == 0 && enemies_.size() < kMaxEnemies) {
 		Enemy* newEnemy = new Enemy(randomPos);
 		newEnemy->Initialize();
@@ -1145,10 +1137,9 @@ void GameLogic::SpawnEnemy() {
 		Enemy5* newEnemy5 = new Enemy5(randomPos);
 		newEnemy5->Initialize();
 		enemies5_.push_back(newEnemy5);
-	} else {
-		// 生成できなかった場合はスキップ
 	}
 }
+
 
 // ----------------------------------------------------
 // GameLogic::SpawnWine (Wineのランダム生成関数)

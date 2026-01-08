@@ -1,6 +1,5 @@
 #pragma once
 #include "KamataEngine.h"
-#include <cstdint>
 
 using namespace KamataEngine;
 
@@ -9,15 +8,10 @@ public:
 	~Stage();
 	void Initialize();
 	void Update();
-	void Draw();
+	void Draw(const Camera& camera); // 引数に Camera を追加
 
 private:
-	uint32_t textureHandle_ = 0;
-
-	KamataEngine::Sprite* sprite_ = nullptr;
-	KamataEngine::Sprite* sprite2_ = nullptr;
-
-	Input* input_ = nullptr;
-
-	float scrollSpeed_ = 4.0f;
+	// 3Dモデルとして地面を持つ
+	Model* model_ = nullptr;
+	WorldTransform worldTransform_;
 };

@@ -105,9 +105,18 @@ void GameScene::Initialize() {
 }
 
 void GameScene::Update() {
-
-	// プレイヤーの更新 (GameSceneに残す)
+	// 1. プレイヤーの更新（ここで最新の translation_ が確定する）
 	player_->Update();
+
+	// 2. カメラを最新のプレイヤー位置に追従させる
+	Vector3 playerPos = player_->GetPosition();
+	camera_.translation_.x = playerPos.x;
+	camera_.translation_.y = playerPos.y;
+	camera_.translation_.z = playerPos.z - 60.0f; // プレイヤーの背後に配置
+	camera_.UpdateMatrix();                       // 行列を再計算
+
+	// 3. 【最重要】最新のプレイヤー座標を基に、ゲームロジック（敵の移動・判定）を実行
+	gameLogic_->Update();
 
 	// HP/ゲームオーバー判定と処理 (GameSceneに残す)
 	int currentHp = player_->GetCurrentHp();
@@ -184,7 +193,7 @@ void GameScene::Draw() {
 	Model::PreDraw();
 
 	// 2. 3Dオブジェクトの描画
-	stage_->Draw();
+	stage_->Draw(camera_); // 修正：3Dとして描画
 	player_->Draw();
 
 	// ★★★ GameLogicが管理するオブジェクトの描画 ★★★

@@ -40,7 +40,7 @@ void GameScene::Initialize() {
 
 	stage_ = new Stage();
 	stage_->Initialize();
-	stage_->Update();
+	//stage_->Update(player_->GetPosition());
 
 	camera_.Initialize();
 	worldTransform.Initialize();
@@ -155,7 +155,7 @@ void GameScene::Update() {
 	}
 	gameLogic_->ClearDeadEnemyPositions();
 
-	stage_->Update();
+	stage_->Update(player_->GetPosition());
 
 	// パーティクルの更新
 	particles_.remove_if([](Particle* particle) {

@@ -33,8 +33,8 @@ void Enemy2::Update(const Vector3& playerPosition) {
 	worldTransform.translation_ += direction * kMoveSpeed;
 
 	// 移動を反映
-	worldTransform.TransferMatrix();
-	worldTransform.UpdateMatarix();
+	worldTransform.UpdateMatarix();  // ★ 先に計算！
+	worldTransform.TransferMatrix(); // ★ 後で転送！
 }
 
 void Enemy2::Draw(const Camera& camera) {

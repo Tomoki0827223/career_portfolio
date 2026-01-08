@@ -9,7 +9,9 @@ std::mt19937 engine(seed_gen());
 // マップの範囲を定義
 const float MAP_HALF_RANGE = 50.0f;
 std::uniform_real_distribution<float> dist(-MAP_HALF_RANGE, MAP_HALF_RANGE);
-const float kScreenDamageRadius = 100.0f; // プレイヤー中心から15.0f以上離れた敵にはダメージを与えない
+
+//const float kScreenDamageRadius = 100.0f; // プレイヤー中心から15.0f以上離れた敵にはダメージを与えない
+
 } // namespace
 
 // GameScene.cppから移動
@@ -787,11 +789,11 @@ void GameLogic::Update() {
 
 
 void GameLogic::CheckAllCollisions() {
-	// ループの直前で最新のプレイヤー座標を取得
+	// 最新のプレイヤー座標を再取得（ワールド座標）
 	Vector3 playerPos = player_->GetPosition();
 	float playerBodyRadius = 0.5f;
 
-	// 1. プレイヤーの近接攻撃判定
+	// --- 1. プレイヤーの攻撃 vs 敵 ---
 	if (player_->IsAttacking()) {
 		float attackRadius = player_->GetAttackRadius();
 		auto checkPlayerAttackCollision = [&](auto& enemies_list) {
@@ -799,12 +801,9 @@ void GameLogic::CheckAllCollisions() {
 				if (enemy->IsDead())
 					continue;
 
-				Vector3 enemyPos = enemy->GetPosition();
-				Vector3 diff = enemyPos - playerPos; // 移動したプレイヤーとの相対距離
-				float distance = Math::Length(diff);
-
-				// プレイヤーの現在地からの距離だけで判定する
-				if (distance <= attackRadius + enemy->GetRadius()) {
+				Vector3 diff = enemy->GetPosition() - playerPos;
+				// 純粋な距離判定のみにする（画面外チェックは削除）
+				if (Math::Length(diff) <= (attackRadius + enemy->GetRadius())) {
 					enemy->TakeDamage(1);
 				}
 			}
@@ -816,61 +815,46 @@ void GameLogic::CheckAllCollisions() {
 		checkPlayerAttackCollision(enemies5_);
 	}
 
-	// 2. 敵 vs プレイヤー（接触ダメージ）
+	// --- 2. 敵 vs プレイヤー（接触） ---
 	auto checkEnemyPlayerCollision = [&](auto& enemies_list) {
 		for (auto enemy : enemies_list) {
 			if (enemy->IsDead() || player_->GetCurrentHp() <= 0)
 				continue;
 
-			// プレイヤーの現在地との距離で判定
 			Vector3 diff = enemy->GetPosition() - playerPos;
-			if (Math::Length(diff) <= playerBodyRadius + enemy->GetRadius()) {
+			if (Math::Length(diff) <= (playerBodyRadius + enemy->GetRadius())) {
 				int damageToTake = (std::max)(1, 1 - player_->GetDefense());
 				player_->TakeDamage(damageToTake);
 				audio_->PlayWave(soundHandleDamage_);
 			}
 		}
 	};
-
-	// 全ての敵タイプに対して実行
 	checkEnemyPlayerCollision(enemies_);
 	checkEnemyPlayerCollision(enemies2_);
 	checkEnemyPlayerCollision(enemies3_);
 	checkEnemyPlayerCollision(enemies4_);
 	checkEnemyPlayerCollision(enemies5_);
 
-	// 3. Book (周回攻撃) vs 敵 の衝突判定
+	// --- 2. Book (周回攻撃) vs 敵 ---
 	for (Book* book : books_) {
-		Vector3 bookPos = book->GetPosition();
-		float bookRadius = book->GetRadius();
-		int bookDamage = book->GetDamage();
-		auto checkEnemyCollision = [&](auto& enemies_list) {
+		Vector3 bPos = book->GetPosition();
+		auto checkBook = [&](auto& enemies_list) {
 			for (auto enemy : enemies_list) {
 				if (enemy->IsDead())
 					continue;
-				Vector3 enemyPos = enemy->GetPosition();
-
-				Vector3 diffFromPlayer = enemyPos - playerPos;
-				// ★★★ 追記: 画面内チェック ★★★
-				if (Math::Length(diffFromPlayer) > kScreenDamageRadius) {
-					continue; // 画面外の敵にはダメージを与えない
-				}
-				// ★★★ 追記ここまで ★★★
-
-				float enemyRadius = enemy->GetRadius();
-				if (Math::Length(enemyPos - bookPos) <= bookRadius + enemyRadius) {
-					enemy->TakeDamage(bookDamage);
+				if (Math::Length(enemy->GetPosition() - bPos) <= (book->GetRadius() + enemy->GetRadius())) {
+					enemy->TakeDamage(book->GetDamage());
 				}
 			}
 		};
-		checkEnemyCollision(enemies_);
-		checkEnemyCollision(enemies2_);
-		checkEnemyCollision(enemies3_);
-		checkEnemyCollision(enemies4_);
-		checkEnemyCollision(enemies5_);
+		checkBook(enemies_);
+		checkBook(enemies2_);
+		checkBook(enemies3_);
+		checkBook(enemies4_);
+		checkBook(enemies5_);
 	}
 
-	// 4. Bullet (オート攻撃) vs 敵 の衝突判定
+	// --- 3. Bullet (オート攻撃) vs 敵 ---
 	for (auto itB = bullets_.begin(); itB != bullets_.end();) {
 		Bullet* bullet = *itB;
 		if (bullet->IsDead()) {
@@ -882,19 +866,15 @@ void GameLogic::CheckAllCollisions() {
 		float bulletRadius = bullet->GetRadius();
 		int bulletDamage = bullet->GetDamage();
 		bool hit = false;
+
 		auto checkBulletCollision = [&](auto& enemies_list) -> bool {
 			for (auto enemy : enemies_list) {
 				if (enemy->IsDead())
 					continue;
 				Vector3 enemyPos = enemy->GetPosition();
-				Vector3 diffFromPlayer = enemyPos - playerPos;
 
-				if (Math::Length(diffFromPlayer) > kScreenDamageRadius) {
-					continue; // 画面外の敵にはダメージを与えない
-				}
-
-				float enemyRadius = enemy->GetRadius();
-				if (Math::Length(enemyPos - bulletPos) <= bulletRadius + enemyRadius) {
+				// ★ 修正: 画面外チェックを削除 ★
+				if (Math::Length(enemyPos - bulletPos) <= (bulletRadius + enemy->GetRadius())) {
 					enemy->TakeDamage(bulletDamage);
 					bullet->Die();
 					return true;
@@ -902,10 +882,11 @@ void GameLogic::CheckAllCollisions() {
 			}
 			return false;
 		};
-		if (checkBulletCollision(enemies_) || checkBulletCollision(enemies2_) || checkBulletCollision(enemies3_) || checkBulletCollision(enemies4_) ||
-		    checkBulletCollision(enemies5_)) { // ★ 修正: Enemy5を追加 ★
+
+		if (checkBulletCollision(enemies_) || checkBulletCollision(enemies2_) || checkBulletCollision(enemies3_) || checkBulletCollision(enemies4_) || checkBulletCollision(enemies5_)) {
 			hit = true;
 		}
+
 		if (hit) {
 			delete bullet;
 			itB = bullets_.erase(itB);
@@ -914,16 +895,13 @@ void GameLogic::CheckAllCollisions() {
 		}
 	}
 
-	// 5. Wine (回復アイテム) vs プレイヤー の衝突判定
+	// --- 4. Wine (回復アイテム) vs プレイヤー ---
 	for (auto itW = wines_.begin(); itW != wines_.end();) {
 		Wine* wine = *itW;
 		Vector3 winePos = wine->GetPosition();
-		float wineRadius = wine->GetRadius();
-		if (Math::Length(winePos - playerPos) <= playerBodyRadius + wineRadius) {
+		if (Math::Length(winePos - playerPos) <= (playerBodyRadius + wine->GetRadius())) {
 			player_->Heal(wine->GetHealAmount());
-
 			audio_->PlayWave(soundHandleHeal_);
-
 			wine->Die();
 			delete wine;
 			itW = wines_.erase(itW);
@@ -932,123 +910,61 @@ void GameLogic::CheckAllCollisions() {
 		}
 	}
 
-	// 6. Boomerang vs 敵 の衝突判定
-	for (auto itB = boomerangs_.begin(); itB != boomerangs_.end();) {
-		Boomerang* boomerang = *itB;
-		if (boomerang->IsDead()) {
-			delete boomerang;
-			itB = boomerangs_.erase(itB);
-			continue;
-		}
-		Vector3 boomerangPos = boomerang->GetPosition();
-		float boomerangRadius = boomerang->GetRadius();
-		int boomerangDamage = boomerang->GetDamage();
-		bool hit = false;
-		auto checkBoomerangCollision = [&](auto& enemies_list) -> bool {
-			for (auto enemy : enemies_list) {
-				if (enemy->IsDead())
-					continue;
-				Vector3 enemyPos = enemy->GetPosition();
-
-				Vector3 diffFromPlayer = enemyPos - playerPos;
-				// ★★★ 追記: 画面内チェック ★★★
-				if (Math::Length(diffFromPlayer) > kScreenDamageRadius) {
-					continue; // 画面外の敵にはダメージを与えない
-				}
-
-				float enemyRadius = enemy->GetRadius();
-				if (Math::Length(enemyPos - boomerangPos) <= boomerangRadius + enemyRadius) {
-					enemy->TakeDamage(boomerangDamage);
-					boomerang->Hit();
-					return true;
-				}
+	// --- 5. Boomerang / Missile (同様に画面外チェックを削除) ---
+	auto checkWeaponCollision = [&](auto& weapons_list, auto handleHit) {
+		for (auto it = weapons_list.begin(); it != weapons_list.end();) {
+			auto weapon = *it;
+			if (weapon->IsDead()) {
+				delete weapon;
+				it = weapons_list.erase(it);
+				continue;
 			}
-			return false;
-		};
-		if (checkBoomerangCollision(enemies_) || checkBoomerangCollision(enemies2_) || checkBoomerangCollision(enemies3_) || checkBoomerangCollision(enemies4_) ||
-		    checkBoomerangCollision(enemies5_)) { // ★ 修正: Enemy5を追加 ★
-			hit = true;
-		}
-		if (hit) {
-			delete boomerang;
-			itB = boomerangs_.erase(itB);
-		} else {
-			++itB;
-		}
-	}
+			bool hit = false;
+			Vector3 wPos = weapon->GetPosition();
+			float wRad = weapon->GetRadius();
+			int wDmg = weapon->GetDamage();
 
-	// 7. Missile vs 敵 の衝突判定
-	for (auto itM = missiles_.begin(); itM != missiles_.end();) {
-		Missile* missile = *itM;
-		if (missile->IsDead()) {
-			delete missile;
-			itM = missiles_.erase(itM);
-			continue;
-		}
-		Vector3 missilePos = missile->GetPosition();
-		float missileRadius = missile->GetRadius();
-		int missileDamage = missile->GetDamage();
-		bool hit = false;
-		auto checkMissileCollision = [&](auto& enemies_list) -> bool {
-			for (auto enemy : enemies_list) {
-				if (enemy->IsDead())
-					continue;
-				Vector3 enemyPos = enemy->GetPosition();
-
-				Vector3 diffFromPlayer = enemyPos - playerPos;
-				// ★★★ 追記: 画面内チェック ★★★
-				if (Math::Length(diffFromPlayer) > kScreenDamageRadius) {
-					continue; // 画面外の敵にはダメージを与えない
+			auto checkAgainstEnemies = [&](auto& enemies_list) -> bool {
+				for (auto enemy : enemies_list) {
+					if (enemy->IsDead())
+						continue;
+					if (Math::Length(enemy->GetPosition() - wPos) <= (wRad + enemy->GetRadius())) {
+						enemy->TakeDamage(wDmg);
+						handleHit(weapon);
+						return true;
+					}
 				}
-				// ★★★ 追記ここまで ★★★
+				return false;
+			};
 
-				float enemyRadius = enemy->GetRadius();
-				if (Math::Length(enemyPos - missilePos) <= missileRadius + enemyRadius) {
-					enemy->TakeDamage(missileDamage);
-					missile->Die();
-					return true;
-				}
+			if (checkAgainstEnemies(enemies_) || checkAgainstEnemies(enemies2_) || checkAgainstEnemies(enemies3_) || checkAgainstEnemies(enemies4_) || checkAgainstEnemies(enemies5_)) {
+				hit = true;
 			}
-			return false;
-		};
-		if (checkMissileCollision(enemies_) || checkMissileCollision(enemies2_) || checkMissileCollision(enemies3_) || checkMissileCollision(enemies4_) ||
-		    checkMissileCollision(enemies5_)) { // ★ 修正: Enemy5を追加 ★
-			hit = true;
-		}
-		if (hit) {
-			delete missile;
-			itM = missiles_.erase(itM);
-		} else {
-			++itM;
-		}
-	}
 
-	// 8. ★ 追記: 敵弾 vs プレイヤー の衝突判定 ★
+			if (hit && weapon->IsDead()) { // 消滅するタイプの武器なら削除
+				delete weapon;
+				it = weapons_list.erase(it);
+			} else {
+				++it;
+			}
+		}
+	};
+
+	checkWeaponCollision(boomerangs_, [](auto b) { b->Hit(); });
+	checkWeaponCollision(missiles_, [](auto m) { m->Die(); });
+
+	// --- 6. 敵弾 vs プレイヤー ---
 	for (auto itEB = enemyBullets_.begin(); itEB != enemyBullets_.end();) {
-		EnemyBullet* enemyBullet = *itEB;
-		if (enemyBullet->IsDead() || player_->GetCurrentHp() <= 0) {
+		EnemyBullet* eb = *itEB;
+		if (eb->IsDead() || player_->GetCurrentHp() <= 0) {
 			++itEB;
 			continue;
 		}
-
-		Vector3 enemyBulletPos = enemyBullet->GetPosition();
-		float enemyBulletRadius = enemyBullet->GetRadius();
-		Vector3 diff = enemyBulletPos - playerPos;
-		float distance = Math::Length(diff);
-
-		if (distance <= playerBodyRadius + enemyBulletRadius) {
-			// 衝突! プレイヤーにダメージを与え、弾を削除
-			int baseDamage = enemyBullet->GetDamage();
-			int damageToTake = baseDamage - player_->GetDefense(); // 弾のダメージから防御力を引く
-
-			if (damageToTake < 1) { // ダメージは最低1 (あるいは0) に設定
-				damageToTake = 1;   // 常に最低1ダメージは受けるようにする（必要に応じて0に調整）
-			}
-
-			player_->TakeDamage(damageToTake);    // ★ 修正: 軽減されたダメージを使用 ★
-			audio_->PlayWave(soundHandleDamage_); // ダメージ音 (既存のものを流用)
-
-			enemyBullet->SetIsDead(true); // 弾を削除リストに入れる
+		if (Math::Length(eb->GetPosition() - playerPos) <= (playerBodyRadius + eb->GetRadius())) {
+			int damage = (std::max)(1, eb->GetDamage() - player_->GetDefense());
+			player_->TakeDamage(damage);
+			audio_->PlayWave(soundHandleDamage_);
+			eb->SetIsDead(true);
 			itEB = enemyBullets_.erase(itEB);
 		} else {
 			++itEB;

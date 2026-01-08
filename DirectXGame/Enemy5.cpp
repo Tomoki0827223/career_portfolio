@@ -28,8 +28,8 @@ void Enemy5::Update(const Vector3& playerPosition) {
 	worldTransform.translation_ += direction * kMoveSpeed; // kMoveSpeed (0.15f) を適用
 
 	// 移動を反映
-	worldTransform.TransferMatrix();
-	worldTransform.UpdateMatarix();
+	worldTransform.UpdateMatarix();  // ★ 先に計算！
+	worldTransform.TransferMatrix(); // ★ 後で転送！
 }
 
 void Enemy5::Draw(const Camera& camera) {

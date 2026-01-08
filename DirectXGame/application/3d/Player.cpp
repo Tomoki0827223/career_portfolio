@@ -21,9 +21,6 @@ void Player::Initialize() {
 
 	input_ = KamataEngine::Input::GetInstance();
 
-	// カメラの初期化
-	camera_.Initialize();
-
 	worldTransform.Initialize();
 	worldTransform.scale_ = {2.0f, 2.0f, 2.0f}; // ★ プレイヤーのサイズを2倍に ★
 
@@ -65,8 +62,9 @@ void Player::Update() {
 		}
 
 		// 死亡モーションの反映と終了
-		worldTransform.TransferMatrix();
-		worldTransform.UpdateMatarix();
+		// 移動を反映
+		worldTransform.UpdateMatarix();  // 1. まず新しい位置を計算する
+		worldTransform.TransferMatrix(); // 2. その新しい位置をGPUに送る
 		return; // 死亡時は以降の処理をスキップ
 	}
 
@@ -171,23 +169,20 @@ void Player::Update() {
 		worldTransform.scale_ = {2.0f, 2.0f, 2.0f};
 	}
 
-
 	// 移動を反映
-	worldTransform.TransferMatrix();
-	worldTransform.UpdateMatarix();
+	worldTransform.UpdateMatarix();  // 1. まず新しい位置を計算する
+	worldTransform.TransferMatrix(); // 2. その新しい位置をGPUに送る
 
 	if (currentHp_ < 0) {
 		currentHp_ = 0;
 	}
 }
 
-void Player::Draw() {
-
-	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
-	dxCommon->ClearDepthBuffer();
+void Player::Draw(const Camera& camera) {
 	Model::PreDraw();
 
-	modelPlayer_->Draw(worldTransform, camera_);
+	// ★ 変更: メンバ変数の camera_ ではなく、引数の camera を使う
+	modelPlayer_->Draw(worldTransform, camera);
 
 	Model::PostDraw();
 }

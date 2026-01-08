@@ -12,7 +12,7 @@ public:
 
 	void Update();
 
-	void Draw();
+	void Draw(const Camera& camera);
 
 	// プレイヤーの位置を取得するためのgetter
 	Vector3 GetPosition() const { return worldTransform.translation_; }
@@ -70,8 +70,6 @@ private:
 	Model* modelPlayer_ = nullptr;
 
 	Input* input_ = nullptr;
-
-	Camera camera_;
 
 	WorldTransform worldTransform;
 

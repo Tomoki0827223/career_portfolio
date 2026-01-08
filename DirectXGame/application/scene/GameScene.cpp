@@ -104,64 +104,60 @@ void GameScene::Initialize() {
 	gameLogic_->Initialize();
 }
 
+
 void GameScene::Update() {
-	// 1. プレイヤーの更新（ここで最新の translation_ が確定する）
+	// 1. プレイヤーを更新（移動させ、行列を計算・転送する）
+	// ★これが最初！
 	player_->Update();
 
-	// 2. カメラを最新のプレイヤー位置に追従させる
+	// 2. カメラをプレイヤーの「最新の位置」に追従させる
 	Vector3 playerPos = player_->GetPosition();
 	camera_.translation_.x = playerPos.x;
 	camera_.translation_.y = playerPos.y;
-	camera_.translation_.z = playerPos.z - 60.0f; // プレイヤーの背後に配置
-	camera_.UpdateMatrix();                       // 行列を再計算
+	camera_.translation_.z = playerPos.z - 60.0f; // 適切な距離を設定
 
-	// 3. 【最重要】最新のプレイヤー座標を基に、ゲームロジック（敵の移動・判定）を実行
+	camera_.UpdateMatrix();   // 行列計算
+	camera_.TransferMatrix(); // ★★★ 【最重要】これを必ず追加してください！ ★★★
+	                          // これがないと描画上のカメラ位置が更新されず、すべてがズレます。
+
+	// 3. ゲームロジックの更新（敵の移動、当たり判定、XP回収）
+	// ★カメラとプレイヤーが確定した後に呼ぶことで、ズレのない判定ができます
 	gameLogic_->Update();
 
-	// HP/ゲームオーバー判定と処理 (GameSceneに残す)
-	int currentHp = player_->GetCurrentHp();
+	// --- 以下、その他の処理 ---
 
+	// HP/ゲームオーバー判定
+	int currentHp = player_->GetCurrentHp();
 	if (currentHp <= 0 && !isGameOver_) {
 		isGameOver_ = true;
 		player_->Die();
 	}
 
-
-	// ゲームオーバー中の処理 (GameSceneに残す)
 	if (isGameOver_) {
 		if (player_->IsDead() && player_->GetDeadTimer() > player_->GetMaxDeadTime()) {
-			// シーン遷移ロジック
+			// シーン遷移など
 		}
 		return;
 	}
 
-	player_->SetIsSkillSelecting(gameLogic_->IsLevelUpPending()); //
+	player_->SetIsSkillSelecting(gameLogic_->IsLevelUpPending());
 
+	// スキル選択中の処理
+	if (gameLogic_->IsLevelUpPending()) {
+		gameLogic_->UpdateSkillSelection();
+		return;
+	}
 
-	// ★★★ 追記: 敵の死亡時パーティクル生成処理 ★★★
-	// GameLogicから倒された敵の位置リストを取得し、パーティクルを生成する
+	// 敵の死亡パーティクル
 	std::list<Vector3> deadPositions = gameLogic_->GetDeadEnemyPositions();
 	for (const Vector3& position : deadPositions) {
 		ParticleBorn(position);
 	}
-	// パーティクル生成後、リストをクリア
 	gameLogic_->ClearDeadEnemyPositions();
 
-	// ------------------------------------
-	// GameLogicの更新処理
-	// ------------------------------------
-	if (gameLogic_->IsLevelUpPending()) {
-		gameLogic_->UpdateSkillSelection();
-		// スキル選択中はGameLogicのUpdate()をスキップするが、UI描画のためにスコアの更新は行う
-		// font_->Set(font_->Get()); // ★ 削除: Get()のビルドエラー回避とロジックの合理化 ★
-		return;
-	}
-
 	stage_->Update();
-	// ★★★ メインのゲームロジックと衝突判定を呼び出す ★★★
-	gameLogic_->Update();
 
-	// ★★★ 追記: パーティクルの更新処理 ★★★
+	// パーティクルの更新
 	particles_.remove_if([](Particle* particle) {
 		particle->Update();
 		if (particle->IsFinished()) {
@@ -186,17 +182,18 @@ void GameScene::DrawEXPBar() {
 }
 
 void GameScene::Draw() {
-
 	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
 
 	// 1. 3D描画のセットアップ
 	Model::PreDraw();
 
 	// 2. 3Dオブジェクトの描画
-	stage_->Draw(camera_); // 修正：3Dとして描画
-	player_->Draw();
+	stage_->Draw(camera_);
 
-	// ★★★ GameLogicが管理するオブジェクトの描画 ★★★
+	// ★ 変更: GameSceneのカメラを渡す
+	player_->Draw(camera_);
+
+	// GameLogicのオブジェクト描画
 	gameLogic_->DrawObjects(camera_);
 
 	for (Particle* particle : particles_) {

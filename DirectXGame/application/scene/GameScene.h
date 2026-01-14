@@ -25,6 +25,9 @@
 
 using namespace KamataEngine;
 
+// 前方宣言またはインクルード
+class TitleScnce;
+
 class GameScene {
 public:
 	~GameScene();
@@ -40,6 +43,9 @@ public:
 	void ResetGameOverFlag() { isGameOver_ = false; }
 
 	void ParticleBorn(Vector3 position);
+
+	// TitleScnceを背景としてセットするためのメソッド
+	void SetBackgroundTitleScene(TitleScnce* titleScnce) { titleScnce_ = titleScnce; }
 
 private:
 	uint32_t textureHandle_ = 0;
@@ -120,4 +126,6 @@ private:
 	WorldTransform worldTransform_;
 
 	std::list<Particle*> particles_; // パーティクルのリスト
+	
+	TitleScnce* titleScnce_ = nullptr; // 背景として使用するタイトルシーンへのポインタ
 };

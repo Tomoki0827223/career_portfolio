@@ -82,18 +82,16 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			}
 
 		} else if (scene == Scene::Game) {
+			// ★ 追加: GameSceneにTitleScnceのポインタを渡す
+			// 毎フレーム呼んでもポインタの代入だけなので負荷はかかりませんが、
+			// 気になる場合は「シーンが切り替わった瞬間」だけに限定してもOKです。
+			gameScnce->SetBackgroundTitleScene(titleScnce);
+
+			// タイトル背景をアニメーション（点滅や移動）させたい場合はUpdateも呼ぶ
+			// titleScnce->Update();
+
 			gameScnce->Update();
 			gameScnce->Draw();
-
-			// ゲームオーバー判定とシーン遷移
-			if (gameScnce->IsGameOver()) {
-				scene = Scene::GameOver;
-				gameOverScene->Initialize(); // ゲームオーバーシーンを初期化
-
-				// ★重要: GameSceneのisGameOver_フラグをリセット
-				// これがないと次のGameScene::Initialize()が呼ばれる前に再度IsGameOver()がtrueを返し続ける可能性がある
-				gameScnce->ResetGameOverFlag();
-			}
 
 		} else if (scene == Scene::GameOver) {
 			gameOverScene->Update();

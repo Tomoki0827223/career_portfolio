@@ -37,6 +37,8 @@ public:
 	/// </summary>
 	void Draw();
 
+	void DrawBackground();
+
 	bool IsSelectFinished() const { return isFinished_; }
 	bool IsGameFinished() const { return isGameFinished_; }
 

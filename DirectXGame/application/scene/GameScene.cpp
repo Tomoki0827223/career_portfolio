@@ -1,4 +1,5 @@
 #include "GameScene.h"
+#include "TitleScnce.h"
 #include <random>
 #include <list>
 
@@ -183,48 +184,38 @@ void GameScene::DrawEXPBar() {
 }
 
 void GameScene::Draw() {
-	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
+	//DirectXCommon* dxCommon = DirectXCommon::GetInstance();
 
-	// 1. 3D描画のセットアップ
+	// 1. 3D描画 (背景より前に出る 3D オブジェクト)
 	Model::PreDraw();
-
-	// 2. 3Dオブジェクトの描画
 	stage_->Draw(camera_);
-
-	// ★ 変更: GameSceneのカメラを渡す
 	player_->Draw(camera_);
-
-	// GameLogicのオブジェクト描画
 	gameLogic_->DrawObjects(camera_);
-
 	for (Particle* particle : particles_) {
-		particle->Draw(&camera_); // camera_はオブジェクトなのでアドレスを渡す
+		particle->Draw(&camera_);
 	}
-
-	// 3. 3D描画の終了
 	Model::PostDraw();
 
-	// --- ここから2D描画 ---
+	// --- 2. 2D描画 (ここでタイトル背景を一番下に描く) ---
+	Sprite::PreDraw();
 
-	// 4. 2D描画のセットアップ (コマンドリスト設定)
-	Sprite::PreDraw(dxCommon->GetCommandList());
+	// ★★★ ここでタイトルの背景画像を描画 ★★★
+	if (titleScnce_) {
+		titleScnce_->DrawBackground();
+	}
 
-	// 5. 2Dオブジェクトの描画
-	DrawHPBar(); // HPバーの描画
+	// 3. ゲームのUI描画 (HPバーなどはタイトルの上に乗る)
+	DrawHPBar();
 	DrawEXPBar();
 
-	// スキル選択画面の描画
 	if (gameLogic_->IsLevelUpPending()) {
-		// ★★★ GameLogicにUI要素を渡して描画させる ★★★
 		gameLogic_->DrawSkillSelectionUI(skillCursorSprite_, skillOptionSprites_, skillScreenBackground_);
 	}
 
 	sousaSprite_->Draw();
 	sousaSprite2_->Draw();
-
 	font_->Draw();
 
-	// 6. 2D描画の終了
 	Sprite::PostDraw();
 
 	// ★★★ 修正: ImGui描画処理の統合を_DEBUGで囲む ★★★

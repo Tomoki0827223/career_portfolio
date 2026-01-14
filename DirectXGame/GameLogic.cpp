@@ -250,6 +250,49 @@ void GameLogic::LoadEnemyPopData() {
 // GameLogic::Update (メイン更新処理)
 // ----------------------------------------------------
 void GameLogic::Update() {
+	// --- 背景モード（自動操作）時の処理 ---
+	if (player_->IsAutoMode()) {
+		static int autoFireTimer = 0;
+		autoFireTimer++;
+
+		// 1. 最も近い敵を探す
+		Enemy* targetEnemy = nullptr;
+		float minDistance = 1000.0f;
+		Vector3 playerPos = player_->GetPosition();
+
+		for (Enemy* enemy : enemies_) {
+			Vector3 enemyPos = enemy->GetPosition();
+			float distance = MathUtility::Length(enemyPos - playerPos); // distをdistanceに変更して衝突回避
+			if (distance < minDistance) {
+				minDistance = distance;
+				targetEnemy = enemy;
+			}
+		}
+
+		// 2. 敵がいれば、その方向（左右）への移動ベクトルをプレイヤーに伝える
+		if (targetEnemy) {
+			Vector3 enemyPos = targetEnemy->GetPosition();
+			Vector3 toEnemy = enemyPos - playerPos;
+
+			// 弾が敵に向かう方向を計算
+			Vector3 fireDirection = toEnemy;
+			MathUtility::Normalize(fireDirection);
+
+			// 20フレームに1回、自動で弾を発射
+			if (autoFireTimer % 5 == 0) {
+				// Bullet(位置, 速度)
+				Bullet* newBullet = new Bullet(playerPos, fireDirection * 0.8f);
+				newBullet->Initialize();
+				bullets_.push_back(newBullet);
+			}
+		}
+	}
+
+
+	// 既存の更新処理を呼ぶ (エラーになっていた未定義の関数は消す)
+	CheckAllCollisions(); // CheckCollisions ではなく CheckAllCollisions
+	// UpdateEnemies という関数はないので、既存の敵更新ループをそのまま使う
+
 	Vector3 playerPos = player_->GetPosition();
 
 	// 全ての敵に対して、現在のプレイヤー座標を渡して更新する

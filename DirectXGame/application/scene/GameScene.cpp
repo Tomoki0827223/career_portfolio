@@ -183,66 +183,51 @@ void GameScene::DrawEXPBar() {
 }
 
 void GameScene::Draw() {
-	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
 
-	// 1. 3D描画のセットアップ
+	// 1. 3Dモデル（キャラやステージ）の描画
+	// 背景時でもゲームの様子を見せるために常に実行
 	Model::PreDraw();
-
-	// 2. 3Dオブジェクトの描画
 	stage_->Draw(camera_);
-
-	// ★ 変更: GameSceneのカメラを渡す
 	player_->Draw(camera_);
-
-	// GameLogicのオブジェクト描画
 	gameLogic_->DrawObjects(camera_);
-
-	for (Particle* particle : particles_) {
-		particle->Draw(&camera_); // camera_はオブジェクトなのでアドレスを渡す
+	for (Particle* particle : particles_) { // パーティクルもあれば描画
+		particle->Draw(&camera_);
 	}
-
-	// 3. 3D描画の終了
 	Model::PostDraw();
 
 	// --- ここから2D描画 ---
 
-	// 4. 2D描画のセットアップ (コマンドリスト設定)
-	Sprite::PreDraw(dxCommon->GetCommandList());
+	// 背景モードでない場合のみUIを描画する
+	if (!isBackground_) {
+		// Sprite描画の開始
+		Sprite::PreDraw();
 
-	// 5. 2Dオブジェクトの描画
-	DrawHPBar(); // HPバーの描画
-	DrawEXPBar();
+		DrawHPBar();
+		DrawEXPBar();
 
-	// スキル選択画面の描画
-	if (gameLogic_->IsLevelUpPending()) {
-		// ★★★ GameLogicにUI要素を渡して描画させる ★★★
-		gameLogic_->DrawSkillSelectionUI(skillCursorSprite_, skillOptionSprites_, skillScreenBackground_);
+		// スキル選択画面の描画
+		if (gameLogic_->IsLevelUpPending()) {
+			gameLogic_->DrawSkillSelectionUI(skillCursorSprite_, skillOptionSprites_, skillScreenBackground_);
+		}
+
+		sousaSprite_->Draw();
+		sousaSprite2_->Draw();
+		font_->Draw();
+
+		// Sprite描画の終了
+		Sprite::PostDraw();
 	}
 
-	sousaSprite_->Draw();
-	sousaSprite2_->Draw();
-
-	font_->Draw();
-
-	// 6. 2D描画の終了
-	Sprite::PostDraw();
-
-	// ★★★ 修正: ImGui描画処理の統合を_DEBUGで囲む ★★★
+	// ImGuiはデバッグ用なので、背景モードに関わらず必要なら表示
 #ifdef _DEBUG
-	KamataEngine::ImGuiManager* imGuiManager = KamataEngine::ImGuiManager::GetInstance();
-
-	// 1. ImGui受付開始
-	imGuiManager->Begin();
-
-	// 2. ImGuiウィンドウの定義
-	gameLogic_->DrawImGui();
-
-	// 3. ImGui受付終了
-	imGuiManager->End();
-
-	// 4. 描画コマンドの実行
-	imGuiManager->Draw();
-#endif // _DEBUG
+	if (!isBackground_) { // タイトル画面でデバッグUIが邪魔ならここでもチェック
+		KamataEngine::ImGuiManager* imGuiManager = KamataEngine::ImGuiManager::GetInstance();
+		imGuiManager->Begin();
+		gameLogic_->DrawImGui();
+		imGuiManager->End();
+		imGuiManager->Draw();
+	}
+#endif
 }
 
 void GameScene::ParticleBorn(Vector3 position) {

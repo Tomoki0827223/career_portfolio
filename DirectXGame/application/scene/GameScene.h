@@ -25,7 +25,13 @@ public:
 
 	void ParticleBorn(Vector3 position);
 
+	void SetIsBackground(bool isBackground) { isBackground_ = isBackground; }
+	bool isBackground_ = false;
+
+	Player* GetPlayer() const { return player_; } // ★追加
+
 private:
+
 	// HPバー描画関数
 	void DrawHPBar();
 	void DrawEXPBar();
@@ -81,4 +87,5 @@ private:
 	// 上記の `worldTransform` と重複していないか確認推奨
 
 	std::list<Particle*> particles_;
+
 };

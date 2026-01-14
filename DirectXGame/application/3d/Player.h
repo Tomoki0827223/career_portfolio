@@ -60,6 +60,11 @@ public:
 		attackSeHandle_ = seHandle;
 	}
 
+	// 背景モードフラグ
+	bool isAutoMode_ = false;
+	void SetAutoMode(bool isAuto) { isAutoMode_ = isAuto; }
+	bool IsAutoMode() const { return isAutoMode_; } // ★追加
+
 private:
 
 	// ★追加: Audio関連 ★

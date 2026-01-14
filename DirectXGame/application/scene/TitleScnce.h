@@ -6,6 +6,7 @@
 #include <3d/WorldTransform.h>
 #include <KamataEngine.h>
 #include <audio/Audio.h>
+#include "GameScene.h"
 
 // --- イージング関数のインライン定義 ---
 inline float EaseOutQuint(float t) {
@@ -114,4 +115,6 @@ private:
 	// TitleScnce.hの既存のsprite_*変数とは別に、スライド専用のものを用意する
 	uint32_t slideTextureHandle_[kSlideCount];
 	KamataEngine::Sprite* slideSprites_[kSlideCount];
+
+	GameScene* backgroundGameScene_ = nullptr;
 };

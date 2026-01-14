@@ -11,6 +11,7 @@ TitleScnce::~TitleScnce() {
 	delete sprite2_;
 	delete sprite3_;
 	delete sprite4_;
+	delete backgroundGameScene_;
 
 	// ★追加: スライドスプライトの解放
 	for (int i = 0; i < kSlideCount; ++i) {
@@ -78,6 +79,20 @@ void TitleScnce::Initialize() {
 		// テクスチャを使いたいので、黒の強制設定を解除し、不透明な白（テクスチャの色そのまま）にします。
 		slideSprites_[i]->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
 	}
+	
+
+	backgroundGameScene_ = new GameScene();
+	backgroundGameScene_->Initialize();
+	backgroundGameScene_->SetIsBackground(true);
+
+	Player* player = backgroundGameScene_->GetPlayer();
+	if (player) {
+		player->SetAutoMode(true);
+
+		// プレイヤーの位置を画面下部（ロゴに被らない位置）へ移動
+		// 座標系に合わせて数値を調整してください（例: Y = -10.0f）
+		//player->SetPosition({0.0f, -10.0f, 0.0f});
+	}
 }
 
 void TitleScnce::InitializeSprites() {
@@ -89,6 +104,12 @@ void TitleScnce::InitializeSprites() {
 
 void TitleScnce::Update() {
 	Timer_ += 1.0f; // フレームごとに加算
+
+	// ★追加: 背景のゲームシーンを更新
+	// タイトル画面の裏で常に動かし続ける
+	if (backgroundGameScene_) {
+		backgroundGameScene_->Update();
+	}
 
 	switch (state_) {
 	case State::TitleScreen:
@@ -191,14 +212,19 @@ void TitleScnce::Update() {
 void TitleScnce::Draw() {
 	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
 
+	// ★追加: 最初にゲームシーンを描画する
+	if (backgroundGameScene_) {
+		backgroundGameScene_->Draw();
+	}
+
 	// 3Dオブジェクト描画 (省略)
 
 	// スプライト描画
 	KamataEngine::Sprite::PreDraw(commandList);
 
-	// 1. 固定要素を描画
-	sprite_->SetPosition({0, 0});
-	sprite_->Draw();
+	/// 1. 固定要素を描画
+	//sprite_->SetPosition({0, 0});
+	//sprite_->Draw();
 
 	// 2. タイトルロゴを描画
 	if (sprite2_) {

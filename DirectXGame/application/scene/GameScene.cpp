@@ -184,9 +184,7 @@ void GameScene::DrawEXPBar() {
 }
 
 void GameScene::Draw() {
-	//DirectXCommon* dxCommon = DirectXCommon::GetInstance();
-
-	// 1. 3D描画 (背景より前に出る 3D オブジェクト)
+	// 1. 3D描画 (不透明オブジェクト)
 	Model::PreDraw();
 	stage_->Draw(camera_);
 	player_->Draw(camera_);
@@ -196,15 +194,14 @@ void GameScene::Draw() {
 	}
 	Model::PostDraw();
 
-	// --- 2. 2D描画 (ここでタイトル背景を一番下に描く) ---
+	// 2. 2D描画 (UIなど)
 	Sprite::PreDraw();
 
-	// ★★★ ここでタイトルの背景画像を描画 ★★★
+	// 背景を消した場合はここが空、または以下のif文ごとコメントアウト
 	if (titleScnce_) {
 		titleScnce_->DrawBackground();
 	}
 
-	// 3. ゲームのUI描画 (HPバーなどはタイトルの上に乗る)
 	DrawHPBar();
 	DrawEXPBar();
 

@@ -197,8 +197,8 @@ void TitleScnce::Draw() {
 	KamataEngine::Sprite::PreDraw(commandList);
 
 	// 1. 固定要素を描画
-	sprite_->SetPosition({0, 0});
-	sprite_->Draw();
+	//sprite_->SetPosition({0, 0});
+	//sprite_->Draw();
 
 	// 2. タイトルロゴを描画
 	if (sprite2_) {
@@ -232,15 +232,11 @@ void TitleScnce::Draw() {
 	KamataEngine::Sprite::PostDraw();
 }
 
-// --- TitleScnce.cpp ---
 void TitleScnce::DrawBackground() {
-	// 3D背景（スカイドーム）がある場合
-	// titleskydome.Draw(Camera_); // もし3D背景を出すならここ
-
-	// 2D背景スプライトの描画
-	// ※ここでは PreDraw/PostDraw は呼ばず、呼び出し元の GameScene に任せる
-	if (sprite_) {
-		sprite_->SetPosition({0, 0});
-		sprite_->Draw();
+	// 2D背景スプライトの描画を一時的に無効化
+	/* if (sprite_) {
+	    sprite_->SetPosition({0, 0});
+	    sprite_->Draw();
 	}
+	*/
 }

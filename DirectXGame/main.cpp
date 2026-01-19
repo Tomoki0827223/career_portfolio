@@ -11,7 +11,7 @@ using namespace KamataEngine;
 // Scene enumに Tutorial と GameOver を追加
 enum class Scene { Title, Tutorial, Game, GameOver };
 
-Scene scene = Scene::Title;
+Scene scene = Scene::Game;
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {

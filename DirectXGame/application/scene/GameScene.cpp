@@ -62,6 +62,7 @@ void GameScene::Initialize() {
 	const Vector2 kExpBarPos = {30.0f, 30.0f}; // ★ 追記: EXPバーの位置 (上側) ★
 	const Vector2 kHpBarSize = {200.0f, 20.0f};
 
+
 	sousaTextureHandle_ = KamataEngine::TextureManager::Load("sousa.png");
 	sousaTextureHandle2_ = KamataEngine::TextureManager::Load("sousa2.png");
 	sousaSprite_ = KamataEngine::Sprite::Create(sousaTextureHandle_, {1040.0f, 400.0f});

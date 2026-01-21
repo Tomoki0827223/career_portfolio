@@ -30,6 +30,8 @@ public:
 
 	Player* GetPlayer() const { return player_; } // ★追加
 
+	int GetScore() const { return gameLogic_->GetScore(); }
+
 private:
 
 	// HPバー描画関数

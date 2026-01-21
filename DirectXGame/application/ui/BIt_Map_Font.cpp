@@ -4,10 +4,24 @@
 
 using namespace KamataEngine;
 
+// BIt_Map_Font.cpp の Initialize を修正して引数で座標を受け取れるようにするか、
+// Drawの前に座標を再設定できるようにします。
+
+void BIt_Map_Font::SetPosition(const Vector2& pos) {
+	position_ = pos;
+	for (int i = 0; i < kNumDigits; ++i) {
+		// ★ここが重要: スプライトが存在するかチェック★
+		if (numberSprite_[i] != nullptr) {
+			numberSprite_[i]->SetPosition({position_.x + kFontSize.x * i, position_.y});
+		}
+	}
+}
+
 void BIt_Map_Font::Initialize() {
 	numberTextureHandle_ = TextureManager::Load("number.png");
 	for (int i = 0; i < kNumDigits; ++i) {
-		numberSprite_[i] = Sprite::Create(numberTextureHandle_, {1100.0f + kFontSize.x * i, 10.0f});
+		// 初期位置（右上）
+		numberSprite_[i] = Sprite::Create(numberTextureHandle_, {position_.x + kFontSize.x * i, position_.y});
 		numberSprite_[i]->SetSize(kFontSize);
 		numberSprite_[i]->SetTextureRect({0, 0}, kFontSize);
 	}

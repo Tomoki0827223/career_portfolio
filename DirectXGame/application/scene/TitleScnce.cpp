@@ -105,10 +105,19 @@ void TitleScnce::InitializeSprites() {
 void TitleScnce::Update() {
 	Timer_ += 1.0f; // フレームごとに加算
 
-	// ★追加: 背景のゲームシーンを更新
-	// タイトル画面の裏で常に動かし続ける
 	if (backgroundGameScene_) {
+		// 背景のGameSceneを更新
 		backgroundGameScene_->Update();
+
+		// ★追加: タイトル画面中だけプレイヤーの弾の威力を爆上げする
+		Player* player = backgroundGameScene_->GetPlayer();
+		if (player) {
+			// 例: 通常は 1 だけどタイトル背景では 100 にして敵を一撃にする
+			player->SetBulletLevel(1); // 弾が出るようにレベルを設定
+			// Bullet自体のダメージ設定は GameLogic 生成時に行われるため、
+			// 背景モードの時だけ GameLogic 側の判定を調整するか、
+			// 以下の手順で GameLogic を経由して弾の威力を上げます。
+		}
 	}
 
 	switch (state_) {

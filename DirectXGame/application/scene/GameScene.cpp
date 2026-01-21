@@ -53,7 +53,7 @@ void GameScene::Initialize() {
 
 	font_ = new BIt_Map_Font();
 	font_->Initialize();
-
+	font_->SetPosition({1100.0f, 10.0f});
 
 	// HPバーの初期化 (GameSceneに残すUI要素)
 	hpBarBaseTexture_ = KamataEngine::TextureManager::Load("HP.png");
@@ -102,10 +102,10 @@ void GameScene::Initialize() {
 
 	// ★★★ GameLogicの生成と初期化 ★★★
 	// GameLogicに依存オブジェクト (Player, Font, HPBar, EXPBar) を渡す
-	gameLogic_ = new GameLogic(player_, font_, hpBar_, hpBarBase_, expBar_, expBarBase_); // ★ 修正: EXPバーを渡す ★
-	gameLogic_->Initialize();
+	gameLogic_ = new GameLogic(player_, font_, hpBar_, hpBarBase_, expBar_, expBarBase_);
+	// ★追加: GameLogicにも背景モードフラグを渡す
+	gameLogic_->SetIsBackground(isBackground_);
 }
-
 
 void GameScene::Update() {
 	// 1. プレイヤーを更新（移動させ、行列を計算・転送する）
@@ -133,6 +133,20 @@ void GameScene::Update() {
 	if (currentHp <= 0 && !isGameOver_) {
 		isGameOver_ = true;
 		player_->Die();
+
+		// ★ここが重要：現在のスコアをリザルト用に保存、またはGameOverSceneに渡す
+		// シーン管理クラスを介して gameOverScene->SetResultScore(gameLogic_->GetScore());
+		// を呼び出す必要があります。
+	}
+
+	// HP/ゲームオーバー判定
+	//int currentHp = player_->GetCurrentHp();
+	if (currentHp <= 0 && !isGameOver_) {
+		isGameOver_ = true;
+		player_->Die();
+
+		// ここでスコアを取得して保持（必要に応じてGameOverSceneへ渡す）
+		// 例: finalScore = gameLogic_->GetScore();
 	}
 
 	if (isGameOver_) {

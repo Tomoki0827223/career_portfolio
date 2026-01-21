@@ -5,6 +5,7 @@
 #include "KamataEngine.h"
 #include "math/MathUtility.h"
 #include "math/Vector3.h"
+#include <Enemy.h>
 
 using namespace KamataEngine;
 
@@ -17,6 +18,11 @@ public:
 	void Initialize();
 	void Update();
 	void Draw(const Camera& camera);
+
+	void SetTargetPos(const Vector3& pos) {
+		targetPos_ = pos;
+		hasTarget_ = true;
+	}
 
 	Vector3 GetPosition() const { return worldTransform.translation_; }
 	float GetRadius() const { return radius_; }
@@ -35,4 +41,9 @@ private:
 	WorldTransform worldTransform;
 	Vector3 velocity_;    // 移動ベクトル
 	bool isDead_ = false; // 命中または画面外でtrue
+	
+
+	Vector3 targetPos_;              // ターゲットの座標
+	bool hasTarget_ = false;         // ターゲットがいるか
+	const float kHomingLimit = 0.1f; // 曲がる強さ (0.01～0.2の間で調整)
 };

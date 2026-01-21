@@ -76,6 +76,18 @@ void GameOverScene::Initialize() {
 		cursorSprite_->SetSize({kOptionSize.x + 20.0f, kOptionSize.y + 10.0f});
 		cursorSprite_->SetColor({1.0f, 1.0f, 0.0f, 0.5f}); // 黄色で半透明
 	}
+
+	// まだ作られていない場合のみ作成する
+	if (resultFont_ == nullptr) {
+		resultFont_ = new BIt_Map_Font();
+	}
+
+	// ★重要: Initialize を呼んでから SetPosition を呼ぶ
+	resultFont_->Initialize();
+
+	// 中央に配置する計算
+	float centerX = 640.0f - (32.0f * 5 / 2.0f);
+	resultFont_->SetPosition({centerX, 300.0f});
 }
 
 void GameOverScene::Update() {
@@ -119,10 +131,10 @@ void GameOverScene::Update() {
 }
 
 void GameOverScene::Draw() {
-	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
+	//DirectXCommon* dxCommon = DirectXCommon::GetInstance();
 
 	// --- 2D描画 ---
-	Sprite::PreDraw(dxCommon->GetCommandList());
+	Sprite::PreDraw();
 
 	// 1. 背景を描画
 	if (backgroundSprite_) {
@@ -143,6 +155,16 @@ void GameOverScene::Draw() {
 	// 3. カーソルを描画 (ハイライト)
 	if (cursorSprite_) {
 		cursorSprite_->Draw();
+	}
+	
+	// 1. 背景やリトライボタンの描画 (既存処理)
+	backgroundSprite_->Draw();
+	retrySprite_->Draw();
+
+	if (resultFont_) {
+		// ★重要：ここで保持しているスコアをフォントにセット
+		resultFont_->Set(resultScore_);
+		resultFont_->Draw();
 	}
 
 	Sprite::PostDraw();

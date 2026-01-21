@@ -87,8 +87,20 @@ public:
 	// スキルアイコンのテクスチャハンドル配列を返す
 	const uint32_t* GetSkillTextureHandles() const { return skillTextureHandles_; }
 
+	int GetScore() const { return score_; }
+	void SetIsBackground(bool isBackground) { isBackground_ = isBackground; }
 
 private:
+
+	int skillSelectTimer_ = 0;       // スローから停止までのタイマー
+	const int kSlowMotionLimit = 60; // スローモーションから停止に切り替わる時間 (例: 1秒)
+
+
+	bool isInitialRapidFire_ = true; // 最初は連射モード
+	int rapidFireTimer_ = 450;       // 連射時間（例：約7.5秒間）
+	float currentShotAngle_ = 0.0f;  // 弾の発射角度管理用
+
+	bool isBackground_ = false;
 
 	// ★追加: 倒された敵の位置を保持するリスト
 	std::list<Vector3> deadEnemyPositions_;

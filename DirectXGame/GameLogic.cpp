@@ -207,6 +207,7 @@ void GameLogic::Initialize() {
 	}
 
 	LoadEnemyPopData();
+
 }
 
 void GameLogic::LoadEnemyPopData() {
@@ -250,50 +251,98 @@ void GameLogic::LoadEnemyPopData() {
 // GameLogic::Update (メイン更新処理)
 // ----------------------------------------------------
 void GameLogic::Update() {
-	// --- 背景モード（自動操作）時の処理 ---
-	if (player_->IsAutoMode()) {
-		static int autoFireTimer = 0;
-		autoFireTimer++;
+	// --- 1. 冒頭でプレイヤーの座標を取得 ---
+	Vector3 playerPos = player_->GetPosition();
 
-		// 1. 最も近い敵を探す
-		Enemy* targetEnemy = nullptr;
-		float minDistance = 1000.0f;
-		Vector3 playerPos = player_->GetPosition();
-
-		for (Enemy* enemy : enemies_) {
-			Vector3 enemyPos = enemy->GetPosition();
-			float distance = MathUtility::Length(enemyPos - playerPos); // distをdistanceに変更して衝突回避
-			if (distance < minDistance) {
-				minDistance = distance;
-				targetEnemy = enemy;
+	// --- 2. ターゲット（最も近い敵）を探す処理を定義 (getTarget) ---
+	// これを連射処理(isInitialRapidFire_)より前に書くのがポイントです
+	auto getTarget = [&]() -> std::pair<Vector3, float> {
+		float minDistanceSq = 1e10f;
+		Vector3 targetPos = playerPos; // 敵がいない場合はプレイヤーの位置を返す
+		auto checkEnemy = [&](auto& enemies_list) {
+			for (auto enemy : enemies_list) {
+				if (enemy->IsDead())
+					continue;
+				float distance = Math::Length(enemy->GetPosition() - playerPos);
+				float distanceSq = distance * distance;
+				if (distanceSq < minDistanceSq) {
+					minDistanceSq = distanceSq;
+					targetPos = enemy->GetPosition();
+				}
 			}
+		};
+		checkEnemy(enemies_);
+		checkEnemy(enemies2_);
+		checkEnemy(enemies3_);
+		checkEnemy(enemies4_);
+		checkEnemy(enemies5_);
+		return {targetPos, minDistanceSq};
+	};
+
+	// --- 3. 序盤の全方位連射モード ---
+	if (isInitialRapidFire_) {
+		rapidFireTimer_--;
+		if (rapidFireTimer_ <= 0) {
+			isInitialRapidFire_ = false;
 		}
 
-		// 2. 敵がいれば、その方向（左右）への移動ベクトルをプレイヤーに伝える
-		if (targetEnemy) {
-			Vector3 enemyPos = targetEnemy->GetPosition();
-			Vector3 toEnemy = enemyPos - playerPos;
+		if (rapidFireTimer_ % 4 == 0) {
+			// ここで getTarget を呼び出す
+			auto [targetPos, minDistanceSq] = getTarget();
 
-			// 弾が敵に向かう方向を計算
-			Vector3 fireDirection = toEnemy;
-			MathUtility::Normalize(fireDirection);
+			for (int i = 0; i < 3; ++i) {
+				Vector3 velocity;
+				velocity.x = std::cos(currentShotAngle_);
+				velocity.y = std::sin(currentShotAngle_);
+				velocity.z = 0.0f;
 
-			// 20フレームに1回、自動で弾を発射
-			if (autoFireTimer % 5 == 0) {
-				// Bullet(位置, 速度)
-				Bullet* newBullet = new Bullet(playerPos, fireDirection * 0.8f);
+				Bullet* newBullet = new Bullet(playerPos, velocity);
 				newBullet->Initialize();
+
+				// ★★★ ここを追加：背景モード（タイトル）なら攻撃力を100にする ★★★
+				if (isBackground_) {
+					newBullet->SetDamage(100);
+				} else {
+					// 通常プレイの時の序盤も少し強くしたいなら、ここを 5 などにしてもOK
+					newBullet->SetDamage(5);
+				}
+
+				// 敵が見つかっていれば追尾ターゲットとして座標を渡す
+				if (minDistanceSq < 10000.0f) {
+					newBullet->SetTargetPos(targetPos);
+				}
+
 				bullets_.push_back(newBullet);
+				currentShotAngle_ += 0.5f;
 			}
+			audio_->PlayWave(soundHandleBulletShot_);
 		}
 	}
-
 
 	// 既存の更新処理を呼ぶ (エラーになっていた未定義の関数は消す)
 	CheckAllCollisions(); // CheckCollisions ではなく CheckAllCollisions
 	// UpdateEnemies という関数はないので、既存の敵更新ループをそのまま使う
 
-	Vector3 playerPos = player_->GetPosition();
+	//Vector3 playerPos = player_->GetPosition();
+
+	// --- スキル選択中の処理 ---
+	if (isLevelUpPending_) {
+		skillSelectTimer_++;
+
+		// プレイヤーを無敵状態にする
+		// (Playerクラスに無敵フラグがある前提、またはダメージ処理を飛ばす)
+
+		// kSlowMotionLimit までは「数フレームに1回」だけ更新することでスローを表現
+		if (skillSelectTimer_ < kSlowMotionLimit) {
+			if (skillSelectTimer_ % 4 != 0) {
+				return; // 4フレームに1回だけ動く (スロー)
+			}
+		} else {
+			return; // 停止
+		}
+	} else {
+		skillSelectTimer_ = 0; // スキル選択中でなければタイマーリセット
+	}
 
 	// 全ての敵に対して、現在のプレイヤー座標を渡して更新する
 	for (Enemy* enemy : enemies_) {
@@ -325,9 +374,6 @@ void GameLogic::Update() {
 	expBar_->SetSize({newExpWidth, currentExpSize.y});
 	// ---------------------------------
 
-	if (isLevelUpPending_) {
-		return;
-	}
 
 	// スコア表示の更新
 	font_->Set(score_);
@@ -856,59 +902,83 @@ void GameLogic::Update() {
 }
 
 void GameLogic::SpawnEnemy(int enemyType) {
-	// 敵の上限数チェック
+	// 敵の上限数チェック（既存のロジック）
 	int currentTotalEnemies = static_cast<int>(enemies_.size() + enemies2_.size() + enemies3_.size() + enemies4_.size() + enemies5_.size());
 	int maxTotalEnemies = kMaxEnemies + kMaxEnemies2 + kMaxEnemies3 + kMaxEnemies4 + kMaxEnemies5;
 	if (currentTotalEnemies >= maxTotalEnemies)
 		return;
 
 	Vector3 playerPos = player_->GetPosition();
-	Vector3 randomPos;
-	// 座標計算
-	std::uniform_real_distribution<float> angleDist(0.0f, 6.283f);
-	float angle = angleDist(engine);
-	float spawnDist = 50.0f;
-	randomPos.x = playerPos.x + std::cos(angle) * spawnDist;
-	randomPos.y = playerPos.y + std::sin(angle) * spawnDist;
-	randomPos.z = 0.0f;
+	Vector3 spawnPos; // randomPos から spawnPos に名前を合わせて調整
+
+	// --- 囲い込み出現のロジック ---
+	if (enemyType == 5) {
+		// static変数で角度を保持し、呼ばれるたびに少しずつずらす
+		static float surroundAngle = 0.0f;
+		float spawnDist = 30.0f; // プレイヤーからの距離（お好みで調整）
+
+		spawnPos.x = playerPos.x + std::cos(surroundAngle) * spawnDist;
+		spawnPos.y = playerPos.y + std::sin(surroundAngle) * spawnDist;
+		spawnPos.z = 0.0f;
+
+		// 次回呼び出し時のために角度を進める（例：360度を24分割して出現させる場合）
+		surroundAngle += (2.0f * 3.14159f) / 24.0f;
+	} else {
+		// --- 既存のランダム出現ロジック ---
+		std::uniform_real_distribution<float> angleDist(0.0f, 6.283f);
+		float angle = angleDist(engine);
+		float spawnDist = 50.0f;
+		spawnPos.x = playerPos.x + std::cos(angle) * spawnDist;
+		spawnPos.y = playerPos.y + std::sin(angle) * spawnDist;
+		spawnPos.z = 0.0f;
+	}
 
 	// ★★★ ここで switch文 を使って生成していますか？ ★★★
 	switch (enemyType) {
 	case 0:
 		if (enemies_.size() < kMaxEnemies) {
-			Enemy* newEnemy = new Enemy(randomPos);
+			Enemy* newEnemy = new Enemy(spawnPos);
 			newEnemy->Initialize();
 			enemies_.push_back(newEnemy);
 		}
 		break;
 	case 1:
 		if (enemies2_.size() < kMaxEnemies2) {
-			Enemy2* newEnemy2 = new Enemy2(randomPos);
+			Enemy2* newEnemy2 = new Enemy2(spawnPos);
 			newEnemy2->Initialize();
 			enemies2_.push_back(newEnemy2);
 		}
 		break;
 	case 2:
 		if (enemies3_.size() < kMaxEnemies3) {
-			Enemy3* newEnemy3 = new Enemy3(randomPos);
+			Enemy3* newEnemy3 = new Enemy3(spawnPos);
 			newEnemy3->Initialize();
 			enemies3_.push_back(newEnemy3);
 		}
 		break;
 	case 3:
 		if (enemies4_.size() < kMaxEnemies4) {
-			Enemy4* newEnemy4 = new Enemy4(randomPos);
+			Enemy4* newEnemy4 = new Enemy4(spawnPos);
 			newEnemy4->Initialize();
 			enemies4_.push_back(newEnemy4);
 		}
 		break;
 	case 4:
 		if (enemies5_.size() < kMaxEnemies5) {
-			Enemy5* newEnemy5 = new Enemy5(randomPos);
+			Enemy5* newEnemy5 = new Enemy5(spawnPos);
 			newEnemy5->Initialize();
 			enemies5_.push_back(newEnemy5);
 		}
 		break;
+
+	case 5: // タイプ5（囲い込み）の時も通常のEnemyを生成する
+		if (enemies_.size() < kMaxEnemies) {
+			Enemy* newEnemy = new Enemy(spawnPos);
+			newEnemy->Initialize();
+			enemies_.push_back(newEnemy);
+		}
+		break;
+
 	default:
 		break;
 	}
@@ -1137,6 +1207,7 @@ void GameLogic::StartLevelUp() {
 	requiredExp_ = static_cast<int>(kExpBase * std::pow(kExpScale, level_ - 1));
 
 	isLevelUpPending_ = true;
+	player_->SetIsInvincible(true); // 無敵開始
 	selectedSkillIndex_ = 0; // 選択インデックスをリセット
 
 	// スキル選択肢をランダムに3つ生成
@@ -1188,9 +1259,7 @@ void GameLogic::UpdateSkillSelection() {
 
 		ApplySkill(currentSkillOptions_[selectedSkillIndex_]);
 		isLevelUpPending_ = false;
-
-		// ゲーム再開
-		currentSkillOptions_.clear(); // 選択肢をクリア
+		player_->SetIsInvincible(false); // 無敵解除
 	}
 }
 

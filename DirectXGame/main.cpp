@@ -12,7 +12,7 @@ using namespace KamataEngine;
 enum class Scene { Title, Tutorial, Game, GameOver };
 
 //Scene scene = Scene::Title;
-Scene scene = Scene::Game;
+Scene scene = Scene::Title;
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
@@ -88,11 +88,16 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 			// ゲームオーバー判定とシーン遷移
 			if (gameScnce->IsGameOver()) {
+				// ★追加：GameSceneから最終スコアを取得する
+				int finalScore = gameScnce->GetScore();
+
 				scene = Scene::GameOver;
 				gameOverScene->Initialize(); // ゲームオーバーシーンを初期化
 
-				// ★重要: GameSceneのisGameOver_フラグをリセット
-				// これがないと次のGameScene::Initialize()が呼ばれる前に再度IsGameOver()がtrueを返し続ける可能性がある
+				// ★追加：取得したスコアをGameOverSceneに渡す
+				gameOverScene->SetResultScore(finalScore);
+
+				// GameSceneのフラグをリセット
 				gameScnce->ResetGameOverFlag();
 			}
 

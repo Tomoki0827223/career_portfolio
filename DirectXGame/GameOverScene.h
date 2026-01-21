@@ -3,6 +3,7 @@
 #include <2d/Sprite.h>
 #include <3d/Camera.h>
 #include <KamataEngine.h>
+#include "BIt_Map_Font.h"
 
 using namespace KamataEngine;
 
@@ -33,6 +34,8 @@ public:
 	bool IsFinished() const { return isFinished_; }
 	// リトライが選択されたか (true: GameSceneへ, false: TitleSceneへ)
 	bool IsRetrySelected() const { return isRetrySelected_; }
+	// ★追加: スコアをセットする関数
+	void SetResultScore(int score) { resultScore_ = score; }
 
 private:
 	KamataEngine::Input* input_ = nullptr;
@@ -40,6 +43,8 @@ private:
 	bool isFinished_ = false;      // シーン遷移フラグ
 	bool isRetrySelected_ = false; // リトライ選択フラグ
 	int selectedOption_ = 0;       // 0: リトライ, 1: タイトルへ (上下キーの処理を削除したため、この値は常に0のままになります)
+	int resultScore_ = 0;          // ★追加: 表示するスコア
+	BIt_Map_Font* resultFont_ = nullptr;
 
 	uint32_t whiteTexture_ = 0;
 	uint32_t optionTexture_ = 0;

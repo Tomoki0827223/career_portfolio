@@ -42,6 +42,7 @@ public:
 	void SetMinionLevel(int level) { minionLevel_ = level; }
 	int GetMissileLevel() const { return missileLevel_; }
 	void SetMissileLevel(int level) { missileLevel_ = level; }
+	void SetIsInvincible(bool isInvincible) { isInvincible_ = isInvincible; }
 	// ------------------------------------
 
 	// ★ 死亡関連 (修正) ★
@@ -66,6 +67,8 @@ public:
 	bool IsAutoMode() const { return isAutoMode_; } // ★追加
 
 private:
+	
+	bool isInvincible_ = false;
 
 	// ★追加: Audio関連 ★
 	Audio* audio_ = nullptr;

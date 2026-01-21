@@ -24,6 +24,9 @@ void Player::Initialize() {
 	worldTransform.Initialize();
 	worldTransform.scale_ = {2.0f, 2.0f, 2.0f}; // ★ プレイヤーのサイズを2倍に ★
 
+	// ★追加: モデルをX軸で90度倒して画面（XY平面）に合わせる
+	worldTransform.rotation_.x = (float)M_PI / 2.0f;
+
 	// ★修正: HPとスキルレベルのリセットを追加 ★
 	currentHp_ = kMaxHp_;
 	bookLevel_ = 0;
@@ -32,7 +35,6 @@ void Player::Initialize() {
 	boomerangLevel_ = 0;
 	minionLevel_ = 0;
 	missileLevel_ = 0;
-	// ------------------------------------
 }
 
 void Player::Update() {
@@ -102,23 +104,30 @@ void Player::Update() {
 			moveVector.x += 1.0f;
 		}
 
-		// 旋回処理
+		// --- 旋回処理 ---
 		if (moveVector.x != 0.0f || moveVector.y != 0.0f) {
+			// 画面上の X(左右) と Y(上下) で角度を出す
+			// atan2(x, y) にすることで、上が 0度(またはPI) になります
 			float targetRotationY = std::atan2(moveVector.x, moveVector.y);
+
+			// モデルの向きによって調整が必要な場合：
+			// もし下が正面になる場合は以下を有効にしてください
+			// targetRotationY += (float)M_PI;
+
 			float currentRotationY = worldTransform.rotation_.y;
 			float diff = targetRotationY - currentRotationY;
 
-			if (diff > M_PI)
+			// 最短距離回転の補正
+			if (diff > (float)M_PI)
 				diff -= 2.0f * (float)M_PI;
-			else if (diff < -M_PI)
+			else if (diff < -(float)M_PI)
 				diff += 2.0f * (float)M_PI;
 
 			const float rotateSpeed = 0.2f;
-			currentRotationY += diff * rotateSpeed;
-			worldTransform.rotation_.y = currentRotationY;
+			worldTransform.rotation_.y += diff * rotateSpeed;
 		}
 
-		// SPACEキーで攻撃
+		// --- 攻撃処理・スケール演出 (ここはそのまま) ---
 		if (input_->TriggerKey(DIK_SPACE) && !isAttacking_) {
 			isAttacking_ = true;
 			attackTimer_ = kMaxAttackTime_;

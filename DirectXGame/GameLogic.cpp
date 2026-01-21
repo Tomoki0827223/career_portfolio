@@ -29,7 +29,7 @@ GameLogic::GameLogic(Player* player, BIt_Map_Font* font, KamataEngine::Sprite* h
 	soundHandleEnemyDie_ = audio_->LoadWave("audio/se/enemyDie.wav"); //
 	// ★追加: プレイヤーの攻撃音をロード ★
 	soundHandlePlayerAttack_ = audio_->LoadWave("audio/se/panti.wav"); //
-
+	 
 	// ★追加: PlayerにAudioインスタンスと攻撃音ハンドルを渡す ★
 	player_->SetAudio(audio_, soundHandlePlayerAttack_); //
 }

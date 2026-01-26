@@ -104,6 +104,7 @@ void GameScene::Initialize() {
 	// ★★★ GameLogicの生成と初期化 ★★★
 	// GameLogicに依存オブジェクト (Player, Font, HPBar, EXPBar) を渡す
 	gameLogic_ = new GameLogic(player_, font_, hpBar_, hpBarBase_, expBar_, expBarBase_);
+	gameLogic_->Initialize();
 	// ★追加: GameLogicにも背景モードフラグを渡す
 	gameLogic_->SetIsBackground(isBackground_);
 }

@@ -110,53 +110,35 @@ void GameScene::Initialize() {
 }
 
 void GameScene::Update() {
-	// 1. プレイヤーを更新（移動させ、行列を計算・転送する）
-	// ★これが最初！
+	// 1. プレイヤーを更新（死亡演出もここに含まれる）
 	player_->Update();
 
-	// 2. カメラをプレイヤーの「最新の位置」に追従させる
+	// 2. カメラの更新（プレイヤーを追い続ける）
 	Vector3 playerPos = player_->GetPosition();
 	camera_.translation_.x = playerPos.x;
 	camera_.translation_.y = playerPos.y;
-	camera_.translation_.z = playerPos.z - 60.0f; // 適切な距離を設定
+	camera_.translation_.z = playerPos.z - 60.0f;
+	camera_.UpdateMatrix();
+	camera_.TransferMatrix();
 
-	camera_.UpdateMatrix();   // 行列計算
-	camera_.TransferMatrix(); // ★★★ 【最重要】これを必ず追加してください！ ★★★
-	                          // これがないと描画上のカメラ位置が更新されず、すべてがズレます。
+	// 3. ゲームロジックの更新（敵などの更新）
+	// ゲームオーバー時でも敵を動かし続けたい場合はそのまま、止めたい場合は if(!isGameOver_) で囲む
+	if (!isGameOver_) {
+		gameLogic_->Update();
+	}
 
-	// 3. ゲームロジックの更新（敵の移動、当たり判定、XP回収）
-	// ★カメラとプレイヤーが確定した後に呼ぶことで、ズレのない判定ができます
-	gameLogic_->Update();
-
-	// --- 以下、その他の処理 ---
-
-	// HP/ゲームオーバー判定
+	// --- ゲームオーバー判定 ---
 	int currentHp = player_->GetCurrentHp();
 	if (currentHp <= 0 && !isGameOver_) {
 		isGameOver_ = true;
-		player_->Die();
-
-		// ★ここが重要：現在のスコアをリザルト用に保存、またはGameOverSceneに渡す
-		// シーン管理クラスを介して gameOverScene->SetResultScore(gameLogic_->GetScore());
-		// を呼び出す必要があります。
+		player_->Die(); // プレイヤーの死亡フラグを立てる
 	}
 
-	// HP/ゲームオーバー判定
-	//int currentHp = player_->GetCurrentHp();
-	if (currentHp <= 0 && !isGameOver_) {
-		isGameOver_ = true;
-		player_->Die();
-
-		// ここでスコアを取得して保持（必要に応じてGameOverSceneへ渡す）
-		// 例: finalScore = gameLogic_->GetScore();
-	}
-
+	// ★修正: ゲームオーバー演出中は、以下のゲーム進行処理をスキップする
 	if (isGameOver_) {
-		if (player_->IsDead() && player_->GetDeadTimer() > player_->GetMaxDeadTime()) {
-			// シーン遷移など
-		}
 		return;
 	}
+
 
 	player_->SetIsSkillSelecting(gameLogic_->IsLevelUpPending());
 

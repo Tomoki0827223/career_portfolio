@@ -86,19 +86,18 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			gameScnce->Update();
 			gameScnce->Draw();
 
-			// ゲームオーバー判定とシーン遷移
+			// ★修正: ゲームオーバー判定
 			if (gameScnce->IsGameOver()) {
-				// ★追加：GameSceneから最終スコアを取得する
-				int finalScore = gameScnce->GetScore();
+				// プレイヤーの死亡演出（タイマー）が終了したかチェックする
+				if (gameScnce->GetPlayer()->GetDeadTimer() >= gameScnce->GetPlayer()->GetMaxDeadTime()) {
+					int finalScore = gameScnce->GetScore();
 
-				scene = Scene::GameOver;
-				gameOverScene->Initialize(); // ゲームオーバーシーンを初期化
+					scene = Scene::GameOver;
+					gameOverScene->Initialize();
+					gameOverScene->SetResultScore(finalScore);
 
-				// ★追加：取得したスコアをGameOverSceneに渡す
-				gameOverScene->SetResultScore(finalScore);
-
-				// GameSceneのフラグをリセット
-				gameScnce->ResetGameOverFlag();
+					gameScnce->ResetGameOverFlag();
+				}
 			}
 
 		} else if (scene == Scene::GameOver) {

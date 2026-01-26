@@ -92,6 +92,12 @@ public:
 
 private:
 
+	float specialGauge_ = 0.0f;             // 現在の必殺技ゲージ量
+	const float kMaxSpecialGauge_ = 100.0f; // 満タンのしきい値
+	bool isSpecialActive_ = false;          // 必殺技が発動中か
+	int specialTimer_ = 0;                  // 発動持続時間タイマー
+	const int kMaxSpecialTime_ = 300;       // 5秒間（60fps × 5）
+
 	int skillSelectTimer_ = 0;       // スローから停止までのタイマー
 	const int kSlowMotionLimit = 60; // スローモーションから停止に切り替わる時間 (例: 1秒)
 

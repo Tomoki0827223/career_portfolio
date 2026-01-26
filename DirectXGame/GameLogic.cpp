@@ -254,6 +254,33 @@ void GameLogic::Update() {
 	// --- 1. 冒頭でプレイヤーの座標を取得 ---
 	Vector3 playerPos = player_->GetPosition();
 
+	// --- 必殺技の発動チェック ---
+	// GameLogic.cpp の Update() 内
+	if (!isSpecialActive_ && specialGauge_ >= kMaxSpecialGauge_) {
+		// Inputクラスのインスタンスを通じてキー入力を取る
+		if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_E)) {
+			isSpecialActive_ = true;
+			specialTimer_ = kMaxSpecialTime_;
+
+			// マシンガンを即座に撃てる状態にするなどの処理
+			// 例: player_->SetBulletLevel(std::max(1, player_->GetBulletLevel()));
+		}
+	}
+
+	// --- 必殺技実行中の処理 ---
+	if (isSpecialActive_) {
+		specialTimer_--;
+
+		// 必殺技として「マシンガン(Bullet)」を強制的にレベル1以上の挙動で動かす
+		// 既存の Bullet 更新ロジックをここに流用するか、
+		// 一時的に player_->SetBulletLevel(1) にするなどの処理を行います。
+
+		if (specialTimer_ <= 0) {
+			isSpecialActive_ = false;
+			specialGauge_ = 0.0f; // ゲージをリセット
+		}
+	}
+
 	// --- 2. ターゲット（最も近い敵）を探す処理を定義 (getTarget) ---
 	// これを連射処理(isInitialRapidFire_)より前に書くのがポイントです
 	auto getTarget = [&]() -> std::pair<Vector3, float> {
@@ -741,22 +768,34 @@ void GameLogic::Update() {
 	}
 
 	// アイテムの削除処理 (取得/死亡判定) とレベルアップ判定
-	for (auto it = experiences_.rbegin(); it != experiences_.rend();) {
+	for (auto it = experiences_.begin(); it != experiences_.end();) {
 		Experience* exp = *it;
+
 		if (exp->IsDead()) {
+			// 経験値の取得（クラスにGetExpValue等の関数がある場合。なければ1のままでOK）
 			int expValue = 1;
 			currentExp_ += expValue;
 			score_ += expValue;
 			font_->Set(score_);
 
+			// ★必殺技ゲージの加算
+			if (!isSpecialActive_) {
+				specialGauge_ += 5.0f; // 加算量
+				if (specialGauge_ > kMaxSpecialGauge_) {
+					specialGauge_ = kMaxSpecialGauge_;
+				}
+			}
+
+			// レベルアップ判定
 			if (currentExp_ >= requiredExp_) {
 				StartLevelUp();
 			}
 
+			// メモリ解放とリストからの削除
 			delete exp;
-			it = std::vector<Experience*>::reverse_iterator(experiences_.erase(std::next(it).base()));
+			it = experiences_.erase(it); // 削除後の次の要素のイテレータを受け取る
 		} else {
-			++it;
+			++it; // 削除しなかった場合のみ次へ進む
 		}
 	}
 
@@ -1171,6 +1210,8 @@ void GameLogic::CheckAllCollisions() {
 			++itEB;
 		}
 	}
+
+
 }
 
 // ----------------------------------------------------

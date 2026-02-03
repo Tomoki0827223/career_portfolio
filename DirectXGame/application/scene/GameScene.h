@@ -72,6 +72,13 @@ private:
 	KamataEngine::Sprite* sousaSprite_ = nullptr;
 	KamataEngine::Sprite* sousaSprite2_ = nullptr;
 
+	KamataEngine::Sprite* spBarBase_ = nullptr;
+	KamataEngine::Sprite* spBar_ = nullptr;
+	uint32_t spBarBaseTexture_ = 0;
+	uint32_t spBarTexture_ = 0;
+
+	void DrawSPBar();
+
 	// ゲームオーバーフラグ
 	bool isGameOver_ = false;
 

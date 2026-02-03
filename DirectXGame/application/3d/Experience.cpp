@@ -60,6 +60,16 @@ void Experience::Update(const Vector3& playerPos) {
 	}
 
 	if (!isAttracted_) {
+		// プレイヤーへの方向ベクトル
+		Vector3 toPlayer = playerPos - worldTransform.translation_;
+		float distance = Math::Length(toPlayer);
+
+		if (distance > 0.1f) {
+			// 徐々にスピードを上げて「シュルシュル」感を出す
+			attractionSpeed_ += 0.05f;
+			worldTransform.translation_ += Math::Normalize(toPlayer) * attractionSpeed_;
+		}
+
 		// 1. 散らばり処理フェーズ
 		if (scatterTimer_ < SCATTER_TIME) {
 			// 移動

@@ -20,8 +20,11 @@ std::uniform_real_distribution<float> dist(-MAP_HALF_RANGE, MAP_HALF_RANGE);
 // GameScene.cppから移動
 const float PI = 3.14159265358979323846f;
 
-GameLogic::GameLogic(Player* player, BIt_Map_Font* font, KamataEngine::Sprite* hpBar, KamataEngine::Sprite* hpBarBase, KamataEngine::Sprite* expBar, KamataEngine::Sprite* expBarBase)
-    : player_(player), font_(font), hpBar_(hpBar), hpBarBase_(hpBarBase), expBar_(expBar), expBarBase_(expBarBase) {
+GameLogic::GameLogic(
+    Player* player, BIt_Map_Font* font, KamataEngine::Sprite* hpBar, KamataEngine::Sprite* hpBarBase, KamataEngine::Sprite* expBar, KamataEngine::Sprite* expBarBase, KamataEngine::Sprite* spBar,
+    KamataEngine::Sprite* spBarBase)
+    : player_(player), font_(font), hpBar_(hpBar), hpBarBase_(hpBarBase), expBar_(expBar), expBarBase_(expBarBase), spBar_(spBar), spBarBase_(spBarBase) { // 初期化リストにも追加
+
 
 	// Audioインスタンスの取得とサウンドのロードをGameLogicで行う
 	audio_ = KamataEngine::Audio::GetInstance(); //
@@ -245,11 +248,12 @@ void GameLogic::Update() {
 			currentExp_ += expValue;
 			score_ += expValue;
 
-			// 必殺技ゲージの加算など（既存通り）
+			// ★ 必殺技発動中でない時だけゲージを増やす
 			if (!isSpecialActive_) {
-				specialGauge_ += 5.0f;
-				if (specialGauge_ > kMaxSpecialGauge_)
+				specialGauge_ += 0.5f; // たまり過ぎないように数値を調整
+				if (specialGauge_ > kMaxSpecialGauge_) {
 					specialGauge_ = kMaxSpecialGauge_;
+				}
 			}
 
 			// ★★★ ここを if から while に変更 ★★★
@@ -667,45 +671,48 @@ void GameLogic::UpdateUI() {
 	float expRatio = (std::clamp)((float)currentExp_ / requiredExp_, 0.0f, 1.0f);
 	expBar_->SetSize({expBarBase_->GetSize().x * expRatio, expBar_->GetSize().y});
 
+	// SPバーの更新
+	float spRatio = (std::clamp)(specialGauge_ / kMaxSpecialGauge_, 0.0f, 1.0f);
+	spBar_->SetSize({spBarBase_->GetSize().x * spRatio, spBar_->GetSize().y});
+
 	font_->Set(score_);
 }
 
-// --- 必殺技・全方位連射の更新 ---
-void GameLogic::UpdateSpecialAndRapidFire(const Vector3& playerPos) {
-
+void GameLogic::UpdateSpecialAndRapidFire(const Vector3& /*playerPos*/) {
 	Input* input = Input::GetInstance();
 	XINPUT_STATE joyState;
 	bool hasJoy = input->GetJoystickState(0, joyState);
 
-	// Eキー または RTボタン(右トリガー)押し込み
+	// 入力判定
 	bool triggerSpecial = input->TriggerKey(DIK_E);
-	if (hasJoy && joyState.Gamepad.bRightTrigger > 128) { // 128以上押し込んだら
+	if (hasJoy && joyState.Gamepad.bRightTrigger > 128) {
 		triggerSpecial = true;
 	}
 
+	// --- 発動判定 ---
 	if (!isSpecialActive_ && specialGauge_ >= kMaxSpecialGauge_) {
 		if (triggerSpecial) {
 			isSpecialActive_ = true;
-			specialTimer_ = kMaxSpecialTime_;
+			specialTimer_ = kMaxSpecialTime_; // 例: 300 (5秒)
+
+			// 画面上の全経験値を吸い込み開始
+			for (auto* exp : experiences_) {
+				exp->StartAttraction();
+			}
 		}
 	}
+	// --- 必殺技中の処理 ---
+	if (isSpecialActive_) {
+		specialTimer_--;
 
-	if (isInitialRapidFire_) {
-		if (--rapidFireTimer_ <= 0)
-			isInitialRapidFire_ = false;
-		if (rapidFireTimer_ % 4 == 0) {
-			Enemy* target = FindNearestEnemy(playerPos);
-			for (int i = 0; i < 3; ++i) {
-				Vector3 velocity = {std::cos(currentShotAngle_), std::sin(currentShotAngle_), 0.0f};
-				Bullet* nb = new Bullet(playerPos, velocity);
-				nb->Initialize();
-				nb->SetDamage(isBackground_ ? 100 : 5);
-				if (target)
-					nb->SetTargetPos(target->GetPosition());
-				bullets_.push_back(nb);
-				currentShotAngle_ += 0.5f;
-			}
-			audio_->PlayWave(soundHandleBulletShot_);
+		// 例：必殺技中、プレイヤーの周りに常に弾を出すなど
+		if (specialTimer_ % 5 == 0) {
+			// ここで playerPos を使って Bullet を生成するロジックを書く
+		}
+
+		if (specialTimer_ <= 0) {
+			isSpecialActive_ = false;
+			specialGauge_ = 0.0f;
 		}
 	}
 }

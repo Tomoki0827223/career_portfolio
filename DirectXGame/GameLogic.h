@@ -51,7 +51,10 @@ struct EnemySpawnData {
 
 class GameLogic {
 public:
-	GameLogic(Player* player, BIt_Map_Font* font, KamataEngine::Sprite* hpBar, KamataEngine::Sprite* hpBarBase, KamataEngine::Sprite* expBar, KamataEngine::Sprite* expBarBase);
+	GameLogic(
+	    Player* player, BIt_Map_Font* font, KamataEngine::Sprite* hpBar, KamataEngine::Sprite* hpBarBase, KamataEngine::Sprite* expBar, 
+		KamataEngine::Sprite* expBarBase, KamataEngine::Sprite* spBar,
+	    KamataEngine::Sprite* spBarBase);
 	~GameLogic();
 
 	void Initialize();
@@ -93,7 +96,7 @@ public:
 private:
 
 	float specialGauge_ = 0.0f;             // 現在の必殺技ゲージ量
-	const float kMaxSpecialGauge_ = 100.0f; // 満タンのしきい値
+	const float kMaxSpecialGauge_ = 300.0f; // 満タンのしきい値
 	bool isSpecialActive_ = false;          // 必殺技が発動中か
 	int specialTimer_ = 0;                  // 発動持続時間タイマー
 	const int kMaxSpecialTime_ = 300;       // 5秒間（60fps × 5）
@@ -141,6 +144,9 @@ private:
 	// ★★★ 追記: EXPバーのスプライト ★★★
 	KamataEngine::Sprite* expBar_ = nullptr;
 	KamataEngine::Sprite* expBarBase_ = nullptr;
+
+	KamataEngine::Sprite* spBar_ = nullptr;
+	KamataEngine::Sprite* spBarBase_ = nullptr;
 	// -----------------------------------
 
 	int score_ = 0;

@@ -38,54 +38,48 @@ GameScene::~GameScene() {
 }
 
 void GameScene::Initialize() {
-	// ... (既存の初期化処理はGameSceneに残るUI要素やSceneの初期化のみ)
-
+	// ... (ステージ、カメラ、プレイヤーの初期化はそのまま) ...
 	stage_ = new Stage();
 	stage_->Initialize();
-	//stage_->Update(player_->GetPosition());
-
 	camera_.Initialize();
 	worldTransform.Initialize();
 
 	player_ = new Player();
 	player_->Initialize();
 	playerModel_ = Model::CreateFromOBJ("block_4");
-
 	modelParticle_ = Model::CreateFromOBJ("block_4");
 
 	font_ = new BIt_Map_Font();
 	font_->Initialize();
 	font_->SetPosition({1100.0f, 10.0f});
 
-	// HPバーの初期化 (GameSceneに残すUI要素)
-	hpBarBaseTexture_ = KamataEngine::TextureManager::Load("HP.png");
-	hpBarTexture_ = KamataEngine::TextureManager::Load("HPR.png");
-	const Vector2 kHpBarPos = {30.0f, 60.0f};  // ★ 修正: HPバーを少し下に移動 ★
-	const Vector2 kExpBarPos = {30.0f, 30.0f}; // ★ 追記: EXPバーの位置 (上側) ★
-	const Vector2 kHpBarSize = {200.0f, 20.0f};
+	// --- 1. 各種バー（HP/EXP/SP）の生成 ---
+	const Vector2 kBarSize = {200.0f, 20.0f};
 
+	hpBarBaseTexture_ = TextureManager::Load("HP.png");
+	hpBarTexture_ = TextureManager::Load("HPR.png");
+	hpBarBase_ = Sprite::Create(hpBarBaseTexture_, {30.0f, 60.0f});
+	hpBarBase_->SetSize(kBarSize);
+	hpBar_ = Sprite::Create(hpBarTexture_, {30.0f, 60.0f});
+	hpBar_->SetSize(kBarSize);
 
-	sousaTextureHandle_ = KamataEngine::TextureManager::Load("sousa.png");
-	sousaTextureHandle2_ = KamataEngine::TextureManager::Load("sousa2.png");
-	sousaSprite_ = KamataEngine::Sprite::Create(sousaTextureHandle_, {1040.0f, 400.0f});
-	sousaSprite2_ = KamataEngine::Sprite::Create(sousaTextureHandle2_, {1040.0f, 500.0f});
+	expBarBaseTexture_ = TextureManager::Load("exp.png");
+	expBarTexture_ = TextureManager::Load("expR.png");
+	expBarBase_ = Sprite::Create(expBarBaseTexture_, {30.0f, 30.0f});
+	expBarBase_->SetSize(kBarSize);
+	expBar_ = Sprite::Create(expBarTexture_, {30.0f, 30.0f});
+	expBar_->SetSize(kBarSize);
 
-	hpBarBase_ = KamataEngine::Sprite::Create(hpBarBaseTexture_, kHpBarPos);
-	hpBarBase_->SetSize(kHpBarSize);
-	hpBar_ = KamataEngine::Sprite::Create(hpBarTexture_, kHpBarPos);
-	hpBar_->SetSize(kHpBarSize);
+	spBarBase_ = Sprite::Create(expBarBaseTexture_, {30.0f, 90.0f});
+	spBarBase_->SetSize(kBarSize);
+	spBar_ = Sprite::Create(expBarTexture_, {30.0f, 90.0f});
+	spBar_->SetSize(kBarSize);
+	spBar_->SetColor({0.5f, 0.5f, 1.0f, 1.0f});
 
-	// ★★★ 追記: EXPバーの初期化 (HPバーと同じテクスチャを使用) ★★★
-	expBarBaseTexture_ = KamataEngine::TextureManager::Load("exp.png");
-	expBarTexture_ = KamataEngine::TextureManager::Load("expR.png");
-	expBarBase_ = KamataEngine::Sprite::Create(expBarBaseTexture_, kExpBarPos);
-	expBarBase_->SetSize(kHpBarSize); // サイズはHPバーと同じ
-	expBar_ = KamataEngine::Sprite::Create(expBarTexture_, kExpBarPos);
-	expBar_->SetSize(kHpBarSize); // サイズはHPバーと同じ
-
-	// スキル選択画面用スプライトの初期化 (GameSceneに残すUI要素)
-	whiteTextureHandle_ = KamataEngine::TextureManager::Load("white1x1.png");
-	skillScreenBackground_ = KamataEngine::Sprite::Create(whiteTextureHandle_, {0, 0});
+	// --- 2. スキル選択用UI（背景・枠・カーソル）の生成 ---
+	// ★ ここが重要！gameLogicに渡す前にこれらを完成させる必要があります
+	whiteTextureHandle_ = TextureManager::Load("white1x1.png");
+	skillScreenBackground_ = Sprite::Create(whiteTextureHandle_, {0, 0});
 	skillScreenBackground_->SetSize({1280.0f, 720.0f});
 	skillScreenBackground_->SetColor({0.0f, 0.0f, 0.0f, 0.8f});
 
@@ -93,21 +87,26 @@ void GameScene::Initialize() {
 	const KamataEngine::Vector2 kBasePos = {440.0f, 180.0f};
 
 	for (int i = 0; i < 3; ++i) {
-		skillOptionSprites_[i] = KamataEngine::Sprite::Create(whiteTextureHandle_, {kBasePos.x, kBasePos.y + i * 120.0f});
+		skillOptionSprites_[i] = Sprite::Create(whiteTextureHandle_, {kBasePos.x, kBasePos.y + i * 120.0f});
 		skillOptionSprites_[i]->SetSize(kOptionSize);
 		skillOptionSprites_[i]->SetColor({0.2f, 0.2f, 0.2f, 1.0f});
 	}
 
-	skillCursorSprite_ = KamataEngine::Sprite::Create(whiteTextureHandle_, {0, 0});
+	// ★ これが nullptr だったので落ちていました。ここで生成を完了させます
+	skillCursorSprite_ = Sprite::Create(whiteTextureHandle_, {0, 0});
 	skillCursorSprite_->SetSize({kOptionSize.x + 20.0f, kOptionSize.y + 10.0f});
 	skillCursorSprite_->SetColor({1.0f, 1.0f, 0.0f, 0.5f});
 
-	// ★★★ GameLogicの生成と初期化 ★★★
-	// GameLogicに依存オブジェクト (Player, Font, HPBar, EXPBar) を渡す
-	gameLogic_ = new GameLogic(player_, font_, hpBar_, hpBarBase_, expBar_, expBarBase_);
+	// --- 3. 全ての準備が整ってから GameLogic を生成 ---
+	gameLogic_ = new GameLogic(player_, font_, hpBar_, hpBarBase_, expBar_, expBarBase_, spBar_, spBarBase_);
 	gameLogic_->Initialize();
-	// ★追加: GameLogicにも背景モードフラグを渡す
 	gameLogic_->SetIsBackground(isBackground_);
+
+	// 操作説明など
+	sousaTextureHandle_ = TextureManager::Load("sousa.png");
+	sousaTextureHandle2_ = TextureManager::Load("sousa2.png");
+	sousaSprite_ = Sprite::Create(sousaTextureHandle_, {1040.0f, 400.0f});
+	sousaSprite2_ = Sprite::Create(sousaTextureHandle2_, {1040.0f, 500.0f});
 }
 
 void GameScene::Update() {
@@ -204,6 +203,9 @@ void GameScene::Draw() {
 
 		DrawHPBar();
 		DrawEXPBar();
+
+		spBarBase_->Draw();
+		spBar_->Draw();
 
 		// スキル選択画面の描画
 		if (gameLogic_->IsLevelUpPending()) {

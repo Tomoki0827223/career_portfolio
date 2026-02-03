@@ -31,19 +31,21 @@ public:
 
 	bool IsDead() const { return isDead_; }
 	bool IsAttracted() const { return isAttracted_; }
+	void StartAttraction() { isAttracted_ = true; } // 吸い込み開始フラグ
 
 private:
 
 	Model* model_ = nullptr;
 	WorldTransform worldTransform;
 
-// 状態管理用
-	Vector3 targetPosition_ = {}; // プレイヤーの位置
-	bool isAttracted_ = false;    // 吸引されているか
-	bool isDead_ = false;         // 取得されたか
+	Vector3 targetPosition_ = {};
+	bool isAttracted_ = false; // ★ これ1行だけにする！
+	bool isDead_ = false;
 
 	// 散らばり処理用メンバ
 	Vector3 scatterVelocity_ = {};
 	int scatterTimer_ = 0;
 	const int SCATTER_TIME = 15; // 散らばりモーションの継続フレーム数 (例: 15フレーム)
+
+	float attractionSpeed_ = 0.0f; // 徐々に速くするための変数
 };

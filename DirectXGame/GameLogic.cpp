@@ -221,18 +221,16 @@ void GameLogic::Update() {
 		}
 	}
 
-	// 2. 敵の出現管理（★ここを確実に動くように修正★）
-	// タイマーを減らす
-	if (enemySpawnTimer_ > 0) {
-		enemySpawnTimer_--;
-	}
-
-	if (enemySpawnTimer_ <= 0) {
-		enemySpawnTimer_ = kEnemySpawnInterval; // 60フレーム(1秒)ごとに出現
-
-		// 0〜4（通常種）と 5（囲い込み）をランダムに選ぶ
-		std::uniform_int_distribution<int> typeDist(0, 5);
-		SpawnEnemy(typeDist(engine));
+	// --- 修正: CSVのデータに基づいた出現管理 ---
+	for (auto& spawnData : enemySpawnList_) {
+		// スコア条件を満たしているかチェック
+		if (score_ >= spawnData.minScore && score_ <= spawnData.maxScore) {
+			spawnData.timer++;
+			if (spawnData.timer >= spawnData.interval) {
+				spawnData.timer = 0;
+				SpawnEnemy(spawnData.enemyType); // 設定されたタイプを生成
+			}
+		}
 	}
 
 	// 3. 武器とUIの更新

@@ -1,60 +1,30 @@
-#include "Enemy2.h" // ヘッダーをEnemy2.hに変更
-
-Enemy2::Enemy2(const Vector3& position) { worldTransform.translation_ = position; }
-
-Enemy2::~Enemy2() { delete model_; }
+#include "Enemy2.h"
 
 void Enemy2::Initialize() {
-	// 敵モデルとして"cube"を使用
-	model_ = Model::CreateFromOBJ("enemy"); // ★ モデルを"cube"に変更 ★
+	// model_ や worldTransform は親クラス(Enemy)のメンバをそのまま使えます
+	model_ = Model::CreateFromOBJ("enemy");
 
 	worldTransform.Initialize();
 	worldTransform.scale_ = {2.0f, 2.0f, 2.0f};
-
-	worldTransform.translation_.z = 0.0f; // Z座標を固定
+	worldTransform.translation_.z = 0.0f;
 	worldTransform.UpdateMatarix();
 }
 
 void Enemy2::Update(const Vector3& playerPosition) {
-	if (isDead_) {
-		return;
-	}
+	if (IsDead())
+		return; // 親の関数を使用
 
-	// ★ 追記: 弾発射タイマーの更新 ★
-	if (shotTimer_ < kShotInterval) {
+	if (shotTimer_ < kShotInterval)
 		shotTimer_++;
-	}
 
-	// プレイヤーへの方向ベクトルを計算
+	// 移動ロジック（親と同じなら親の Update を呼ぶだけでもOK）
 	Vector3 diff = playerPosition - worldTransform.translation_;
-
-	// 正規化して移動 (追尾)
 	Vector3 direction = Math::Normalize(diff);
-	worldTransform.translation_ += direction * kMoveSpeed;
+	worldTransform.translation_ += direction * 0.1f; // Speed
 
-	// 移動を反映
-	worldTransform.UpdateMatarix();  // ★ 先に計算！
-	worldTransform.TransferMatrix(); // ★ 後で転送！
+	worldTransform.UpdateMatarix();
+	worldTransform.TransferMatrix();
 }
 
-void Enemy2::Draw(const Camera& camera) {
-	if (isDead_) {
-		return;
-	}
-
-	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
-	dxCommon->ClearDepthBuffer();
-	Model::PreDraw();
-
-	model_->Draw(worldTransform, camera);
-
-	Model::PostDraw();
-}
-
-void Enemy2::TakeDamage(int damage) {
-	currentHp_ -= damage;
-	if (currentHp_ <= 0) {
-		currentHp_ = 0;
-		isDead_ = true;
-	}
-}
+// ★ Draw や TakeDamage は Enemy.cpp と全く同じなので、
+// Enemy2.cpp からは削除してしまって大丈夫です！（親の関数が自動で呼ばれます）

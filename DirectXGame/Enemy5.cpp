@@ -1,9 +1,5 @@
 #include "Enemy5.h"
 
-Enemy5::Enemy5(const Vector3& position) { worldTransform.translation_ = position; }
-
-Enemy5::~Enemy5() { delete model_; }
-
 void Enemy5::Initialize() {
 	// 敵モデルとして"enemy"を使用 (必要に応じて別のモデルに変更してください)
 	model_ = Model::CreateFromOBJ("enemy2");
@@ -30,26 +26,4 @@ void Enemy5::Update(const Vector3& playerPosition) {
 	// 移動を反映
 	worldTransform.UpdateMatarix();  // ★ 先に計算！
 	worldTransform.TransferMatrix(); // ★ 後で転送！
-}
-
-void Enemy5::Draw(const Camera& camera) {
-	if (isDead_) {
-		return;
-	}
-
-	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
-	dxCommon->ClearDepthBuffer();
-	Model::PreDraw();
-
-	model_->Draw(worldTransform, camera);
-
-	Model::PostDraw();
-}
-
-void Enemy5::TakeDamage(int damage) {
-	currentHp_ -= damage;
-	if (currentHp_ <= 0) {
-		currentHp_ = 0;
-		isDead_ = true;
-	}
 }

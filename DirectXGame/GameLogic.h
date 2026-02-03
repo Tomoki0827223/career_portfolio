@@ -110,22 +110,28 @@ private:
 
 	// ★追加: 倒された敵の位置を保持するリスト
 	std::list<Vector3> deadEnemyPositions_;
+	std::vector<Experience*> experiences_;
+	std::vector<EnemySpawnData> enemySpawnList_;
 
-	// GameSceneから移動したオブジェクト管理
-	std::vector<Bullet*> bullets_;
+	// リストの集約（二重定義を削除し、敵を一本化）
+	std::vector<Enemy*> allEnemies_; // Enemy1~5すべてこれに入れる
+	std::vector<Bullet*> bullets_;   // 1つだけに整理
+	std::vector<EnemyBullet*> enemyBullets_;
 	std::vector<Book*> books_;
 	std::vector<Wine*> wines_;
 	std::vector<Boomerang*> boomerangs_;
 	std::vector<Minion*> minions_;
 	std::vector<Missile*> missiles_;
-	std::vector<Enemy*> enemies_;
-	std::vector<Enemy2*> enemies2_;
-	std::vector<Enemy3*> enemies3_;
-	std::vector<Enemy4*> enemies4_;
-	std::vector<Enemy5*> enemies5_;
-	std::vector<EnemyBullet*> enemyBullets_;
-	std::vector<Experience*> experiences_;
-	std::vector<EnemySpawnData> enemySpawnList_;
+
+	// --- 共通処理の関数化 ---
+	// 指定した位置から最も近い敵を探す（攻撃の自動ターゲット用）
+	Enemy* FindNearestEnemy(Vector3 basePos, float* outDistSq = nullptr);
+
+	// 敵の種類に応じたドロップ処理
+	void DropExperience(Vector3 position, int type);
+
+	// リスト内の IsDead() なオブジェクトを削除・解放するテンプレート関数
+	template<typename T> void CleanupDeadObjects(std::vector<T*>& list);
 
 	// 依存オブジェクト
 	Player* player_ = nullptr;
@@ -173,6 +179,11 @@ private:
 	void SpawnWine();
 	void StartLevelUp();
 	void ApplySkill(SkillType skill);
+
+	void UpdateSpecialAndRapidFire(const Vector3& playerPos);      // 必殺技・全方位連射
+	void UpdateWeapons(const Vector3& playerPos);                  // 各武器の自動生成と更新
+	void UpdateUI();                                               // HP/EXPバーの更新
+	void SpawnEnemyBullet(Enemy* enemy, const Vector3& playerPos); // 敵の弾発射処理
 
 	uint32_t skillTextureHandles_[static_cast<int>(SkillType::kSkillCount)] = {};
 	KamataEngine::Sprite* skillIconSprites_[3] = {};

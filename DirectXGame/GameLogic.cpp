@@ -35,6 +35,13 @@ GameLogic::GameLogic(Player* player, BIt_Map_Font* font, KamataEngine::Sprite* h
 }
 
 GameLogic::~GameLogic() {
+
+	// 古い enemies_ ～ enemies5_ のループをこれ1つに置き換え
+	for (Enemy* obj : allEnemies_) {
+		delete obj;
+	}
+	allEnemies_.clear();
+
 	// 1. リスト内の全オブジェクトを解放
 	for (Book* obj : books_) {
 		delete obj;
@@ -60,13 +67,7 @@ GameLogic::~GameLogic() {
 		delete obj;
 	}
 	wines_.clear();
-	for (Enemy* obj : enemies_) {
-		delete obj;
-	}
-	enemies_.clear();
-	for (EnemyBullet* obj : enemyBullets_) {
-		delete obj;
-	}
+
 	enemyBullets_.clear();
 	for (Experience* obj : experiences_) {
 		delete obj;
@@ -89,72 +90,14 @@ GameLogic::~GameLogic() {
 }
 
 void GameLogic::Initialize() {
-	// GameScene::Initializeから移動: リストのクリアとタイマー、レベルアップ関連の初期化
-	for (Experience* exp : experiences_) {
-		delete exp;
-	}
-	experiences_.clear();
-	for (Enemy* enemy : enemies_) {
-		delete enemy;
-	}
-	enemies_.clear();
-	for (Enemy2* enemy2 : enemies2_) {
-		delete enemy2;
-	}
-	enemies2_.clear();
-	for (Enemy3* enemy2 : enemies3_) {
-		delete enemy2;
-	}
-	enemies3_.clear();
-	for (Enemy4* enemy4 : enemies4_) { // ★ 追記 ★
-		delete enemy4;
-	}
-	enemies4_.clear(); // ★ 追記 ★
-	for (Enemy5* enemy5 : enemies5_) {
-		delete enemy5;
-	}
-	enemies5_.clear();
-	for (EnemyBullet* enemyBullet : enemyBullets_) { // ★ 追記: 敵弾の解放 ★
-		delete enemyBullet;
-	}
-	enemyBullets_.clear(); // ★ 追記: 敵弾の解放 ★
-	for (Bullet* bullet : bullets_) {
-		delete bullet;
-	}
-	bullets_.clear();
-	for (Book* book : books_) {
-		delete book;
-	}
-	books_.clear();
-	for (Wine* wine : wines_) {
-		delete wine;
-	}
-	wines_.clear();
-	for (Boomerang* boomerang : boomerangs_) {
-		delete boomerang;
-	}
-	boomerangs_.clear();
-	for (Minion* minion : minions_) {
-		delete minion;
-	}
-	minions_.clear();
-	for (Missile* missile : missiles_) {
-		delete missile;
-	}
-	missiles_.clear();
 
-	bulletSpawnTimer_ = 0;
-	wineSpawnTimer_ = 0;
-	boomerangSpawnTimer_ = 0;
-	missileSpawnTimer_ = 0;
-	enemySpawnTimer_ = 0; // 追記
+	// 既存のリストを全て掃除
+	for (auto* e : allEnemies_)
+		delete e;
+	allEnemies_.clear();
 
-	level_ = 1;
-	currentExp_ = 0;
-	score_ = 0;
-	requiredExp_ = kExpBase;
-	isLevelUpPending_ = false;
-	selectedSkillIndex_ = 0;
+	// 他のリスト（bullets_, experiences_等）も同様に掃除
+	CleanupDeadObjects(bullets_); // テンプレート関数を活用
 
 #ifdef _DEBUG
 	// ユーザーが指定した初期サイズをここで設定します
@@ -247,704 +190,93 @@ void GameLogic::LoadEnemyPopData() {
 	file.close();
 }
 
-// ----------------------------------------------------
-// GameLogic::Update (メイン更新処理)
-// ----------------------------------------------------
 void GameLogic::Update() {
-	// --- 1. 冒頭でプレイヤーの座標を取得 ---
 	Vector3 playerPos = player_->GetPosition();
+	UpdateSpecialAndRapidFire(playerPos);
 
-	// --- 必殺技の発動チェック ---
-	// GameLogic.cpp の Update() 内
-	if (!isSpecialActive_ && specialGauge_ >= kMaxSpecialGauge_) {
-		// Inputクラスのインスタンスを通じてキー入力を取る
-		if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_E)) {
-			isSpecialActive_ = true;
-			specialTimer_ = kMaxSpecialTime_;
-
-			// マシンガンを即座に撃てる状態にするなどの処理
-			// 例: player_->SetBulletLevel(std::max(1, player_->GetBulletLevel()));
-		}
-	}
-
-	// --- 必殺技実行中の処理 ---
-	if (isSpecialActive_) {
-		specialTimer_--;
-
-		// 必殺技として「マシンガン(Bullet)」を強制的にレベル1以上の挙動で動かす
-		// 既存の Bullet 更新ロジックをここに流用するか、
-		// 一時的に player_->SetBulletLevel(1) にするなどの処理を行います。
-
-		if (specialTimer_ <= 0) {
-			isSpecialActive_ = false;
-			specialGauge_ = 0.0f; // ゲージをリセット
-		}
-	}
-
-	// --- 2. ターゲット（最も近い敵）を探す処理を定義 (getTarget) ---
-	// これを連射処理(isInitialRapidFire_)より前に書くのがポイントです
-	auto getTarget = [&]() -> std::pair<Vector3, float> {
-		float minDistanceSq = 1e10f;
-		Vector3 targetPos = playerPos; // 敵がいない場合はプレイヤーの位置を返す
-		auto checkEnemy = [&](auto& enemies_list) {
-			for (auto enemy : enemies_list) {
-				if (enemy->IsDead())
-					continue;
-				float distance = Math::Length(enemy->GetPosition() - playerPos);
-				float distanceSq = distance * distance;
-				if (distanceSq < minDistanceSq) {
-					minDistanceSq = distanceSq;
-					targetPos = enemy->GetPosition();
-				}
-			}
-		};
-		checkEnemy(enemies_);
-		checkEnemy(enemies2_);
-		checkEnemy(enemies3_);
-		checkEnemy(enemies4_);
-		checkEnemy(enemies5_);
-		return {targetPos, minDistanceSq};
-	};
-
-	// --- 3. 序盤の全方位連射モード ---
-	if (isInitialRapidFire_) {
-		rapidFireTimer_--;
-		if (rapidFireTimer_ <= 0) {
-			isInitialRapidFire_ = false;
-		}
-
-		if (rapidFireTimer_ % 4 == 0) {
-			// ここで getTarget を呼び出す
-			auto [targetPos, minDistanceSq] = getTarget();
-
-			for (int i = 0; i < 3; ++i) {
-				Vector3 velocity;
-				velocity.x = std::cos(currentShotAngle_);
-				velocity.y = std::sin(currentShotAngle_);
-				velocity.z = 0.0f;
-
-				Bullet* newBullet = new Bullet(playerPos, velocity);
-				newBullet->Initialize();
-
-				// ★★★ ここを追加：背景モード（タイトル）なら攻撃力を100にする ★★★
-				if (isBackground_) {
-					newBullet->SetDamage(100);
-				} else {
-					// 通常プレイの時の序盤も少し強くしたいなら、ここを 5 などにしてもOK
-					newBullet->SetDamage(5);
-				}
-
-				// 敵が見つかっていれば追尾ターゲットとして座標を渡す
-				if (minDistanceSq < 10000.0f) {
-					newBullet->SetTargetPos(targetPos);
-				}
-
-				bullets_.push_back(newBullet);
-				currentShotAngle_ += 0.5f;
-			}
-			audio_->PlayWave(soundHandleBulletShot_);
-		}
-	}
-
-	// 既存の更新処理を呼ぶ (エラーになっていた未定義の関数は消す)
-	CheckAllCollisions(); // CheckCollisions ではなく CheckAllCollisions
-	// UpdateEnemies という関数はないので、既存の敵更新ループをそのまま使う
-
-	//Vector3 playerPos = player_->GetPosition();
-
-	// --- スキル選択中の処理 ---
 	if (isLevelUpPending_) {
-		skillSelectTimer_++;
-
-		// プレイヤーを無敵状態にする
-		// (Playerクラスに無敵フラグがある前提、またはダメージ処理を飛ばす)
-
-		// kSlowMotionLimit までは「数フレームに1回」だけ更新することでスローを表現
-		if (skillSelectTimer_ < kSlowMotionLimit) {
-			if (skillSelectTimer_ % 4 != 0) {
-				return; // 4フレームに1回だけ動く (スロー)
-			}
-		} else {
-			return; // 停止
-		}
-	} else {
-		skillSelectTimer_ = 0; // スキル選択中でなければタイマーリセット
+		if (++skillSelectTimer_ < kSlowMotionLimit && skillSelectTimer_ % 4 != 0)
+			return;
+		if (skillSelectTimer_ >= kSlowMotionLimit)
+			return;
 	}
 
-	// 全ての敵に対して、現在のプレイヤー座標を渡して更新する
-	for (Enemy* enemy : enemies_) {
+	// 全ての敵の更新と発射
+	for (auto* enemy : allEnemies_) {
 		enemy->Update(playerPos);
+		if (enemy->CanShoot() && enemyBullets_.size() < kMaxEnemyBullets) {
+			SpawnEnemyBullet(enemy, playerPos);
+		}
 	}
 
-	// HPバーの更新 (GameScene::Updateから移動)
-	int currentHp = player_->GetCurrentHp();
-	int maxHp = player_->GetMaxHp();
+	UpdateWeapons(playerPos);
+	CheckAllCollisions();
+	UpdateUI();
 
-	float hpRatio = (float)currentHp / maxHp;
-	if (hpRatio < 0.0f) {
-		hpRatio = 0.0f;
-	}
-	float newWidth = hpBarBase_->GetSize().x * hpRatio;
-	Vector2 currentSize = hpBar_->GetSize();
-	hpBar_->SetSize({newWidth, currentSize.y});
-
-	// ★★★ 追記: EXPバーの更新 ★★★
-	float expRatio = (float)currentExp_ / requiredExp_;
-	if (expRatio > 1.0f) { // 経験値が要求経験値を超えた場合（レベルアップが未処理の場合）
-		expRatio = 1.0f;
-	}
-	if (expRatio < 0.0f) {
-		expRatio = 0.0f;
-	}
-	float newExpWidth = expBarBase_->GetSize().x * expRatio;
-	Vector2 currentExpSize = expBar_->GetSize();
-	expBar_->SetSize({newExpWidth, currentExpSize.y});
-	// ---------------------------------
-
-
-	// スコア表示の更新
-	font_->Set(score_);
-
-	// --- 修正後（CSVデータを使う形にする） ---
+	// 出現管理 (CSV) と アイテム更新
 	for (auto& spawnData : enemySpawnList_) {
-		// 現在のスコアが範囲内かチェック
 		if (score_ >= spawnData.minScore && score_ <= spawnData.maxScore) {
-			spawnData.timer++;
-			if (spawnData.timer >= spawnData.interval) {
-				// CSVで指定されたタイプの敵を出現させる
+			if (++spawnData.timer >= spawnData.interval) {
 				SpawnEnemy(spawnData.enemyType);
 				spawnData.timer = 0;
 			}
 		}
 	}
-
-	// Wineの生成
-	wineSpawnTimer_++;
-	const int kMinWineInterval = 100;
-	int currentWineInterval = kWineSpawnInterval / (std::max)(1, player_->GetWineLevel());
-	currentWineInterval = (std::max)(currentWineInterval, kMinWineInterval);
-
-	if (player_->GetWineLevel() >= 1 && wines_.empty() && wineSpawnTimer_ >= currentWineInterval) {
-		SpawnWine();
-		wineSpawnTimer_ = 0;
-	}
-
-	// 敵の更新
-	for (Enemy* enemy : enemies_) {
-		enemy->Update(playerPos);
-	}
-	for (Enemy2* enemy2 : enemies2_) {
-		enemy2->Update(playerPos);
-
-		// ★★★ 追記: Enemy2の発射ロジック (Enemy3/4と同様) ★★★
-		if (enemy2->CanShoot() && enemyBullets_.size() < kMaxEnemyBullets) {
-			enemy2->ResetShotTimer();
-
-			// プレイヤーへの方向ベクトルを計算
-			Vector3 diff = playerPos - enemy2->GetShotPosition();
-			Vector3 direction = Math::Normalize(diff);
-
-			// 速度を設定
-			// Enemy3やEnemy4と差別化するため、ここでは弾速を0.8fに設定します
-			const float kEnemyBulletSpeed = 1.2f;
-			Vector3 velocity = direction * kEnemyBulletSpeed;
-
-			// 弾を生成
-			EnemyBullet* newBullet = new EnemyBullet(enemy2->GetShotPosition(), velocity);
-			// 弾のダメージは Enemy3(10) や Enemy4(70) より低めの5に設定します
-			newBullet->SetDamage(30);
-			newBullet->Initialize();
-			enemyBullets_.push_back(newBullet);
-		}
-		// ★★★ 追記ここまで ★★★
-	}
-	for (Enemy3* enemy3 : enemies3_) {
-		enemy3->Update(playerPos);
-
-		// ★ 追記: Enemy3の発射ロジック (Enemy4と同一) ★
-		if (enemy3->CanShoot() && enemyBullets_.size() < kMaxEnemyBullets) {
-			enemy3->ResetShotTimer();
-
-			// プレイヤーへの方向ベクトルを計算
-			Vector3 diff = playerPos - enemy3->GetShotPosition();
-			Vector3 direction = Math::Normalize(diff);
-
-			// 速度を設定
-			// kEnemyBulletSpeedは下記で定義されているため、ここでは流用
-			const float kEnemyBulletSpeed = 1.0f;
-			Vector3 velocity = direction * kEnemyBulletSpeed;
-
-			// 弾を生成
-			EnemyBullet* newBullet = new EnemyBullet(enemy3->GetShotPosition(), velocity);
-			newBullet->SetDamage(10); // ★ Enemy3の弾はダメージ1に設定 (Enemy4の弾と差別化) ★
-			newBullet->Initialize();
-			enemyBullets_.push_back(newBullet);
-		}
-	}
-	for (Enemy4* enemy4 : enemies4_) {
-		enemy4->Update(playerPos);
-
-		// ★ 追記: Enemy4の発射ロジック ★
-		if (enemy4->CanShoot() && enemyBullets_.size() < kMaxEnemyBullets) {
-			enemy4->ResetShotTimer();
-
-			// プレイヤーへの方向ベクトルを計算
-			Vector3 diff = playerPos - enemy4->GetShotPosition();
-			Vector3 direction = Math::Normalize(diff);
-
-			// 速度を設定
-			const float kEnemyBulletSpeed = 0.6f;
-			Vector3 velocity = direction * kEnemyBulletSpeed;
-
-			// 弾を生成
-			EnemyBullet* newBullet = new EnemyBullet(enemy4->GetShotPosition(), velocity);
-			newBullet->SetDamage(70); // ★ Enemy4の弾はダメージ3に設定 ★
-			newBullet->Initialize();
-			enemyBullets_.push_back(newBullet);
-		}
-	}
-	for (Enemy5* enemy5 : enemies5_) {
-		enemy5->Update(playerPos);
-	}
-	for (EnemyBullet* enemyBullet : enemyBullets_) {
-		enemyBullet->Update();
-	}
-
-	// Book (周回攻撃) の更新
-	for (Book* book : books_) {
-		book->Update(playerPos);
-	}
-
-	// Bulletの自動生成と更新
-	if (player_->GetBulletLevel() >= 1) {
-		bulletSpawnTimer_++;
-		const int kMinBulletInterval = 10;
-		int currentBulletInterval = kBulletSpawnInterval / (std::max)(1, player_->GetBulletLevel());
-		currentBulletInterval = (std::max)(currentBulletInterval, kMinBulletInterval);
-
-		if (bulletSpawnTimer_ >= currentBulletInterval) {
-			auto findNearestEnemy = [&]() -> std::pair<Vector3, float> {
-				float minDistanceSq = 1e10f;
-				Vector3 targetPos = playerPos;
-				auto checkEnemy = [&](auto& enemies_list) {
-					for (auto enemy : enemies_list) {
-						if (enemy->IsDead())
-							continue;
-						float distance = Math::Length(enemy->GetPosition() - playerPos);
-						float distanceSq = distance * distance;
-						if (distanceSq < minDistanceSq) {
-							minDistanceSq = distanceSq;
-							targetPos = enemy->GetPosition();
-						}
-					}
-				};
-				checkEnemy(enemies_);
-				checkEnemy(enemies2_);
-				checkEnemy(enemies3_);
-				checkEnemy(enemies4_);
-				return {targetPos, minDistanceSq};
-			};
-
-			auto [targetPos, minDistanceSq] = findNearestEnemy();
-
-			if (minDistanceSq < 1e9f) {
-				Vector3 velocity = targetPos - playerPos;
-				Bullet* newBullet = new Bullet(playerPos, velocity);
-				newBullet->Initialize();
-				bullets_.push_back(newBullet);
-
-				audio_->PlayWave(soundHandleBulletShot_);
-			}
-			bulletSpawnTimer_ = 0;
-		}
-	}
-	for (Bullet* bullet : bullets_) {
-		bullet->Update();
-	}
-
-	// Boomerang の自動生成と更新
-	if (player_->GetBoomerangLevel() >= 1) {
-		boomerangSpawnTimer_++;
-		const int kMinBoomerangInterval = 30;
-		int currentBoomerangInterval = kBoomerangSpawnInterval / (std::max)(1, player_->GetBoomerangLevel());
-		currentBoomerangInterval = (std::max)(currentBoomerangInterval, kMinBoomerangInterval);
-
-		if (boomerangSpawnTimer_ >= currentBoomerangInterval) {
-			Vector3 velocity;
-			auto findNearestEnemy = [&]() -> std::pair<Vector3, float> {
-				float minDistanceSq = 1e10f;
-				Vector3 targetPos = playerPos;
-				auto checkEnemy = [&](auto& enemies_list) {
-					for (auto enemy : enemies_list) {
-						if (enemy->IsDead())
-							continue;
-						float distance = Math::Length(enemy->GetPosition() - playerPos);
-						float distanceSq = distance * distance;
-						if (distanceSq < minDistanceSq) {
-							minDistanceSq = distanceSq;
-							targetPos = enemy->GetPosition();
-						}
-					}
-				};
-				checkEnemy(enemies_);
-				checkEnemy(enemies2_);
-				checkEnemy(enemies3_);
-				checkEnemy(enemies4_);
-				return {targetPos, minDistanceSq};
-			};
-
-			auto [targetPos, minDistanceSq] = findNearestEnemy();
-
-			if (minDistanceSq < 1e9f) {
-				velocity = targetPos - playerPos;
-			} else {
-				std::uniform_real_distribution<float> angleDist(0.0f, PI * 2.0f);
-				float randomAngle = angleDist(engine);
-				velocity.x = std::cos(randomAngle);
-				velocity.y = std::sin(randomAngle);
-			}
-
-			Boomerang* newBoomerang = new Boomerang(playerPos, velocity);
-			newBoomerang->Initialize();
-			boomerangs_.push_back(newBoomerang);
-
-			audio_->PlayWave(soundHandleBoomerangShot_);
-			boomerangSpawnTimer_ = 0;
-		}
-	}
-	for (Boomerang* boomerang : boomerangs_) {
-		boomerang->Update(playerPos);
-	}
-
-	// Minion の更新と攻撃
-	for (Minion* minion : minions_) {
-		minion->Update(playerPos);
-	}
-	if (player_->GetMinionLevel() >= 1) {
-		for (Minion* minion : minions_) {
-			if (minion->CanAttack()) {
-				auto findNearestEnemy = [&]() -> std::pair<Vector3, float> {
-					float minDistanceSq = 1e10f;
-					Vector3 targetPos = playerPos;
-					auto checkEnemy = [&](auto& enemies_list) {
-						for (auto enemy : enemies_list) {
-							if (enemy->IsDead())
-								continue;
-							float distance = Math::Length(enemy->GetPosition() - minion->GetPosition());
-							float distanceSq = distance * distance;
-							if (distanceSq < minDistanceSq) {
-								minDistanceSq = distanceSq;
-								targetPos = enemy->GetPosition();
-							}
-						}
-					};
-					checkEnemy(enemies_);
-					checkEnemy(enemies2_);
-					checkEnemy(enemies3_);
-					checkEnemy(enemies4_);
-					return {targetPos, minDistanceSq};
-				};
-
-				auto [targetPos, minDistanceSq] = findNearestEnemy();
-
-				if (minDistanceSq < 1e9f) {
-					Vector3 velocity = targetPos - minion->GetPosition();
-					Bullet* newBullet = new Bullet(minion->GetPosition(), velocity);
-					newBullet->SetDamage(minion->GetDamage() + player_->GetMinionLevel() / 2);
-					newBullet->Initialize();
-					bullets_.push_back(newBullet);
-
-					audio_->PlayWave(soundHandleMinionShot_);
-				}
-				minion->ResetAttackTimer();
-			}
-		}
-	}
-
-	// Missile の自動生成と更新
-	if (player_->GetMissileLevel() >= 1) {
-		missileSpawnTimer_++;
-		const int kMinMissileInterval = 20;
-		int currentMissileInterval = kMissileSpawnInterval / (std::max)(1, player_->GetMissileLevel());
-		currentMissileInterval = (std::max)(currentMissileInterval, kMinMissileInterval);
-
-		if (missileSpawnTimer_ >= currentMissileInterval) {
-			auto findNearestEnemy = [&]() -> std::pair<Vector3, float> {
-				float minDistanceSq = 1e10f;
-				Vector3 targetPos = playerPos;
-				auto checkEnemy = [&](auto& enemies_list) {
-					for (auto enemy : enemies_list) {
-						if (enemy->IsDead())
-							continue;
-						float distance = Math::Length(enemy->GetPosition() - playerPos);
-						float distanceSq = distance * distance;
-						if (distanceSq < minDistanceSq) {
-							minDistanceSq = distanceSq;
-							targetPos = enemy->GetPosition();
-						}
-					}
-				};
-				checkEnemy(enemies_);
-				checkEnemy(enemies2_);
-				checkEnemy(enemies3_);
-				checkEnemy(enemies4_);
-				return {targetPos, minDistanceSq};
-			};
-
-			auto [targetPos, minDistanceSq] = findNearestEnemy();
-
-			if (minDistanceSq < 1e9f) {
-				Missile* newMissile = new Missile(playerPos, targetPos);
-				newMissile->Initialize();
-				missiles_.push_back(newMissile);
-
-				audio_->PlayWave(soundHandleMissileShot_);
-			}
-			missileSpawnTimer_ = 0;
-		}
-	}
-
-	auto findNearestEnemyForMissileHoming = [&]() -> Vector3 {
-		float minDistanceSq = 1e10f;
-		Vector3 targetPos = playerPos;
-		auto checkEnemy = [&](auto& enemies_list) {
-			for (auto enemy : enemies_list) {
-				if (enemy->IsDead())
-					continue;
-				float distance = Math::Length(enemy->GetPosition() - playerPos);
-				float distanceSq = distance * distance;
-				if (distanceSq < minDistanceSq) {
-					minDistanceSq = distanceSq;
-					targetPos = enemy->GetPosition();
-				}
-			}
-		};
-		checkEnemy(enemies_);
-		checkEnemy(enemies2_);
-		checkEnemy(enemies3_);
-		checkEnemy(enemies4_);
-		return targetPos;
-	};
-	Vector3 nearestEnemyPos = findNearestEnemyForMissileHoming();
-
-	for (Missile* missile : missiles_) {
-		missile->Update(nearestEnemyPos);
-	}
-
-	// 衝突判定の実行
-	CheckAllCollisions();
-
-	// 経験値アイテムの更新・削除
-	for (Experience* exp : experiences_) {
+	for (auto* exp : experiences_)
 		exp->Update(playerPos);
-	}
-	for (Wine* wine : wines_) {
+	for (auto* wine : wines_)
 		wine->Update(playerPos);
-	}
 
-	// GameLogic.cpp の Update() 内 - 敵弾の削除処理
-	// ★ 追記: 敵弾の削除処理 ★
-	for (auto it = enemyBullets_.rbegin(); it != enemyBullets_.rend();) {
-		EnemyBullet* enemyBullet = *it;
-		if (enemyBullet->IsDead()) {
-			delete enemyBullet;
-			// 正しいイテレータの再設定:
-			// eraseには「削除したい要素を指す」順方向イテレータが必要。
-			// reverse_iteratorの `it` が指す要素を削除するには、
-			// `std::next(it).base()` または `it.base()` の調整が必要。
-
-			// C++の標準的な書き方 (std::next(it).base()を使用):
-			// (std::next(it) は「削除したい要素の次」を指す逆イテレータ)
-			// (std::next(it).base() は「削除したい要素」を指す順方向イテレータ)
-			auto forward_it = std::next(it).base();
-			forward_it = enemyBullets_.erase(forward_it);
-
-			// eraseの戻り値 (forward_it) は「削除された要素の次」を指す。
-			// これを逆イテレータに変換すると、「削除された要素の直前」を指す逆イテレータになる。
-			it = std::vector<EnemyBullet*>::reverse_iterator(forward_it);
-		} else {
-			++it;
+	// 死亡処理と掃除
+	for (auto* enemy : allEnemies_) {
+		if (enemy->IsDead()) {
+			audio_->PlayWave(soundHandleEnemyDie_);
+			deadEnemyPositions_.push_back(enemy->GetPosition());
+			DropExperience(enemy->GetPosition(), enemy->GetType());
 		}
 	}
 
-	// アイテムの削除処理 (取得/死亡判定) とレベルアップ判定
+	// --- 経験値アイテムの取得とレベルアップ判定 ---
 	for (auto it = experiences_.begin(); it != experiences_.end();) {
 		Experience* exp = *it;
 
 		if (exp->IsDead()) {
-			// 経験値の取得（クラスにGetExpValue等の関数がある場合。なければ1のままでOK）
 			int expValue = 1;
 			currentExp_ += expValue;
 			score_ += expValue;
-			font_->Set(score_);
 
-			// ★必殺技ゲージの加算
+			// 必殺技ゲージの加算など（既存通り）
 			if (!isSpecialActive_) {
-				specialGauge_ += 5.0f; // 加算量
-				if (specialGauge_ > kMaxSpecialGauge_) {
+				specialGauge_ += 5.0f;
+				if (specialGauge_ > kMaxSpecialGauge_)
 					specialGauge_ = kMaxSpecialGauge_;
-				}
 			}
 
-			// レベルアップ判定
-			if (currentExp_ >= requiredExp_) {
+			// ★★★ ここを if から while に変更 ★★★
+			// 1回の取得で必要経験値を複数回分超えても、その分だけ StartLevelUp を予約する形になります
+			while (currentExp_ >= requiredExp_) {
 				StartLevelUp();
 			}
 
-			// メモリ解放とリストからの削除
 			delete exp;
-			it = experiences_.erase(it); // 削除後の次の要素のイテレータを受け取る
-		} else {
-			++it; // 削除しなかった場合のみ次へ進む
-		}
-	}
-
-	// 敵の削除処理 (死亡判定)
-	std::uniform_int_distribution<int> distCount1(10, 15);
-	const int kEnemy2DropCount = 30;
-
-	for (auto it = enemies_.rbegin(); it != enemies_.rend();) {
-		Enemy* enemy = *it;
-		if (enemy->IsDead()) {
-
-			audio_->PlayWave(soundHandleEnemyDie_);
-
-			deadEnemyPositions_.push_back(enemy->GetPosition());
-
-			Vector3 dropPosition = enemy->GetPosition();
-			int dropCount = distCount1(engine);
-			for (int i = 0; i < dropCount; ++i) {
-				Experience* newExp = new Experience(dropPosition);
-				newExp->Initialize();
-				experiences_.push_back(newExp);
-			}
-			delete enemy;
-			it = std::vector<Enemy*>::reverse_iterator(enemies_.erase(std::next(it).base()));
+			it = experiences_.erase(it);
 		} else {
 			++it;
 		}
 	}
 
-	for (auto it = enemies2_.rbegin(); it != enemies2_.rend();) {
-		Enemy2* enemy2 = *it;
-		if (enemy2->IsDead()) {
-
-			audio_->PlayWave(soundHandleEnemyDie_);
-
-			deadEnemyPositions_.push_back(enemy2->GetPosition());
-
-			Vector3 dropPosition = enemy2->GetPosition();
-			int dropCount = kEnemy2DropCount;
-			for (int i = 0; i < dropCount; ++i) {
-				Experience* newExp = new Experience(dropPosition);
-				newExp->Initialize();
-				experiences_.push_back(newExp);
-			}
-			delete enemy2;
-			it = std::vector<Enemy2*>::reverse_iterator(enemies2_.erase(std::next(it).base()));
-		} else {
-			++it;
-		}
-	}
-	for (auto it = enemies3_.rbegin(); it != enemies3_.rend();) {
-		Enemy3* enemy3 = *it; // 変数名を enemy3 に修正 (元のファイルでは enemy2 になっていた)
-		if (enemy3->IsDead()) {
-
-			audio_->PlayWave(soundHandleEnemyDie_);
-
-			deadEnemyPositions_.push_back(enemy3->GetPosition());
-
-			Vector3 dropPosition = enemy3->GetPosition();
-			int dropCount = kEnemy2DropCount;
-			for (int i = 0; i < dropCount; ++i) {
-				Experience* newExp = new Experience(dropPosition);
-				newExp->Initialize();
-				experiences_.push_back(newExp);
-			}
-			delete enemy3;
-			it = std::vector<Enemy3*>::reverse_iterator(enemies3_.erase(std::next(it).base()));
-		} else {
-			++it;
-		}
-	}
-	for (auto it = enemies4_.rbegin(); it != enemies4_.rend();) { // ★ 追記 ★
-		Enemy4* enemy4 = *it;
-		if (enemy4->IsDead()) {
-
-			deadEnemyPositions_.push_back(enemy4->GetPosition());
-
-			audio_->PlayWave(soundHandleEnemyDie_);
-
-			Vector3 dropPosition = enemy4->GetPosition();
-			int dropCount = kEnemy2DropCount;
-			for (int i = 0; i < dropCount; ++i) {
-				Experience* newExp = new Experience(dropPosition);
-				newExp->Initialize();
-				experiences_.push_back(newExp);
-			}
-			delete enemy4;
-			it = std::vector<Enemy4*>::reverse_iterator(enemies4_.erase(std::next(it).base()));
-		} else {
-			++it;
-		}
-	}
-	for (auto it = enemies5_.rbegin(); it != enemies5_.rend();) {
-		Enemy5* enemy5 = *it;
-		if (enemy5->IsDead()) {
-
-			deadEnemyPositions_.push_back(enemy5->GetPosition());
-
-			audio_->PlayWave(soundHandleEnemyDie_);
-
-			Vector3 dropPosition = enemy5->GetPosition();
-			int dropCount = kEnemy2DropCount; // 仮でEnemy2と同じドロップ数
-			for (int i = 0; i < dropCount; ++i) {
-				Experience* newExp = new Experience(dropPosition);
-				newExp->Initialize();
-				experiences_.push_back(newExp);
-			}
-			delete enemy5;
-			it = std::vector<Enemy5*>::reverse_iterator(enemies5_.erase(std::next(it).base()));
-		} else {
-			++it;
-		}
-	}
-
-	// 弾/スキルの削除処理
-	for (auto itB = bullets_.rbegin(); itB != bullets_.rend();) {
-		Bullet* bullet = *itB;
-		if (bullet->IsDead()) {
-			delete bullet;
-			itB = std::vector<Bullet*>::reverse_iterator(bullets_.erase(std::next(itB).base()));
-		} else {
-			++itB;
-		}
-	}
-	for (auto itB = boomerangs_.rbegin(); itB != boomerangs_.rend();) {
-		Boomerang* boomerang = *itB;
-		if (boomerang->IsDead()) {
-			delete boomerang;
-			itB = std::vector<Boomerang*>::reverse_iterator(boomerangs_.erase(std::next(itB).base()));
-		} else {
-			++itB;
-		}
-	}
-	for (auto itM = missiles_.rbegin(); itM != missiles_.rend();) {
-		Missile* missile = *itM;
-		if (missile->IsDead()) {
-			delete missile;
-			itM = std::vector<Missile*>::reverse_iterator(missiles_.erase(std::next(itM).base()));
-		} else {
-			++itM;
-		}
-	}
+	CleanupDeadObjects(allEnemies_);
+	CleanupDeadObjects(bullets_);
+	CleanupDeadObjects(enemyBullets_);
+	CleanupDeadObjects(boomerangs_);
+	CleanupDeadObjects(missiles_);
+	//CleanupDeadObjects(experiences_);
+	CleanupDeadObjects(wines_);
 }
 
 void GameLogic::SpawnEnemy(int enemyType) {
-	// 敵の上限数チェック（既存のロジック）
-	int currentTotalEnemies = static_cast<int>(enemies_.size() + enemies2_.size() + enemies3_.size() + enemies4_.size() + enemies5_.size());
-	int maxTotalEnemies = kMaxEnemies + kMaxEnemies2 + kMaxEnemies3 + kMaxEnemies4 + kMaxEnemies5;
-	if (currentTotalEnemies >= maxTotalEnemies)
+	// 敵の上限数チェック（allEnemies_ 一本にする）
+	if (allEnemies_.size() >= (kMaxEnemies + kMaxEnemies2 + kMaxEnemies3 + kMaxEnemies4 + kMaxEnemies5))
 		return;
 
 	Vector3 playerPos = player_->GetPosition();
@@ -972,54 +304,30 @@ void GameLogic::SpawnEnemy(int enemyType) {
 		spawnPos.z = 0.0f;
 	}
 
-	// ★★★ ここで switch文 を使って生成していますか？ ★★★
+	Enemy* newEnemy = nullptr;
 	switch (enemyType) {
 	case 0:
-		if (enemies_.size() < kMaxEnemies) {
-			Enemy* newEnemy = new Enemy(spawnPos);
-			newEnemy->Initialize();
-			enemies_.push_back(newEnemy);
-		}
+		newEnemy = new Enemy(spawnPos);
 		break;
 	case 1:
-		if (enemies2_.size() < kMaxEnemies2) {
-			Enemy2* newEnemy2 = new Enemy2(spawnPos);
-			newEnemy2->Initialize();
-			enemies2_.push_back(newEnemy2);
-		}
+		newEnemy = new Enemy2(spawnPos);
 		break;
 	case 2:
-		if (enemies3_.size() < kMaxEnemies3) {
-			Enemy3* newEnemy3 = new Enemy3(spawnPos);
-			newEnemy3->Initialize();
-			enemies3_.push_back(newEnemy3);
-		}
+		newEnemy = new Enemy3(spawnPos);
 		break;
 	case 3:
-		if (enemies4_.size() < kMaxEnemies4) {
-			Enemy4* newEnemy4 = new Enemy4(spawnPos);
-			newEnemy4->Initialize();
-			enemies4_.push_back(newEnemy4);
-		}
+		newEnemy = new Enemy4(spawnPos);
 		break;
 	case 4:
-		if (enemies5_.size() < kMaxEnemies5) {
-			Enemy5* newEnemy5 = new Enemy5(spawnPos);
-			newEnemy5->Initialize();
-			enemies5_.push_back(newEnemy5);
-		}
+		newEnemy = new Enemy5(spawnPos);
 		break;
-
-	case 5: // タイプ5（囲い込み）の時も通常のEnemyを生成する
-		if (enemies_.size() < kMaxEnemies) {
-			Enemy* newEnemy = new Enemy(spawnPos);
-			newEnemy->Initialize();
-			enemies_.push_back(newEnemy);
-		}
+	case 5:
+		newEnemy = new Enemy(spawnPos);
 		break;
-
-	default:
-		break;
+	}
+	if (newEnemy) {
+		newEnemy->Initialize();
+		allEnemies_.push_back(newEnemy); // ★ここも allEnemies_ に入れる
 	}
 }
 
@@ -1027,107 +335,76 @@ void GameLogic::SpawnEnemy(int enemyType) {
 // GameLogic::CheckAllCollisions (衝突判定)
 // ----------------------------------------------------
 
-
 void GameLogic::CheckAllCollisions() {
-	// 最新のプレイヤー座標を再取得（ワールド座標）
 	Vector3 playerPos = player_->GetPosition();
 	float playerBodyRadius = 0.5f;
+
+	for (Enemy* enemy : allEnemies_) {
+		enemy->Update(playerPos);
+
+		// 敵の攻撃ロジック（タイプによって弾速などを変える場合は enemy->GetType() 等で判別）
+		if (enemy->CanShoot() && enemyBullets_.size() < kMaxEnemyBullets) {
+			enemy->ResetShotTimer();
+			Vector3 direction = Math::Normalize(playerPos - enemy->GetShotPosition());
+			Vector3 velocity = direction * 1.0f; // 共通の弾速（必要に応じて調整）
+
+			EnemyBullet* newBullet = new EnemyBullet(enemy->GetShotPosition(), velocity);
+			newBullet->SetDamage(10); // 共通ダメージ
+			newBullet->Initialize();
+			enemyBullets_.push_back(newBullet);
+		}
+	}
 
 	// --- 1. プレイヤーの攻撃 vs 敵 ---
 	if (player_->IsAttacking()) {
 		float attackRadius = player_->GetAttackRadius();
-		auto checkPlayerAttackCollision = [&](auto& enemies_list) {
-			for (auto enemy : enemies_list) {
-				if (enemy->IsDead())
-					continue;
-
-				Vector3 diff = enemy->GetPosition() - playerPos;
-				// 純粋な距離判定のみにする（画面外チェックは削除）
-				if (Math::Length(diff) <= (attackRadius + enemy->GetRadius())) {
-					enemy->TakeDamage(1);
-				}
-			}
-		};
-		checkPlayerAttackCollision(enemies_);
-		checkPlayerAttackCollision(enemies2_);
-		checkPlayerAttackCollision(enemies3_);
-		checkPlayerAttackCollision(enemies4_);
-		checkPlayerAttackCollision(enemies5_);
-	}
-
-	// --- 2. 敵 vs プレイヤー（接触） ---
-	auto checkEnemyPlayerCollision = [&](auto& enemies_list) {
-		for (auto enemy : enemies_list) {
-			if (enemy->IsDead() || player_->GetCurrentHp() <= 0)
+		for (auto* enemy : allEnemies_) {
+			if (enemy->IsDead())
 				continue;
-
-			Vector3 diff = enemy->GetPosition() - playerPos;
-			if (Math::Length(diff) <= (playerBodyRadius + enemy->GetRadius())) {
-				int damageToTake = (std::max)(1, 1 - player_->GetDefense());
-				player_->TakeDamage(damageToTake);
-				audio_->PlayWave(soundHandleDamage_);
+			if (Math::Length(enemy->GetPosition() - playerPos) <= (attackRadius + enemy->GetRadius())) {
+				enemy->TakeDamage(1);
 			}
 		}
-	};
-	checkEnemyPlayerCollision(enemies_);
-	checkEnemyPlayerCollision(enemies2_);
-	checkEnemyPlayerCollision(enemies3_);
-	checkEnemyPlayerCollision(enemies4_);
-	checkEnemyPlayerCollision(enemies5_);
+	}
 
-	// --- 2. Book (周回攻撃) vs 敵 ---
+	// --- 2. 敵 vs プレイヤー（接触ダメージ） ---
+	for (auto* enemy : allEnemies_) {
+		if (enemy->IsDead() || player_->GetCurrentHp() <= 0)
+			continue;
+		if (Math::Length(enemy->GetPosition() - playerPos) <= (playerBodyRadius + enemy->GetRadius())) {
+			int damageToTake = (std::max)(1, 1 - player_->GetDefense()); // 修正後の防御計算
+			player_->TakeDamage(damageToTake);
+			audio_->PlayWave(soundHandleDamage_);
+		}
+	}
+
+	// --- 3. Book (周回攻撃) vs 敵 ---
 	for (Book* book : books_) {
 		Vector3 bPos = book->GetPosition();
-		auto checkBook = [&](auto& enemies_list) {
-			for (auto enemy : enemies_list) {
-				if (enemy->IsDead())
-					continue;
-				if (Math::Length(enemy->GetPosition() - bPos) <= (book->GetRadius() + enemy->GetRadius())) {
-					enemy->TakeDamage(book->GetDamage());
-				}
+		for (auto* enemy : allEnemies_) {
+			if (enemy->IsDead())
+				continue;
+			if (Math::Length(enemy->GetPosition() - bPos) <= (book->GetRadius() + enemy->GetRadius())) {
+				enemy->TakeDamage(book->GetDamage());
 			}
-		};
-		checkBook(enemies_);
-		checkBook(enemies2_);
-		checkBook(enemies3_);
-		checkBook(enemies4_);
-		checkBook(enemies5_);
+		}
 	}
 
-	// --- 3. Bullet (オート攻撃) vs 敵 ---
+	// --- 4. Bullet (オート弾) vs 敵 ---
 	for (auto itB = bullets_.begin(); itB != bullets_.end();) {
 		Bullet* bullet = *itB;
-		if (bullet->IsDead()) {
-			delete bullet;
-			itB = bullets_.erase(itB);
-			continue;
-		}
-		Vector3 bulletPos = bullet->GetPosition();
-		float bulletRadius = bullet->GetRadius();
-		int bulletDamage = bullet->GetDamage();
 		bool hit = false;
-
-		auto checkBulletCollision = [&](auto& enemies_list) -> bool {
-			for (auto enemy : enemies_list) {
-				if (enemy->IsDead())
-					continue;
-				Vector3 enemyPos = enemy->GetPosition();
-
-				// ★ 修正: 画面外チェックを削除 ★
-				if (Math::Length(enemyPos - bulletPos) <= (bulletRadius + enemy->GetRadius())) {
-					enemy->TakeDamage(bulletDamage);
-					bullet->Die();
-					return true;
-				}
+		for (auto* enemy : allEnemies_) {
+			if (enemy->IsDead())
+				continue;
+			if (Math::Length(enemy->GetPosition() - bullet->GetPosition()) <= (bullet->GetRadius() + enemy->GetRadius())) {
+				enemy->TakeDamage(bullet->GetDamage());
+				bullet->Die();
+				hit = true;
+				break;
 			}
-			return false;
-		};
-
-		if (checkBulletCollision(enemies_) || checkBulletCollision(enemies2_) || checkBulletCollision(enemies3_) || checkBulletCollision(enemies4_) || checkBulletCollision(enemies5_)) {
-			hit = true;
 		}
-
-		if (hit) {
+		if (hit || bullet->IsDead()) {
 			delete bullet;
 			itB = bullets_.erase(itB);
 		} else {
@@ -1135,53 +412,22 @@ void GameLogic::CheckAllCollisions() {
 		}
 	}
 
-	// --- 4. Wine (回復アイテム) vs プレイヤー ---
-	for (auto itW = wines_.begin(); itW != wines_.end();) {
-		Wine* wine = *itW;
-		Vector3 winePos = wine->GetPosition();
-		if (Math::Length(winePos - playerPos) <= (playerBodyRadius + wine->GetRadius())) {
-			player_->Heal(wine->GetHealAmount());
-			audio_->PlayWave(soundHandleHeal_);
-			wine->Die();
-			delete wine;
-			itW = wines_.erase(itW);
-		} else {
-			++itW;
-		}
-	}
-
-	// --- 5. Boomerang / Missile (同様に画面外チェックを削除) ---
+	// --- 5. Boomerang / Missile vs 敵 ---
 	auto checkWeaponCollision = [&](auto& weapons_list, auto handleHit) {
 		for (auto it = weapons_list.begin(); it != weapons_list.end();) {
 			auto weapon = *it;
-			if (weapon->IsDead()) {
-				delete weapon;
-				it = weapons_list.erase(it);
-				continue;
-			}
 			bool hit = false;
-			Vector3 wPos = weapon->GetPosition();
-			float wRad = weapon->GetRadius();
-			int wDmg = weapon->GetDamage();
-
-			auto checkAgainstEnemies = [&](auto& enemies_list) -> bool {
-				for (auto enemy : enemies_list) {
-					if (enemy->IsDead())
-						continue;
-					if (Math::Length(enemy->GetPosition() - wPos) <= (wRad + enemy->GetRadius())) {
-						enemy->TakeDamage(wDmg);
-						handleHit(weapon);
-						return true;
-					}
+			for (auto* enemy : allEnemies_) {
+				if (enemy->IsDead())
+					continue;
+				if (Math::Length(enemy->GetPosition() - weapon->GetPosition()) <= (weapon->GetRadius() + enemy->GetRadius())) {
+					enemy->TakeDamage(weapon->GetDamage());
+					handleHit(weapon);
+					hit = true;
+					break;
 				}
-				return false;
-			};
-
-			if (checkAgainstEnemies(enemies_) || checkAgainstEnemies(enemies2_) || checkAgainstEnemies(enemies3_) || checkAgainstEnemies(enemies4_) || checkAgainstEnemies(enemies5_)) {
-				hit = true;
 			}
-
-			if (hit && weapon->IsDead()) { // 消滅するタイプの武器なら削除
+			if (weapon->IsDead()) {
 				delete weapon;
 				it = weapons_list.erase(it);
 			} else {
@@ -1189,10 +435,11 @@ void GameLogic::CheckAllCollisions() {
 			}
 		}
 	};
-
 	checkWeaponCollision(boomerangs_, [](auto b) { b->Hit(); });
 	checkWeaponCollision(missiles_, [](auto m) { m->Die(); });
 
+	// --- 6. アイテム・敵弾 vs プレイヤー (既存のロジックでOK) ---
+	// (WineやEnemyBulletsのループはそのまま維持)
 	// --- 6. 敵弾 vs プレイヤー ---
 	for (auto itEB = enemyBullets_.begin(); itEB != enemyBullets_.end();) {
 		EnemyBullet* eb = *itEB;
@@ -1210,9 +457,8 @@ void GameLogic::CheckAllCollisions() {
 			++itEB;
 		}
 	}
-
-
 }
+
 
 // ----------------------------------------------------
 // GameLogic::SpawnWine (Wineのランダム生成関数)
@@ -1277,32 +523,61 @@ void GameLogic::StartLevelUp() {
 // GameLogic::UpdateSkillSelection (スキル選択更新)
 // ----------------------------------------------------
 void GameLogic::UpdateSkillSelection() {
-	Input* input = KamataEngine::Input::GetInstance();
-
+	Input* input = Input::GetInstance();
+	// ★修正: [0].size() ではなく .size() に直す
 	int optionCount = static_cast<int>(currentSkillOptions_.size());
 
-	// 上キー/下キーで選択肢を移動
-	if (input->TriggerKey(DIK_W) || input->TriggerKey(DIK_UP)) {
+	// コントローラー状態の取得
+	XINPUT_STATE joyState, joyStatePrev;
+	bool hasJoy = input->GetJoystickState(0, joyState);
+	bool hasJoyPrev = input->GetJoystickStatePrevious(0, joyStatePrev);
+
+	// --- 入力判定（キーボード ＋ 十字キー ＋ スティック） ---
+	bool moveUp = input->TriggerKey(DIK_W) || input->TriggerKey(DIK_UP);
+	bool moveDown = input->TriggerKey(DIK_S) || input->TriggerKey(DIK_DOWN);
+	bool enter = input->TriggerKey(DIK_SPACE) || input->TriggerKey(DIK_RETURN);
+
+	if (hasJoy && hasJoyPrev) {
+		// 上方向（十字キー or スティック）
+		if (!(joyStatePrev.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) && (joyState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP))
+			moveUp = true;
+		if (joyStatePrev.Gamepad.sThumbLY <= 15000 && joyState.Gamepad.sThumbLY > 15000)
+			moveUp = true;
+
+		// 下方向
+		if (!(joyStatePrev.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) && (joyState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN))
+			moveDown = true;
+		if (joyStatePrev.Gamepad.sThumbLY >= -15000 && joyState.Gamepad.sThumbLY < -15000)
+			moveDown = true;
+
+		// 決定（Aボタン）
+		if (!(joyStatePrev.Gamepad.wButtons & XINPUT_GAMEPAD_A) && (joyState.Gamepad.wButtons & XINPUT_GAMEPAD_A))
+			enter = true;
+	}
+
+	if (moveUp) {
 		selectedSkillIndex_ = (selectedSkillIndex_ - 1 + optionCount) % optionCount;
-
 		audio_->PlayWave(soundHandleSelectCursor_);
 	}
-	if (input->TriggerKey(DIK_S) || input->TriggerKey(DIK_DOWN)) {
+	if (moveDown) {
 		selectedSkillIndex_ = (selectedSkillIndex_ + 1) % optionCount;
-
 		audio_->PlayWave(soundHandleSelectCursor_);
 	}
 
-	// 決定キー (スペースキーやエンターキー) でスキルを適用し、ゲームを再開
-	if (input->TriggerKey(DIK_SPACE) || input->TriggerKey(DIK_RETURN)) {
-
+	if (enter) {
 		audio_->PlayWave(soundHandleSkillDecide_);
-
 		ApplySkill(currentSkillOptions_[selectedSkillIndex_]);
-		isLevelUpPending_ = false;
-		player_->SetIsInvincible(false); // 無敵解除
+
+		// 連続レベルアップ判定（whileでのStartLevelUpを反映）
+		if (currentExp_ >= requiredExp_) {
+			StartLevelUp();
+		} else {
+			isLevelUpPending_ = false;
+			player_->SetIsInvincible(false);
+		}
 	}
 }
+
 
 // ----------------------------------------------------
 // GameLogic::ApplySkill (スキル適用処理)
@@ -1384,66 +659,160 @@ void GameLogic::ApplySkill(SkillType skill) {
 	}
 }
 
+// --- UIの更新 (HP/EXPバー) ---
+void GameLogic::UpdateUI() {
+	float hpRatio = (std::clamp)((float)player_->GetCurrentHp() / player_->GetMaxHp(), 0.0f, 1.0f);
+	hpBar_->SetSize({hpBarBase_->GetSize().x * hpRatio, hpBar_->GetSize().y});
+
+	float expRatio = (std::clamp)((float)currentExp_ / requiredExp_, 0.0f, 1.0f);
+	expBar_->SetSize({expBarBase_->GetSize().x * expRatio, expBar_->GetSize().y});
+
+	font_->Set(score_);
+}
+
+// --- 必殺技・全方位連射の更新 ---
+void GameLogic::UpdateSpecialAndRapidFire(const Vector3& playerPos) {
+
+	Input* input = Input::GetInstance();
+	XINPUT_STATE joyState;
+	bool hasJoy = input->GetJoystickState(0, joyState);
+
+	// Eキー または RTボタン(右トリガー)押し込み
+	bool triggerSpecial = input->TriggerKey(DIK_E);
+	if (hasJoy && joyState.Gamepad.bRightTrigger > 128) { // 128以上押し込んだら
+		triggerSpecial = true;
+	}
+
+	if (!isSpecialActive_ && specialGauge_ >= kMaxSpecialGauge_) {
+		if (triggerSpecial) {
+			isSpecialActive_ = true;
+			specialTimer_ = kMaxSpecialTime_;
+		}
+	}
+
+	if (isInitialRapidFire_) {
+		if (--rapidFireTimer_ <= 0)
+			isInitialRapidFire_ = false;
+		if (rapidFireTimer_ % 4 == 0) {
+			Enemy* target = FindNearestEnemy(playerPos);
+			for (int i = 0; i < 3; ++i) {
+				Vector3 velocity = {std::cos(currentShotAngle_), std::sin(currentShotAngle_), 0.0f};
+				Bullet* nb = new Bullet(playerPos, velocity);
+				nb->Initialize();
+				nb->SetDamage(isBackground_ ? 100 : 5);
+				if (target)
+					nb->SetTargetPos(target->GetPosition());
+				bullets_.push_back(nb);
+				currentShotAngle_ += 0.5f;
+			}
+			audio_->PlayWave(soundHandleBulletShot_);
+		}
+	}
+}
+
+// --- 各武器の自動生成と更新 ---
+void GameLogic::UpdateWeapons(const Vector3& playerPos) {
+	// Bullet (オート)
+	if (player_->GetBulletLevel() >= 1) {
+		if (++bulletSpawnTimer_ >= (std::max)(10, kBulletSpawnInterval / player_->GetBulletLevel())) {
+			Enemy* target = FindNearestEnemy(playerPos);
+			if (target) {
+				Bullet* nb = new Bullet(playerPos, target->GetPosition() - playerPos);
+				nb->Initialize();
+				bullets_.push_back(nb);
+				audio_->PlayWave(soundHandleBulletShot_);
+			}
+			bulletSpawnTimer_ = 0;
+		}
+	}
+	for (auto* b : bullets_)
+		b->Update();
+
+	// Boomerang
+	if (player_->GetBoomerangLevel() >= 1) {
+		if (++boomerangSpawnTimer_ >= (std::max)(30, kBoomerangSpawnInterval / player_->GetBoomerangLevel())) {
+			Enemy* target = FindNearestEnemy(playerPos);
+			Vector3 vel = target ? target->GetPosition() - playerPos : Vector3(1, 0, 0);
+			Boomerang* nbm = new Boomerang(playerPos, vel);
+			nbm->Initialize();
+			boomerangs_.push_back(nbm);
+			audio_->PlayWave(soundHandleBoomerangShot_);
+			boomerangSpawnTimer_ = 0;
+		}
+	}
+	for (auto* b : boomerangs_)
+		b->Update(playerPos);
+
+	// Missile
+	if (player_->GetMissileLevel() >= 1) {
+		if (++missileSpawnTimer_ >= (std::max)(20, kMissileSpawnInterval / player_->GetMissileLevel())) {
+			Enemy* target = FindNearestEnemy(playerPos);
+			if (target) {
+				Missile* nm = new Missile(playerPos, target->GetPosition());
+				nm->Initialize();
+				missiles_.push_back(nm);
+				audio_->PlayWave(soundHandleMissileShot_);
+			}
+			missileSpawnTimer_ = 0;
+		}
+	}
+	Enemy* homingTarget = FindNearestEnemy(playerPos);
+	Vector3 targetPos = homingTarget ? homingTarget->GetPosition() : playerPos;
+	for (auto* m : missiles_)
+		m->Update(targetPos);
+
+	// Book / Minion / EnemyBullet
+	for (auto* b : books_)
+		b->Update(playerPos);
+	for (auto* m : minions_)
+		m->Update(playerPos);
+	for (auto* eb : enemyBullets_)
+		eb->Update();
+}
+
+// --- 敵の弾発射ヘルパー ---
+void GameLogic::SpawnEnemyBullet(Enemy* enemy, const Vector3& playerPos) {
+	enemy->ResetShotTimer();
+	Vector3 direction = Math::Normalize(playerPos - enemy->GetShotPosition());
+	float speed = (enemy->GetType() == 1) ? 1.2f : (enemy->GetType() == 3) ? 0.6f : 1.0f;
+	int damage = (enemy->GetType() == 1) ? 30 : (enemy->GetType() == 3) ? 70 : 10;
+
+	EnemyBullet* nb = new EnemyBullet(enemy->GetShotPosition(), direction * speed);
+	nb->SetDamage(damage);
+	nb->Initialize();
+	enemyBullets_.push_back(nb);
+}
+
 // ----------------------------------------------------
 // GameLogic::DrawObjects (3Dオブジェクト描画)
 // ----------------------------------------------------
 void GameLogic::DrawObjects(const Camera& camera) {
-	// 経験値アイテムの描画
-	for (Experience* exp : experiences_) {
+	// 経験値・Wine
+	for (Experience* exp : experiences_)
 		exp->Draw(camera);
-	}
-
-	// Wineアイテムの描画
-	for (Wine* wine : wines_) {
+	for (Wine* wine : wines_)
 		wine->Draw(camera);
-	}
 
-	// 敵の描画
-	for (Enemy* enemy : enemies_) {
+	// ★ 敵の一括描画（これだけでOK）
+	for (Enemy* enemy : allEnemies_) {
 		enemy->Draw(camera);
 	}
-	for (Enemy2* enemy2 : enemies2_) {
-		enemy2->Draw(camera);
-	}
-	for (Enemy3* enemy3 : enemies3_) { // 変数名を enemy3 に修正
-		enemy3->Draw(camera);
-	}
-	for (Enemy4* enemy4 : enemies4_) { // ★ 追記 ★
-		enemy4->Draw(camera);
-	}
-	for (Enemy5* enemy5 : enemies5_) {
-		enemy5->Draw(camera);
-	}
-	// ★ 追記: 敵弾の描画 ★
-	for (EnemyBullet* enemyBullet : enemyBullets_) {
-		enemyBullet->Draw(camera);
-	}
 
-	// Bulletの描画
-	for (Bullet* bullet : bullets_) {
-		bullet->Draw(camera);
-	}
-
-	// Book (周回攻撃) の描画
-	for (Book* book : books_) {
-		book->Draw(camera);
-	}
-
-	// Boomerangの描画
-	for (Boomerang* boomerang : boomerangs_) {
-		boomerang->Draw(camera);
-	}
-
-	// Minionの描画
-	for (Minion* minion : minions_) {
-		minion->Draw(camera);
-	}
-
-	// Missileの描画
-	for (Missile* missile : missiles_) {
-		missile->Draw(camera);
-	}
+	// 弾・武器
+	for (EnemyBullet* eb : enemyBullets_)
+		eb->Draw(camera);
+	for (Bullet* b : bullets_)
+		b->Draw(camera);
+	for (Book* bk : books_)
+		bk->Draw(camera);
+	for (Boomerang* bm : boomerangs_)
+		bm->Draw(camera);
+	for (Minion* m : minions_)
+		m->Draw(camera);
+	for (Missile* ms : missiles_)
+		ms->Draw(camera);
 }
+
 
 #ifdef _DEBUG
 void GameLogic::DrawImGui() {
@@ -1469,6 +838,61 @@ void GameLogic::DrawImGui() {
 	}
 }
 #endif // _DEBUG
+
+Enemy* GameLogic::FindNearestEnemy(Vector3 basePos, float* outDistSq) {
+	float minDistanceSq = 1e10f;
+	Enemy* nearestEnemy = nullptr;
+
+	for (auto* enemy : allEnemies_) {
+		if (enemy->IsDead())
+			continue;
+
+		Vector3 diff = enemy->GetPosition() - basePos;
+		// LengthSq の代わりに二乗和を手動計算
+		float distSq = diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
+
+		if (distSq < minDistanceSq) {
+			minDistanceSq = distSq;
+			nearestEnemy = enemy;
+		}
+	}
+
+	if (outDistSq)
+		*outDistSq = minDistanceSq;
+	return nearestEnemy;
+}
+
+void GameLogic::DropExperience(Vector3 position, int type) {
+	int dropCount = 0;
+
+	if (type == 0) {
+		// ★ dist を dropDist に変更して名前の衝突を避ける
+		std::uniform_int_distribution<int> dropDist(10, 15);
+		dropCount = dropDist(engine);
+	} else {
+		dropCount = 30;
+	}
+
+	for (int i = 0; i < dropCount; ++i) {
+		Experience* newExp = new Experience(position);
+		newExp->Initialize();
+		experiences_.push_back(newExp);
+	}
+}
+
+template<typename T> void GameLogic::CleanupDeadObjects(std::vector<T*>& list) {
+	// 1. IsDead() が true の要素を後ろに集め、同時に delete する
+	auto it = std::remove_if(list.begin(), list.end(), [](T* obj) {
+		if (obj->IsDead()) {
+			delete obj; // メモリ解放
+			return true;
+		}
+		return false;
+	});
+
+	// 2. 不要になったポインタを vector から一括削除
+	list.erase(it, list.end());
+}
 
 // ----------------------------------------------------
 // GameLogic::DrawSkillSelectionUI (スキル選択UI描画)

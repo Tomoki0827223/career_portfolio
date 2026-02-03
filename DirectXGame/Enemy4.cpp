@@ -1,9 +1,5 @@
 #include "Enemy4.h"
 
-Enemy4::Enemy4(const Vector3& position) { worldTransform.translation_ = position; }
-
-Enemy4::~Enemy4() { delete model_; }
-
 void Enemy4::Initialize() {
 	// 敵モデルとして"cube"を使用
 	model_ = Model::CreateFromOBJ("enemy2"); // Enemyモデルを使用
@@ -39,27 +35,4 @@ void Enemy4::Update(const Vector3& playerPosition) {
 	// 移動を反映
 	worldTransform.UpdateMatarix();  // ★ 先に計算！
 	worldTransform.TransferMatrix(); // ★ 後で転送！
-}
-
-void Enemy4::Draw(const Camera& camera) {
-	if (isDead_) {
-		return;
-	}
-
-	// ★ 修正: DirectXCommon関連の呼び出しを削除 (GameLogic::DrawObjectsでまとめて行うため) ★
-	// DirectXCommon* dxCommon = DirectXCommon::GetInstance();
-	// dxCommon->ClearDepthBuffer();
-	 Model::PreDraw();
-
-	 model_->Draw(worldTransform, camera);
-
-	 Model::PostDraw();
-}
-
-void Enemy4::TakeDamage(int damage) {
-	currentHp_ -= damage;
-	if (currentHp_ <= 0) {
-		currentHp_ = 0;
-		isDead_ = true;
-	}
 }

@@ -86,45 +86,65 @@ void Player::Update() {
 		worldTransform.UpdateMatarix();
 	} else {
 
-		// --- 既存の入力による操作 ---
-		if (input_->PushKey(DIK_W)) {
+		// --- コントローラー情報の取得 ---
+		XINPUT_STATE joyState;
+		bool hasJoy = input_->GetJoystickState(0, joyState);
+
+		// SPACEキー または RT(右トリガー) が半分以上押し込まれたら
+		bool attackTrigger = input_->TriggerKey(DIK_SPACE);
+		if (hasJoy && joyState.Gamepad.bRightTrigger > 128) {
+			attackTrigger = true;
+		}
+
+		if (attackTrigger && !isAttacking_) {
+			isAttacking_ = true;
+			attackTimer_ = kMaxAttackTime_;
+			if (audio_ && attackSeHandle_ != 0) {
+				audio_->PlayWave(attackSeHandle_, false);
+			}
+		}
+
+		// --- 移動処理 (キーボード + 十字キー + 左スティック) ---
+
+		// 上方向
+		if (input_->PushKey(DIK_W) || (hasJoy && (joyState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP)) || (hasJoy && joyState.Gamepad.sThumbLY > 10000)) {
 			worldTransform.translation_.y += speed;
 			moveVector.y += 1.0f;
 		}
-		if (input_->PushKey(DIK_S)) {
+		// 下方向
+		if (input_->PushKey(DIK_S) || (hasJoy && (joyState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN)) || (hasJoy && joyState.Gamepad.sThumbLY < -10000)) {
 			worldTransform.translation_.y -= speed;
 			moveVector.y -= 1.0f;
 		}
-		if (input_->PushKey(DIK_A)) {
+		// 左方向
+		if (input_->PushKey(DIK_A) || (hasJoy && (joyState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT)) || (hasJoy && joyState.Gamepad.sThumbLX < -10000)) {
 			worldTransform.translation_.x -= speed;
 			moveVector.x -= 1.0f;
 		}
-		if (input_->PushKey(DIK_D)) {
+		// 右方向
+		if (input_->PushKey(DIK_D) || (hasJoy && (joyState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT)) || (hasJoy && joyState.Gamepad.sThumbLX > 10000)) {
 			worldTransform.translation_.x += speed;
 			moveVector.x += 1.0f;
 		}
 
-		// --- 旋回処理 ---
+		// --- 旋回処理（既存の moveVector ロジックがそのまま使えます） ---
 		if (moveVector.x != 0.0f || moveVector.y != 0.0f) {
-			// 画面上の X(左右) と Y(上下) で角度を出す
-			// atan2(x, y) にすることで、上が 0度(またはPI) になります
 			float targetRotationY = std::atan2(moveVector.x, moveVector.y);
-
-			// モデルの向きによって調整が必要な場合：
-			// もし下が正面になる場合は以下を有効にしてください
-			// targetRotationY += (float)M_PI;
-
 			float currentRotationY = worldTransform.rotation_.y;
 			float diff = targetRotationY - currentRotationY;
-
-			// 最短距離回転の補正
 			if (diff > (float)M_PI)
 				diff -= 2.0f * (float)M_PI;
 			else if (diff < -(float)M_PI)
 				diff += 2.0f * (float)M_PI;
+			worldTransform.rotation_.y += diff * 0.2f;
+		}
 
-			const float rotateSpeed = 0.2f;
-			worldTransform.rotation_.y += diff * rotateSpeed;
+		if (attackTrigger && !isAttacking_) {
+			isAttacking_ = true;
+			attackTimer_ = kMaxAttackTime_;
+			if (audio_ && attackSeHandle_ != 0) {
+				audio_->PlayWave(attackSeHandle_, false);
+			}
 		}
 
 		// --- 攻撃処理・スケール演出 (ここはそのまま) ---

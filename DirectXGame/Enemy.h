@@ -28,17 +28,22 @@ public:
     // ダメージ処理
     void TakeDamage(int damage);
 
+    // Enemy.h のクラス定義内に追加
+	virtual bool CanShoot() { return false; } // 基本は撃たない
+	virtual void ResetShotTimer() {}          // 派生クラスでオーバーライド
+	virtual Vector3 GetShotPosition() { return worldTransform.translation_; }
+	virtual int GetType() { return 0; } // 敵のタイプ判別用
 
-private:
-    // 敵のステータス
-    const float kMoveSpeed = 0.1f;
-    const float radius_ = 1.0f;
-    const int kMaxHp = 10;
-    int currentHp_ = kMaxHp;
+protected: // private から protected に変更
+	// 敵のステータス
+	const float kMoveSpeed = 0.1f;
+	const float radius_ = 1.0f;
+	const int kMaxHp = 10;
+	int currentHp_ = kMaxHp;
 
-    // モデルとワールド変換
-    Model* model_ = nullptr;
-    WorldTransform worldTransform;
+	// モデルとワールド変換
+	Model* model_ = nullptr;
+	WorldTransform worldTransform;
 
-    bool isDead_ = false; // HPが0になったらtrue
+	bool isDead_ = false;
 };

@@ -1,50 +1,24 @@
 #pragma once
-#include "3d/Camera.h"
-#include "3d/Model.h"
-#include "3d/WorldTransform.h"
-#include "KamataEngine.h"
-#include "math/MathUtility.h"
+#include "Enemy.h" // 親クラスをインクルード
 
-using namespace KamataEngine;
-
-class Enemy2 { // Enemy2に名前を変更
+// ★ : public Enemy を追加して継承させる
+class Enemy2 : public Enemy {
 public:
-	Enemy2(const Vector3& position);
-	~Enemy2();
+	// コンストラクタは親のコンストラクタを呼ぶようにします
+	Enemy2(const Vector3& position) : Enemy(position) {}
 
+	// 親にある関数を「上書き（オーバーライド）」するものだけ宣言
 	void Initialize();
-	// プレイヤーの位置を受け取り、追尾・更新を行う
 	void Update(const Vector3& playerPosition);
-	void Draw(const Camera& camera);
 
-
-	// 衝突判定/被弾判定用
-	Vector3 GetPosition() const { return worldTransform.translation_; }
-	float GetRadius() const { return radius_; }
-	bool IsDead() const { return isDead_; }
-
-	// ダメージ処理
-	void TakeDamage(int damage);
-
-	// ★ 追記: 弾発射用 ★
-	bool CanShoot() const { return shotTimer_ >= kShotInterval; }
-	void ResetShotTimer() { shotTimer_ = 0; }
-	Vector3 GetShotPosition() const { return worldTransform.translation_; }
+	// 弾発射ロジックを持つ場合のみ、親の仮想関数を上書き
+	bool CanShoot() override { return shotTimer_ >= kShotInterval; }
+	void ResetShotTimer() override { shotTimer_ = 0; }
+	int GetType() override { return 1; } // 敵タイプ1
 
 private:
-	// 敵のステータス
-	const float kMoveSpeed = 0.1f;
-	const float radius_ = 1.0f;
-	const int kMaxHp = 20; // ★ HPを4に変更 (4回攻撃で倒せるように)
-	int currentHp_ = kMaxHp;
-
-	// ★ 追記: 弾発射用のタイマーと定数 (連射型のため短く設定) ★
+	// Enemy2 固有の変数だけ残す
 	int shotTimer_ = 0;
-	const int kShotInterval = 45; // 0.75秒に1回発射 (60FPS想定で45フレーム)
-
-	// モデルとワールド変換
-	Model* model_ = nullptr;
-	WorldTransform worldTransform;
-
-	bool isDead_ = false; // HPが0になったらtrue
+	const int kShotInterval = 45;
+	// model_ や worldTransform は親(Enemy)にあるものを使うので削除してOK
 };

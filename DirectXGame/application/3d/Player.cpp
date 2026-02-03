@@ -96,6 +96,7 @@ void Player::Update() {
 			attackTrigger = true;
 		}
 
+
 		if (attackTrigger && !isAttacking_) {
 			isAttacking_ = true;
 			attackTimer_ = kMaxAttackTime_;

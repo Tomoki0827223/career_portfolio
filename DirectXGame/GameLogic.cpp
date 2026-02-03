@@ -223,12 +223,12 @@ void GameLogic::Update() {
 
 	// --- 修正: CSVのデータに基づいた出現管理 ---
 	for (auto& spawnData : enemySpawnList_) {
-		// スコア条件を満たしているかチェック
+		// 現在のスコアがCSVで指定された範囲内にあるかチェック
 		if (score_ >= spawnData.minScore && score_ <= spawnData.maxScore) {
-			spawnData.timer++;
+			spawnData.timer++; // 各出現パターンごとのタイマーを更新
 			if (spawnData.timer >= spawnData.interval) {
 				spawnData.timer = 0;
-				SpawnEnemy(spawnData.enemyType); // 設定されたタイプを生成
+				SpawnEnemy(spawnData.enemyType); // 指定されたタイプを生成
 			}
 		}
 	}
@@ -292,16 +292,29 @@ void GameLogic::SpawnEnemy(int enemyType) {
 		return;
 
 	Vector3 playerPos = player_->GetPosition();
-	Vector3 spawnPos;
+	Vector3 spawnPos; // 1. ここで既に宣言されている
 
 	// --- 出現位置の計算ロジックはOK！ ---
 	if (enemyType == 5) {
-		static float surroundAngle = 0.0f;
+		// --- 囲い込み出現: 一気に円形に配置する ---
+		int numEnemies = 12;
 		float spawnDist = 30.0f;
-		spawnPos.x = playerPos.x + std::cos(surroundAngle) * spawnDist;
-		spawnPos.y = playerPos.y + std::sin(surroundAngle) * spawnDist;
-		spawnPos.z = 0.0f;
-		surroundAngle += (2.0f * 3.14159f) / 24.0f;
+		for (int i = 0; i < numEnemies; ++i) {
+			float angle = (2.0f * PI / numEnemies) * i;
+
+			// ★修正箇所: ここでの「Vector3 spawnPos;」という再宣言を削除する
+			spawnPos.x = playerPos.x + std::cos(angle) * spawnDist;
+			spawnPos.y = playerPos.y + std::sin(angle) * spawnDist;
+			spawnPos.z = 0.0f;
+
+			Enemy* newEnemy = new Enemy(spawnPos);
+			newEnemy->Initialize();
+			allEnemies_.push_back(newEnemy);
+		}
+
+		// ★重要: タイプ5の時はループ内で全て生成済みなので、関数の残りの処理をスキップする
+		return;
+
 	} else {
 		std::uniform_real_distribution<float> angleDist(0.0f, 6.283f);
 		float angle = angleDist(engine);
@@ -311,6 +324,7 @@ void GameLogic::SpawnEnemy(int enemyType) {
 		spawnPos.z = 0.0f;
 	}
 
+	// 以下の処理は通常種の敵（0-4）の場合のみ実行される
 	Enemy* newEnemy = nullptr;
 	switch (enemyType) {
 	case 0:
@@ -328,9 +342,6 @@ void GameLogic::SpawnEnemy(int enemyType) {
 	case 4:
 		newEnemy = new Enemy5(spawnPos);
 		break;
-	case 5:
-		newEnemy = new Enemy(spawnPos);
-		break;
 	default:
 		newEnemy = new Enemy(spawnPos);
 		break;
@@ -338,7 +349,6 @@ void GameLogic::SpawnEnemy(int enemyType) {
 
 	if (newEnemy) {
 		newEnemy->Initialize();
-		// ★修正: enemies_ を allEnemies_ に
 		allEnemies_.push_back(newEnemy);
 	}
 }

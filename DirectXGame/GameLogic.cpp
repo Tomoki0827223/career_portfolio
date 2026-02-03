@@ -159,7 +159,6 @@ void GameLogic::Initialize() {
 void GameLogic::LoadEnemyPopData() {
 	enemySpawnList_.clear();
 
-	// ファイルを開く (パスは環境に合わせて調整してください)
 	std::ifstream file("Resources/enemyPop.csv");
 	if (!file.is_open()) {
 		return;
@@ -167,7 +166,7 @@ void GameLogic::LoadEnemyPopData() {
 
 	std::string line;
 	while (std::getline(file, line)) {
-		// コメント行(//)や空行をスキップ
+		// 空行やコメント行を飛ばす
 		if (line.empty() || line.find("//") == 0) {
 			continue;
 		}
@@ -176,18 +175,28 @@ void GameLogic::LoadEnemyPopData() {
 		std::string segment;
 		std::vector<std::string> seglist;
 
+		// カンマ区切りで seglist に入れる
 		while (std::getline(ss, segment, ',')) {
 			seglist.push_back(segment);
 		}
 
+		// ★ ここからが重要！文字列を数値に変換して変数に入れる ★
 		if (seglist.size() >= 4) {
-			EnemySpawnData data;
-			data.enemyType = std::stoi(seglist[0]);
-			data.interval = std::stoi(seglist[1]);
-			data.minScore = std::stoi(seglist[2]);
-			data.maxScore = std::stoi(seglist[3]);
-			data.timer = 0; // タイマー初期化
-			enemySpawnList_.push_back(data);
+			int type = std::stoi(seglist[0]);     // 1列目: 敵タイプ
+			int interval = std::stoi(seglist[1]); // 2列目: 出現間隔
+			int minScore = std::stoi(seglist[2]); // 3列目: 開始スコア
+			int maxScore = std::stoi(seglist[3]); // 4列目: 終了スコア
+
+			// 囲い込み(5)も許可してリストに追加
+			if (type >= 0 && type <= 5) {
+				EnemySpawnData data;
+				data.enemyType = type;
+				data.interval = interval;
+				data.minScore = minScore;
+				data.maxScore = maxScore;
+				data.timer = 0;
+				enemySpawnList_.push_back(data);
+			}
 		}
 	}
 	file.close();
@@ -204,7 +213,7 @@ void GameLogic::Update() {
 			return;
 	}
 
-	// 全ての敵の更新と発射
+	// 1. 全ての敵の更新
 	for (auto* enemy : allEnemies_) {
 		enemy->Update(playerPos);
 		if (enemy->CanShoot() && enemyBullets_.size() < kMaxEnemyBullets) {
@@ -212,25 +221,55 @@ void GameLogic::Update() {
 		}
 	}
 
+	// 2. 敵の出現管理（★ここを確実に動くように修正★）
+	// タイマーを減らす
+	if (enemySpawnTimer_ > 0) {
+		enemySpawnTimer_--;
+	}
+
+	if (enemySpawnTimer_ <= 0) {
+		enemySpawnTimer_ = kEnemySpawnInterval; // 60フレーム(1秒)ごとに出現
+
+		// 0〜4（通常種）と 5（囲い込み）をランダムに選ぶ
+		std::uniform_int_distribution<int> typeDist(0, 5);
+		SpawnEnemy(typeDist(engine));
+	}
+
+	// 3. 武器とUIの更新
 	UpdateWeapons(playerPos);
 	CheckAllCollisions();
 	UpdateUI();
 
-	// 出現管理 (CSV) と アイテム更新
-	for (auto& spawnData : enemySpawnList_) {
-		if (score_ >= spawnData.minScore && score_ <= spawnData.maxScore) {
-			if (++spawnData.timer >= spawnData.interval) {
-				SpawnEnemy(spawnData.enemyType);
-				spawnData.timer = 0;
-			}
-		}
-	}
+	// 4. アイテムの更新
 	for (auto* exp : experiences_)
 		exp->Update(playerPos);
 	for (auto* wine : wines_)
 		wine->Update(playerPos);
 
-	// 死亡処理と掃除
+	// 5. 経験値の取得判定
+	for (auto it = experiences_.begin(); it != experiences_.end();) {
+		Experience* exp = *it;
+		if (exp->IsDead()) {
+			currentExp_ += 1;
+			score_ += 1;
+
+			if (!isSpecialActive_) {
+				specialGauge_ += 0.5f;
+				if (specialGauge_ > kMaxSpecialGauge_)
+					specialGauge_ = kMaxSpecialGauge_;
+			}
+
+			while (currentExp_ >= requiredExp_)
+				StartLevelUp();
+
+			delete exp;                  // メモリを消す
+			it = experiences_.erase(it); // ★ここ！コメントアウト(//)を外してリストからも消す
+		} else {
+			++it;
+		}
+	}
+
+	// 6. 敵の死亡処理
 	for (auto* enemy : allEnemies_) {
 		if (enemy->IsDead()) {
 			audio_->PlayWave(soundHandleEnemyDie_);
@@ -239,67 +278,33 @@ void GameLogic::Update() {
 		}
 	}
 
-	// --- 経験値アイテムの取得とレベルアップ判定 ---
-	for (auto it = experiences_.begin(); it != experiences_.end();) {
-		Experience* exp = *it;
-
-		if (exp->IsDead()) {
-			int expValue = 1;
-			currentExp_ += expValue;
-			score_ += expValue;
-
-			// ★ 必殺技発動中でない時だけゲージを増やす
-			if (!isSpecialActive_) {
-				specialGauge_ += 0.5f; // たまり過ぎないように数値を調整
-				if (specialGauge_ > kMaxSpecialGauge_) {
-					specialGauge_ = kMaxSpecialGauge_;
-				}
-			}
-
-			// ★★★ ここを if から while に変更 ★★★
-			// 1回の取得で必要経験値を複数回分超えても、その分だけ StartLevelUp を予約する形になります
-			while (currentExp_ >= requiredExp_) {
-				StartLevelUp();
-			}
-
-			delete exp;
-			it = experiences_.erase(it);
-		} else {
-			++it;
-		}
-	}
-
+	// 7. 死んだオブジェクトの掃除
 	CleanupDeadObjects(allEnemies_);
 	CleanupDeadObjects(bullets_);
 	CleanupDeadObjects(enemyBullets_);
 	CleanupDeadObjects(boomerangs_);
 	CleanupDeadObjects(missiles_);
-	//CleanupDeadObjects(experiences_);
 	CleanupDeadObjects(wines_);
 }
 
 void GameLogic::SpawnEnemy(int enemyType) {
-	// 敵の上限数チェック（allEnemies_ 一本にする）
-	if (allEnemies_.size() >= (kMaxEnemies + kMaxEnemies2 + kMaxEnemies3 + kMaxEnemies4 + kMaxEnemies5))
+	// ★修正: enemies_ を allEnemies_ に統一
+	const size_t kTotalEnemyMax = 100;
+	if (allEnemies_.size() >= kTotalEnemyMax)
 		return;
 
 	Vector3 playerPos = player_->GetPosition();
-	Vector3 spawnPos; // randomPos から spawnPos に名前を合わせて調整
+	Vector3 spawnPos;
 
-	// --- 囲い込み出現のロジック ---
+	// --- 出現位置の計算ロジックはOK！ ---
 	if (enemyType == 5) {
-		// static変数で角度を保持し、呼ばれるたびに少しずつずらす
 		static float surroundAngle = 0.0f;
-		float spawnDist = 30.0f; // プレイヤーからの距離（お好みで調整）
-
+		float spawnDist = 30.0f;
 		spawnPos.x = playerPos.x + std::cos(surroundAngle) * spawnDist;
 		spawnPos.y = playerPos.y + std::sin(surroundAngle) * spawnDist;
 		spawnPos.z = 0.0f;
-
-		// 次回呼び出し時のために角度を進める（例：360度を24分割して出現させる場合）
 		surroundAngle += (2.0f * 3.14159f) / 24.0f;
 	} else {
-		// --- 既存のランダム出現ロジック ---
 		std::uniform_real_distribution<float> angleDist(0.0f, 6.283f);
 		float angle = angleDist(engine);
 		float spawnDist = 50.0f;
@@ -328,10 +333,15 @@ void GameLogic::SpawnEnemy(int enemyType) {
 	case 5:
 		newEnemy = new Enemy(spawnPos);
 		break;
+	default:
+		newEnemy = new Enemy(spawnPos);
+		break;
 	}
+
 	if (newEnemy) {
 		newEnemy->Initialize();
-		allEnemies_.push_back(newEnemy); // ★ここも allEnemies_ に入れる
+		// ★修正: enemies_ を allEnemies_ に
+		allEnemies_.push_back(newEnemy);
 	}
 }
 
@@ -678,7 +688,7 @@ void GameLogic::UpdateUI() {
 	font_->Set(score_);
 }
 
-void GameLogic::UpdateSpecialAndRapidFire(const Vector3& /*playerPos*/) {
+void GameLogic::UpdateSpecialAndRapidFire(const Vector3& playerPos) {
 	Input* input = Input::GetInstance();
 	XINPUT_STATE joyState;
 	bool hasJoy = input->GetJoystickState(0, joyState);
@@ -693,7 +703,13 @@ void GameLogic::UpdateSpecialAndRapidFire(const Vector3& /*playerPos*/) {
 	if (!isSpecialActive_ && specialGauge_ >= kMaxSpecialGauge_) {
 		if (triggerSpecial) {
 			isSpecialActive_ = true;
-			specialTimer_ = kMaxSpecialTime_; // 例: 300 (5秒)
+			specialTimer_ = kMaxSpecialTime_;
+
+			// ★★★ 追加：古い弾をすべて削除して画面をスッキリさせる ★★★
+			for (auto* b : bullets_) {
+				delete b;
+			}
+			bullets_.clear();
 
 			// 画面上の全経験値を吸い込み開始
 			for (auto* exp : experiences_) {
@@ -701,18 +717,41 @@ void GameLogic::UpdateSpecialAndRapidFire(const Vector3& /*playerPos*/) {
 			}
 		}
 	}
-	// --- 必殺技中の処理 ---
+
+	// --- 必殺技発動中の処理 ---
 	if (isSpecialActive_) {
 		specialTimer_--;
 
-		// 例：必殺技中、プレイヤーの周りに常に弾を出すなど
-		if (specialTimer_ % 5 == 0) {
-			// ここで playerPos を使って Bullet を生成するロジックを書く
+		// ★★★ マシンガン（弾の発射）ロジックをここに統合 ★★★
+		// 4フレームに1回、全方位に弾をバラまく
+		if (specialTimer_ % 4 == 0) {
+			Enemy* target = FindNearestEnemy(playerPos);
+
+			// 1回の発射で3方向に弾を出す（角度をずらして全方位にする）
+			for (int i = 0; i < 3; ++i) {
+				Vector3 velocity = {std::cos(currentShotAngle_), std::sin(currentShotAngle_), 0.0f};
+				Bullet* nb = new Bullet(playerPos, velocity);
+				nb->Initialize();
+
+				// 必殺技なのでダメージを高く設定
+				nb->SetDamage(20);
+
+				if (target) {
+					nb->SetTargetPos(target->GetPosition());
+				}
+				bullets_.push_back(nb);
+
+				// 次の弾の角度を少しずらす
+				currentShotAngle_ += 0.5f;
+			}
+			// 発射音
+			audio_->PlayWave(soundHandleBulletShot_);
 		}
 
+		// 終了判定
 		if (specialTimer_ <= 0) {
 			isSpecialActive_ = false;
-			specialGauge_ = 0.0f;
+			specialGauge_ = 0.0f; // ゲージリセット
 		}
 	}
 }

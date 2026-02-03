@@ -8,6 +8,7 @@
 using namespace KamataEngine;
 
 
+
 // Scene enumに Tutorial と GameOver を追加
 enum class Scene { Title, Tutorial, Game, GameOver };
 

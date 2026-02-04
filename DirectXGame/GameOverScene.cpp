@@ -10,7 +10,7 @@ const float kWindowWidth = 1280.0f;
 const float kWindowHeight = 720.0f;
 
 GameOverScene::~GameOverScene() {
-	// ★修正: deleteする前にnullptrチェックを追加★
+	// ★修正: deleteする前にnullptrチェックを追加★+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	if (backgroundSprite_) {
 		delete backgroundSprite_;
 	}

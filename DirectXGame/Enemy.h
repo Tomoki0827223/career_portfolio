@@ -10,11 +10,11 @@ using namespace KamataEngine;
 class Enemy {
 public:
     Enemy(const Vector3& position); 
-    ~Enemy();
+    virtual ~Enemy(); // デストラクタも virtual にする
 
-    void Initialize();
-    // プレイヤーの位置を受け取り、追尾・更新を行う
-    void Update(const Vector3& playerPosition); 
+    virtual void Initialize(); // virtual を追加
+    virtual void Update(const Vector3& playerPosition); // virtual を追加~Enemy();
+
     void Draw(const Camera& camera);
     
     // ★追加: 敵の位置を取得するゲッター

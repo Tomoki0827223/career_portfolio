@@ -95,34 +95,30 @@ void GameOverScene::Update() {
 		return;
 	}
 
-	// 上キー/下キーで選択肢を移動
-	// ★削除: 選択肢をリトライに固定するため、キー入力による移動ロジックを削除
-	/*
-	if (input_->TriggerKey(DIK_W) || input_->TriggerKey(DIK_UP)) {
-	    selectedOption_ = (selectedOption_ - 1 + 2) % 2;
-	}
-	if (input_->TriggerKey(DIK_S) || input_->TriggerKey(DIK_DOWN)) {
-	    selectedOption_ = (selectedOption_ + 1) % 2;
-	}
-	*/
+	// --- コントローラー情報の取得 ---
+	XINPUT_STATE joyState;
+	bool hasJoy = input_->GetJoystickState(0, joyState);
 
-	// 決定キー (スペースキーやエンターキー)
-	if (input_->TriggerKey(DIK_SPACE) || input_->TriggerKey(DIK_RETURN)) {
+	// --- 決定操作 (スペース、エンター、またはコントローラーのAボタン) ---
+	bool enterTrigger = input_->TriggerKey(DIK_SPACE) || input_->TriggerKey(DIK_RETURN);
+	if (hasJoy && (joyState.Gamepad.wButtons & XINPUT_GAMEPAD_A)) {
+		enterTrigger = true;
+	}
+
+	if (enterTrigger) {
 		isFinished_ = true;
-		isRetrySelected_ = true; // ★修正: 常にリトライを選択したことにする
+		isRetrySelected_ = true; // 常にリトライを選択したことにする
 		return;
 	}
 
-	// カーソルの位置を更新
-	// 選択肢がリトライに固定されたため、常に retrySprite_ をターゲットにする
-	Sprite* targetSprite = retrySprite_; // ★修正: targetSpriteをretrySprite_に固定
+	// カーソルの位置を更新 (既存の処理)
+	Sprite* targetSprite = retrySprite_;
 
 	if (targetSprite && cursorSprite_) {
 		Vector2 targetCenter = targetSprite->GetPosition();
 		Vector2 targetSize = targetSprite->GetSize();
 		Vector2 cursorSize = cursorSprite_->GetSize();
 
-		// 選択肢の中心にカーソルを配置するよう座標を計算
 		Vector2 targetCenterPos = {targetCenter.x + targetSize.x / 2.0f, targetCenter.y + targetSize.y / 2.0f};
 		Vector2 cursorDrawPos = {targetCenterPos.x - cursorSize.x / 2.0f, targetCenterPos.y - cursorSize.y / 2.0f};
 

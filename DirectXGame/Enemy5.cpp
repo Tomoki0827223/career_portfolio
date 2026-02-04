@@ -16,6 +16,10 @@ void Enemy5::Update(const Vector3& playerPosition) {
 		return;
 	}
 
+	if (shotTimer_ < kShotInterval) {
+		shotTimer_++;
+	}
+
 	// プレイヤーへの方向ベクトルを計算
 	Vector3 diff = playerPosition - worldTransform.translation_;
 

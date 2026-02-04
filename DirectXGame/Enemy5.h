@@ -11,7 +11,7 @@ public:
 
 	bool CanShoot() override { return shotTimer_ >= kShotInterval; }
 	void ResetShotTimer() override { shotTimer_ = 0; }
-	int GetType() override { return 3; }
+	int GetType() override { return 4; }
 
 private:
 	// 固有のタイマーだけ残す

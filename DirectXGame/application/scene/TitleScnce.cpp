@@ -103,33 +103,33 @@ void TitleScnce::InitializeSprites() {
 }
 
 void TitleScnce::Update() {
-	Timer_ += 1.0f; // フレームごとに加算
+	Timer_ += 1.0f;
+
+	XINPUT_STATE joyState;
+	bool hasJoy = input_->GetJoystickState(0, joyState);
 
 	if (backgroundGameScene_) {
-		// 背景のGameSceneを更新
 		backgroundGameScene_->Update();
-
-		// ★追加: タイトル画面中だけプレイヤーの弾の威力を爆上げする
 		Player* player = backgroundGameScene_->GetPlayer();
 		if (player) {
-			// 例: 通常は 1 だけどタイトル背景では 100 にして敵を一撃にする
-			player->SetBulletLevel(1); // 弾が出るようにレベルを設定
-			// Bullet自体のダメージ設定は GameLogic 生成時に行われるため、
-			// 背景モードの時だけ GameLogic 側の判定を調整するか、
-			// 以下の手順で GameLogic を経由して弾の威力を上げます。
+			player->SetBulletLevel(1);
 		}
 	}
 
 	switch (state_) {
-	case State::TitleScreen:
-		// Enterキーで演出開始 (Transition状態へ移行)
-		if (input_->TriggerKey(DIK_RETURN)) {
-			// audio_->PlayWave(TitleSEHandle3_, false); // スタートSE
-			state_ = State::Transition;
-			transitionTimer_ = 0.0f; // タイマーリセット
+	case State::TitleScreen: { // ★波括弧を追加
+		// --- 決定操作 (Enterキー または Aボタン) ---
+		bool startTrigger = input_->TriggerKey(DIK_RETURN);
+		if (hasJoy && (joyState.Gamepad.wButtons & XINPUT_GAMEPAD_A)) {
+			startTrigger = true;
 		}
 
-		// 降下アニメーション (TitleScreen状態でのみ継続)
+		if (startTrigger) {
+			state_ = State::Transition;
+			transitionTimer_ = 0.0f;
+		}
+
+		// 降下アニメーション
 		if (sprite2_) {
 			auto pos = sprite2_->GetPosition();
 			float targetY = 0.0f;
@@ -141,7 +141,8 @@ void TitleScnce::Update() {
 				sprite2_->SetPosition(pos);
 			}
 		}
-		break;
+	} // ★波括弧を閉じる
+	break;
 
 	case State::Transition: { // ★スコープ追加
 		// 移行演出の更新

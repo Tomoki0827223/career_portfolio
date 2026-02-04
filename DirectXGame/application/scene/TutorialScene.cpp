@@ -58,14 +58,17 @@ void TutorialScene::Initialize() {
 }
 
 void TutorialScene::Update() {
+	// --- コントローラー情報の取得 ---
+	XINPUT_STATE joyState;
+	bool hasJoy = input_->GetJoystickState(0, joyState);
 
-	// タイトルに戻るボタンの判定 (例としてDIK_Qを使用)
-	if (input_->TriggerKey(DIK_Q)) {
+	// タイトルに戻る判定 (キーボード Q または コントローラー Bボタン)
+	if (input_->TriggerKey(DIK_Q) || (hasJoy && (joyState.Gamepad.wButtons & XINPUT_GAMEPAD_B))) {
 		isBackToTitle_ = true;
 	}
 
 	if (isBackToTitle_ || isFinished_) {
-		return; // フラグが立っている間は以降の処理を行わない
+		return;
 	}
 
 	timer_ += 1.0f;
@@ -73,49 +76,44 @@ void TutorialScene::Update() {
 	switch (state_) {
 	case State::FadeIn:
 		fadeInTimer_ += 1.0f;
-
 		if (fadeInTimer_ >= kFadeInDuration) {
-			// フェードイン完了 -> Active状態へ移行
 			state_ = State::Active;
 		}
-		// フェードイン中は操作を受け付けない
 		break;
 
-	case State::Active:
-		// ★スペースキーでタイトルへ戻る
+	case State::Active: { // ★波括弧を追加
+		// --- 決定操作 (Enterキー または Aボタン) ---
+		bool enterTrigger = input_->TriggerKey(DIK_RETURN);
+		if (hasJoy && (joyState.Gamepad.wButtons & XINPUT_GAMEPAD_A)) {
+			enterTrigger = true;
+		}
+
+		if (enterTrigger) {
+			state_ = State::Transition;
+			fadeOutTimer_ = 0.0f;
+			loadingTimer_ = 0.0f;
+		}
+
 		if (input_->TriggerKey(DIK_SPACE)) {
 			isBackToTitle_ = true;
 		}
-
-		// ★ ゲームシーンへ移行する条件
-		// Enterキーが押されたら Transition 状態へ移行
-		if (input_->TriggerKey(DIK_RETURN)) {
-			state_ = State::Transition; // ★修正: 移行演出へ
-			fadeOutTimer_ = 0.0f;       // ★追加: タイマーリセット
-			loadingTimer_ = 0.0f;       // ★追加: ロードタイマーリセット
-		}
-		// TODO: 必要に応じて、説明スプライトのアニメーションや点滅などをここに追加
+	}
 		break;
 
 	case State::Transition:
-		// 移行演出の更新 (フェードアウト + ロード演出)
+		// (既存のタイマー処理)
 		if (fadeOutTimer_ < kFadeOutDuration) {
-			// フェードアウト中
 			fadeOutTimer_ += 1.0f;
 		} else {
-			// フェードアウト完了後 (画面は完全に黒)
 			loadingTimer_ += 1.0f;
-
 			if (loadingTimer_ >= kLoadingHoldDuration) {
-				// ロード演出完了 -> Finished状態へ移行し、次のシーンへ
-				state_ = State::Finished; // Finished状態へ
-				isFinished_ = true;       // ここでフラグを立てる
+				state_ = State::Finished;
+				isFinished_ = true;
 			}
 		}
 		break;
 
-	case State::Finished: // ★追加: Finished状態での処理
-		// isFinished_ が true の間、Draw で暗転が維持される
+	case State::Finished:
 		break;
 	}
 }

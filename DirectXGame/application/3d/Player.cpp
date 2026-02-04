@@ -91,8 +91,8 @@ void Player::Update() {
 		bool hasJoy = input_->GetJoystickState(0, joyState);
 
 		// SPACEキー または RT(右トリガー) が半分以上押し込まれたら
-		bool attackTrigger = input_->TriggerKey(DIK_SPACE);
-		if (hasJoy && joyState.Gamepad.bRightTrigger > 128) {
+		bool attackTrigger = input_->TriggerKey(DIK_E);
+		if (hasJoy && joyState.Gamepad.bLeftTrigger > 128) {
 			attackTrigger = true;
 		}
 

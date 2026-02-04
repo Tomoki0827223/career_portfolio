@@ -934,6 +934,7 @@ void GameLogic::DropExperience(Vector3 position, int type) {
 	}
 }
 
+
 template<typename T> void GameLogic::CleanupDeadObjects(std::vector<T*>& list) {
 	// 1. IsDead() が true の要素を後ろに集め、同時に delete する
 	auto it = std::remove_if(list.begin(), list.end(), [](T* obj) {

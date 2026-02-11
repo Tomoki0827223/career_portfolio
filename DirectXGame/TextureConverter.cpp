@@ -3,35 +3,44 @@
 #include <filesystem>
 
 
+// TextureConverter.cpp 内の修正例
 void TextureConverter::ConvertTextureWICToDDS(const std::string& filePath) {
-	// ファイルを読み込む
 	LoadWICTextureFromFile(filePath);
 
-	// 保存先パスの作成（単純に末尾を書き換えるのではなく、安全な方法にする）
 	std::filesystem::path srcPath(filePath);
 	std::filesystem::path ddsPath = srcPath;
-	ddsPath.replace_extension(".dds"); // 拡張子を .dds に変更
-
+	ddsPath.replace_extension(".dds");
 	std::wstring wddsFilePath = ddsPath.wstring();
 
 	// ② ミップマップの生成
 	DirectX::ScratchImage mipChain;
 	HRESULT hr = DirectX::GenerateMipMaps(m_WICData.GetImages(), m_WICData.GetImageCount(), m_WICData.GetMetadata(), DirectX::TEX_FILTER_DEFAULT, 0, mipChain);
 
-	// 生成に成功したデータを使う（失敗した場合は元のデータを使う）
-	DirectX::ScratchImage* saveImage = &m_WICData;
+	DirectX::ScratchImage* midImage = &m_WICData;
 	if (SUCCEEDED(hr)) {
-		saveImage = &mipChain;
+		midImage = &mipChain;
+	}
+
+	// ★追加: テクスチャ圧縮 (スライドの指示通りミップマップ生成の後に差し込む) ★
+	DirectX::ScratchImage converted;
+	hr = DirectX::Compress(
+	    midImage->GetImages(), midImage->GetImageCount(), midImage->GetMetadata(),
+	    DXGI_FORMAT_BC7_UNORM_SRGB, // 圧縮形式
+	    DirectX::TEX_COMPRESS_BC7_QUICK | DirectX::TEX_COMPRESS_SRGB_OUT | DirectX::TEX_COMPRESS_PARALLEL, 1.0f, converted);
+
+	DirectX::ScratchImage* saveImage = midImage;
+	if (SUCCEEDED(hr)) {
+		saveImage = &converted;
 	}
 
 	// ③ DDS ファイルとして保存
 	hr = DirectX::SaveToDDSFile(saveImage->GetImages(), saveImage->GetImageCount(), saveImage->GetMetadata(), DirectX::DDS_FLAGS_NONE, wddsFilePath.c_str());
 
 	if (FAILED(hr)) {
-		// 保存に失敗した場合はここにくる
 		OutputDebugStringA("Failed to save DDS file.\n");
 	}
 }
+
 
 // テクスチャファイル読み込み関数の実装（LoadWICTextureFromFile）
 void TextureConverter::LoadWICTextureFromFile(const std::string& filePath) {

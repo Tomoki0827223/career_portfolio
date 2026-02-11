@@ -119,24 +119,22 @@ void TextureConverter::SeparateFilePath(const std::wstring& filePath)
     fileName = exceptExt;
 }
 
-// マルチバイト文字列をワイド文字列に変換する関数の実装
-std::wstring TextureConverter::ConvertMultiByteStringToWideString(const std::string& mString)
-{
-    // ① まず第5引数に nullptr を入れて呼び出すことで、必要な文字数 (バッファサイズ) を取得する
-    // ワイド文字列に変換した際の文字数を計算 (終端NULLを含む)
-    // CP_ACP: 現在のシステムANSIコードページを使用
-    int filePathBufferSize = MultiByteToWideChar(CP_ACP, 0, mString.c_str(), -1, nullptr, 0);
+// TextureConverter.cpp 内の関数を以下に差し替え
+std::wstring TextureConverter::ConvertMultiByteStringToWideString(const std::string& mString) {
+	if (mString.empty())
+		return L"";
 
-    // ワイド文字列
-    std::wstring wString;
-    // ② その文字数分のバッファを wString に用意する
-    wString.resize(filePathBufferSize);
+	// 必要なバッファサイズを取得
+	int filePathBufferSize = MultiByteToWideChar(CP_ACP, 0, mString.c_str(), -1, nullptr, 0);
 
-    // ③ 実際に変換する
-    MultiByteToWideChar(CP_ACP, 0, mString.c_str(), -1, &wString[0], filePathBufferSize);
+	std::wstring wString(filePathBufferSize, L'\0');
+	MultiByteToWideChar(CP_ACP, 0, mString.c_str(), -1, &wString[0], filePathBufferSize);
 
-    // 終端NULLを含めてリサイズしているので、NULL文字を取り除く (std::wstringの扱いとして)
-    wString.resize(filePathBufferSize - 1);
+	// std::wstringは終端NULLを内部で管理するため、末尾のNULL文字を手動で取り除く
+	size_t nullPos = wString.find_last_not_of(L'\0');
+	if (nullPos != std::wstring::npos) {
+		wString.resize(nullPos + 1);
+	}
 
-    return wString;
+	return wString;
 }

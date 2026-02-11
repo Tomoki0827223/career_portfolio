@@ -3,6 +3,7 @@
 #include "KamataEngine.h"
 #include "TitleScnce.h"
 #include "TutorialScene.h"
+#include "TextureConverter.h"
 #include <Windows.h>
 
 using namespace KamataEngine;
@@ -43,6 +44,23 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// ★ ゲームオーバーシーンの初期化 (追加)
 	gameOverScene = new GameOverScene();
 	gameOverScene->Initialize();
+
+	// エンジンの初期化などの後
+	TextureConverter converter;
+
+	// 変換したい画像ファイルを指定（Resourcesフォルダ内のファイルを指定してください）
+	// 例として uvChecker.dds を DDS に変換する場合
+	converter.ConvertTextureWICToDDS("Resources/HPR.png");
+	converter.ConvertTextureWICToDDS("Resources/Tile.png");
+	converter.ConvertTextureWICToDDS("Resources/uvChecker.png");
+	converter.ConvertTextureWICToDDS("Resources/HP.png");
+	converter.ConvertTextureWICToDDS("Resources/exp.png");
+	converter.ConvertTextureWICToDDS("Resources/sample.png");
+	converter.ConvertTextureWICToDDS("Resources/white1x1.png");
+	converter.ConvertTextureWICToDDS("Resources/Title/Title1.png");
+	converter.ConvertTextureWICToDDS("Resources/Title/ShotGame.png");
+	converter.ConvertTextureWICToDDS("Resources/Title/Title1.png");
+	converter.ConvertTextureWICToDDS("Resources/Title/HitEnter.png");
 
 	// メインループ
 	while (true) {

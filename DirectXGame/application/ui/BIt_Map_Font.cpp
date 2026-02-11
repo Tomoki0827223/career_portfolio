@@ -18,7 +18,7 @@ void BIt_Map_Font::SetPosition(const Vector2& pos) {
 }
 
 void BIt_Map_Font::Initialize() {
-	numberTextureHandle_ = TextureManager::Load("number.png");
+	numberTextureHandle_ = TextureManager::Load("number.dds");
 	for (int i = 0; i < kNumDigits; ++i) {
 		// 初期位置（右上）
 		numberSprite_[i] = Sprite::Create(numberTextureHandle_, {position_.x + kFontSize.x * i, position_.y});

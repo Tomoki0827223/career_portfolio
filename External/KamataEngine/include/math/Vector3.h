@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <cmath> // Math::LengthやMath::Normalizeで使用される可能性があるため
 
 namespace KamataEngine {

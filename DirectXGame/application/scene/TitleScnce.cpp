@@ -24,13 +24,13 @@ void TitleScnce::Initialize() {
 	input_ = KamataEngine::Input::GetInstance();
 	audio_ = KamataEngine::Audio::GetInstance();
 
-	textureHandle_ = KamataEngine::TextureManager::Load("Title/Title1.png");
+	textureHandle_ = KamataEngine::TextureManager::Load("Title/Title1.dds");
 	sprite_ = KamataEngine::Sprite::Create(textureHandle_, {0, 0});
 
-	textureHandle2_ = KamataEngine::TextureManager::Load("Title/ShotGame.png");
+	textureHandle2_ = KamataEngine::TextureManager::Load("Title/ShotGame.dds");
 	sprite2_ = KamataEngine::Sprite::Create(textureHandle2_, {0, 0});
 
-	textureHandle3_ = KamataEngine::TextureManager::Load("Title/HitEnter.png");
+	textureHandle3_ = KamataEngine::TextureManager::Load("Title/HitEnter.dds");
 	sprite3_ = KamataEngine::Sprite::Create(textureHandle3_, {0, 0});
 
 	titleskydome.Initialize();
@@ -63,7 +63,7 @@ void TitleScnce::Initialize() {
 
 	for (int i = 0; i < kSlideCount; ++i) {
 		// ★修正: 5種類の異なるテクスチャを読み込むように変更
-		std::string filename = "Transition/Slide" + std::to_string(i) + ".png";
+		std::string filename = "Transition/Slide" + std::to_string(i) + ".dds";
 		slideTextureHandle_[i] = KamataEngine::TextureManager::Load(filename.c_str());
 
 		slideSprites_[i] = KamataEngine::Sprite::Create(

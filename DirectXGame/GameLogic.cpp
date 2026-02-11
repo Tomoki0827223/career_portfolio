@@ -128,18 +128,18 @@ void GameLogic::Initialize() {
 	soundHandleMinionShot_ = audio_->LoadWave("audio/se/Inspiration.wav");
 
 	// 既存スキルのテクスチャロード (アップロードされたファイル名と対応)
-	skillTextureHandles_[static_cast<int>(SkillType::kBook)] = KamataEngine::TextureManager::Load("Sukill/book.png");  //
-	skillTextureHandles_[static_cast<int>(SkillType::kBullet)] = KamataEngine::TextureManager::Load("Sukill/Gun.png"); //
-	skillTextureHandles_[static_cast<int>(SkillType::kHeart)] = KamataEngine::TextureManager::Load("Sukill/Hart.png"); //
-	skillTextureHandles_[static_cast<int>(SkillType::kWine)] = KamataEngine::TextureManager::Load("Sukill/Wine.png");  //
+	skillTextureHandles_[static_cast<int>(SkillType::kBook)] = KamataEngine::TextureManager::Load("Sukill/book.dds");  //
+	skillTextureHandles_[static_cast<int>(SkillType::kBullet)] = KamataEngine::TextureManager::Load("Sukill/Gun.dds"); //
+	skillTextureHandles_[static_cast<int>(SkillType::kHeart)] = KamataEngine::TextureManager::Load("Sukill/Hart.dds"); //
+	skillTextureHandles_[static_cast<int>(SkillType::kWine)] = KamataEngine::TextureManager::Load("Sukill/Wine.dds");  //
 
 	// 新規スキルのテクスチャ (一時的に既存のテクスチャを割り当て。必要に応じて変更してください)
-	skillTextureHandles_[static_cast<int>(SkillType::kBoomerang)] = KamataEngine::TextureManager::Load("Sukill/axe.png");   // Resources/axe/axe.png を想定
-	skillTextureHandles_[static_cast<int>(SkillType::kMinion)] = KamataEngine::TextureManager::Load("Sukill/Minion.png");   // Resources/player/player.png を想定
-	skillTextureHandles_[static_cast<int>(SkillType::kMissile)] = KamataEngine::TextureManager::Load("Sukill/Missile.png"); // Resources/Bullet/Bullet.png を想定
+	skillTextureHandles_[static_cast<int>(SkillType::kBoomerang)] = KamataEngine::TextureManager::Load("Sukill/axe.dds");   // Resources/axe/axe.dds を想定
+	skillTextureHandles_[static_cast<int>(SkillType::kMinion)] = KamataEngine::TextureManager::Load("Sukill/Minion.dds");   // Resources/player/player.dds を想定
+	skillTextureHandles_[static_cast<int>(SkillType::kMissile)] = KamataEngine::TextureManager::Load("Sukill/Missile.dds"); // Resources/Bullet/Bullet.dds を想定
 
 	// ★★★ 修正: アイコン描画用スプライトの初期化 (iconSize_ を使用) ★★★
-	uint32_t initialTextureHandle = KamataEngine::TextureManager::Load("sample.png");
+	uint32_t initialTextureHandle = KamataEngine::TextureManager::Load("sample.dds");
 	for (int i = 0; i < 3; ++i) {
 		// 初期化時に正しいサイズを設定
 		skillIconSprites_[i] = KamataEngine::Sprite::Create(initialTextureHandle, {0, 0});

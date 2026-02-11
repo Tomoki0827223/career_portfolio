@@ -14,19 +14,19 @@ void TutorialScene::Initialize() {
 	input_ = KamataEngine::Input::GetInstance();
 
 	// ★背景スプライトの初期化
-	// 例: "Tutorial/Background.png" を読み込む (画像ファイル名は適宜変更してください)
-	backgroundTextureHandle_ = KamataEngine::TextureManager::Load("Tutorial/Background.png");
+	// 例: "Tutorial/Background.dds" を読み込む (画像ファイル名は適宜変更してください)
+	backgroundTextureHandle_ = KamataEngine::TextureManager::Load("Tutorial/Background.dds");
 	// 画面いっぱいに表示するために、座標 {0, 0} でスプライトを作成
 	// ※ 画面サイズに合わせてサイズや座標を調整してください
 	backgroundSprite_ = KamataEngine::Sprite::Create(backgroundTextureHandle_, {0, 0});
 
-	// ゲーム説明画像 (例: Tutorial.png) を読み込む
-	textureHandle_ = KamataEngine::TextureManager::Load("Tutorial/Tutorial.png");
+	// ゲーム説明画像 (例: Tutorial.dds) を読み込む
+	textureHandle_ = KamataEngine::TextureManager::Load("Tutorial/Tutorial.dds");
 	tutorialSprite_ = KamataEngine::Sprite::Create(textureHandle_, {0, 0});
 
 	// ★追加: フェードアウト用暗転スプライトの初期化
 	// 1x1の白テクスチャを読み込み、サイズを画面全体(1280x720)に広げる
-	fadeTextureHandle_ = KamataEngine::TextureManager::Load("white1x1.png"); // ★1x1の白テクスチャを想定
+	fadeTextureHandle_ = KamataEngine::TextureManager::Load("white1x1.dds"); // ★1x1の白テクスチャを想定
 	fadeOutSprite_ = KamataEngine::Sprite::Create(
 	    fadeTextureHandle_, {0.0f, 0.0f}, // 座標
 	    {1280.0f, 720.0f}                 // サイズ (画面全体)
@@ -35,8 +35,8 @@ void TutorialScene::Initialize() {
 	fadeOutSprite_->SetColor({0.0f, 0.0f, 0.0f, 0.0f});
 
 	// ★追加: ロード画面用スプライトの初期化
-	// 画像ファイル名は適宜変更してください (例: Transition/Loading.png)
-	loadingTextureHandle_ = KamataEngine::TextureManager::Load("Tutorial/Loading.png");
+	// 画像ファイル名は適宜変更してください (例: Transition/Loading.dds)
+	loadingTextureHandle_ = KamataEngine::TextureManager::Load("Tutorial/Loading.dds");
 	// 画面中央({640, 360})に表示し、アンカーポイントを中央({0.5, 0.5})に設定
 	loadingSprite_ = KamataEngine::Sprite::Create(
 	    loadingTextureHandle_, {640.0f, 360.0f}, // 座標を画面中央に設定 (1280x720の半分)

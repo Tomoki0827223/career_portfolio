@@ -32,8 +32,8 @@ void GameOverScene::Initialize() {
 
 	// 既存のテクスチャをロード
 	// white1x1.pngは真っ白なテクスチャとして、sample.pngはUIのベースとして利用
-	whiteTexture_ = KamataEngine::TextureManager::Load("white1x1.png");
-	optionTexture_ = KamataEngine::TextureManager::Load("R.png");
+	whiteTexture_ = KamataEngine::TextureManager::Load("white1x1.dds");
+	optionTexture_ = KamataEngine::TextureManager::Load("R.dds");
 
 	// 1. 全画面背景スプライトの生成 (背景一枚の代わり)
 	backgroundSprite_ = KamataEngine::Sprite::Create(whiteTexture_, {0, 0});

@@ -4,15 +4,47 @@
 #include "TitleScnce.h"
 #include "TutorialScene.h"
 #include <Windows.h>
+#include "TextureConverter.h"
+#include <filesystem>
+#include <vector>
+#include <string>
 
 using namespace KamataEngine;
 
+namespace fs = std::filesystem;
+
+void ConvertAllImages() {
+	TextureConverter converter;
+	std::string rootPath = "Resources";
+
+	// フォルダが存在するかまずチェック
+	if (!fs::exists(rootPath)) {
+		OutputDebugStringA("Error: 'Resources' folder not found!\n");
+		return;
+	}
+
+	for (const auto& entry : fs::recursive_directory_iterator(rootPath)) {
+		if (entry.is_regular_file()) {
+			std::string ext = entry.path().extension().string();
+			if (ext == ".png" || ext == ".jpg" || ext == ".jpeg") {
+				std::string filePath = entry.path().string();
+
+				// 変換開始をログに出す
+				std::string log = "Converting: " + filePath + "\n";
+				OutputDebugStringA(log.c_str());
+
+				converter.ConvertTextureWICToDDS(filePath);
+			}
+		}
+	}
+	OutputDebugStringA("Conversion Process Finished.\n");
+}
 
 // Scene enumに Tutorial と GameOver を追加
 enum class Scene { Title, Tutorial, Game, GameOver };
 
-//Scene scene = Scene::Title;
-Scene scene = Scene::Game;
+Scene scene = Scene::Title;
+//Scene scene = Scene::Game;
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
@@ -43,6 +75,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// ★ ゲームオーバーシーンの初期化 (追加)
 	gameOverScene = new GameOverScene();
 	gameOverScene->Initialize();
+
+	ConvertAllImages();
 
 	// メインループ
 	while (true) {

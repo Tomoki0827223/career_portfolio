@@ -56,15 +56,15 @@ void GameScene::Initialize() {
 	// --- 1. 各種バー（HP/EXP/SP）の生成 ---
 	const Vector2 kBarSize = {200.0f, 20.0f};
 
-	hpBarBaseTexture_ = TextureManager::Load("HP.png");
-	hpBarTexture_ = TextureManager::Load("HPR.png");
+	hpBarBaseTexture_ = TextureManager::Load("HP.dds");
+	hpBarTexture_ = TextureManager::Load("HPR.dds");
 	hpBarBase_ = Sprite::Create(hpBarBaseTexture_, {30.0f, 60.0f});
 	hpBarBase_->SetSize(kBarSize);
 	hpBar_ = Sprite::Create(hpBarTexture_, {30.0f, 60.0f});
 	hpBar_->SetSize(kBarSize);
 
-	expBarBaseTexture_ = TextureManager::Load("exp.png");
-	expBarTexture_ = TextureManager::Load("expR.png");
+	expBarBaseTexture_ = TextureManager::Load("exp.dds");
+	expBarTexture_ = TextureManager::Load("expR.dds");
 	expBarBase_ = Sprite::Create(expBarBaseTexture_, {30.0f, 30.0f});
 	expBarBase_->SetSize(kBarSize);
 	expBar_ = Sprite::Create(expBarTexture_, {30.0f, 30.0f});
@@ -78,7 +78,7 @@ void GameScene::Initialize() {
 
 	// --- 2. スキル選択用UI（背景・枠・カーソル）の生成 ---
 	// ★ ここが重要！gameLogicに渡す前にこれらを完成させる必要があります
-	whiteTextureHandle_ = TextureManager::Load("white1x1.png");
+	whiteTextureHandle_ = TextureManager::Load("white1x1.dds");
 	skillScreenBackground_ = Sprite::Create(whiteTextureHandle_, {0, 0});
 	skillScreenBackground_->SetSize({1280.0f, 720.0f});
 	skillScreenBackground_->SetColor({0.0f, 0.0f, 0.0f, 0.8f});
@@ -103,8 +103,8 @@ void GameScene::Initialize() {
 	gameLogic_->SetIsBackground(isBackground_);
 
 	// 操作説明など
-	sousaTextureHandle_ = TextureManager::Load("sousa.png");
-	sousaTextureHandle2_ = TextureManager::Load("sousa2.png");
+	sousaTextureHandle_ = TextureManager::Load("sousa.dds");
+	sousaTextureHandle2_ = TextureManager::Load("sousa2.dds");
 	sousaSprite_ = Sprite::Create(sousaTextureHandle_, {1040.0f, 400.0f});
 	sousaSprite2_ = Sprite::Create(sousaTextureHandle2_, {1040.0f, 500.0f});
 }

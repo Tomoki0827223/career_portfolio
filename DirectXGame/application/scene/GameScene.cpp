@@ -23,6 +23,7 @@ GameScene::~GameScene() {
 
 
 
+
 	// スキル選択画面用スプライトの解放 (GameSceneに残すUI要素)
 	delete skillScreenBackground_;
 	delete skillCursorSprite_;

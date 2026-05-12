@@ -26,6 +26,7 @@ void Enemy::Update(const Vector3& playerPosition) {
 		return;
 	}
 
+
 	// プレイヤーへの方向ベクトルを計算
 	Vector3 diff = playerPosition - worldTransform.translation_;
 

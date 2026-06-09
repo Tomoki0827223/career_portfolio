@@ -389,6 +389,7 @@ void GameLogic::CheckAllCollisions() {
 		}
 	}
 
+
 	// --- 2. 敵 vs プレイヤー（接触ダメージ） ---
 	for (auto* enemy : allEnemies_) {
 		if (enemy->IsDead() || player_->GetCurrentHp() <= 0)

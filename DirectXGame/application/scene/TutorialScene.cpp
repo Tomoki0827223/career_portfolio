@@ -45,9 +45,14 @@ void TutorialScene::Initialize() {
 	// 初期状態は透明にしておく (描画しない)
 	loadingSprite_->SetColor({1.0f, 1.0f, 1.0f, 0.0f});
 
-	isFinished_ = false;
-	isBackToTitle_ = false; // ★重要: 戻るフラグを確実にリセット
 	timer_ = 0.0f;
+	// ① チュートリアルが正常に終わってゲームへ行く時
+	isFinished_ = true;
+	nextScene_ = Scene::Game; // ★追加：次はゲームシーンへ行く
+
+	// ② もし「タイトルに戻る」操作がされた時
+	isFinished_ = true;        // ★修正：isBackToTitle_の代わりにisFinished_をtrueにする
+	nextScene_ = Scene::Title; // ★追加：次はタイトルシーンへ戻る
 
 	// 初期状態設定
 	state_ = State::FadeIn;

@@ -124,8 +124,17 @@ void GameScene::Update() {
 
 	// 3. ゲームロジックの更新（敵などの更新）
 	// ゲームオーバー時でも敵を動かし続けたい場合はそのまま、止めたい場合は if(!isGameOver_) で囲む
-	if (!isGameOver_) {
-		gameLogic_->Update();
+	// ★追加：ゲームオーバーの判定とシーン終了の通知
+	if (isGameOver_) {
+		// プレイヤーの死亡演出（タイマー）が終了したかチェック
+		if (player_->GetDeadTimer() >= player_->GetMaxDeadTime()) {
+
+			isFinished_ = true;           // mainへ終了を伝える
+			nextScene_ = Scene::GameOver; // 次はゲームオーバーシーンへ行く指示
+
+			// ※スコアの受け渡し（SetResultScore）は、後ほど共通データ（SharedData）を作った際に
+			// ここで sharedData_->score = GetScore(); のように書くことになります。
+		}
 	}
 
 	// --- ゲームオーバー判定 ---

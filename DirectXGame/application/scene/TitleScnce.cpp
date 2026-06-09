@@ -204,12 +204,14 @@ void TitleScnce::Update() {
 				// sprite3は透明度を下げてフェードアウト
 				sprite3_->SetColor({1.0f, 1.0f, 1.0f, (std::max)(0.0f, 1.0f - t_total)});
 			}
-
+		
 		} else {
 			// 演出完了
 			state_ = State::Finished;
-			isFinished_ = true; // 次のシーン (Tutorial) へ移行するためのフラグ
+			isFinished_ = true;           // mainへ終了を伝える
+			nextScene_ = Scene::Tutorial; // ★追加：次はチュートリアルへ行くよう指示
 		}
+
 	} // ★スコープ終了
 	break;
 

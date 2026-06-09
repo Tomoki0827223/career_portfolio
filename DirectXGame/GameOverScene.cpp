@@ -106,10 +106,17 @@ void GameOverScene::Update() {
 	}
 
 	if (enterTrigger) {
-		isFinished_ = true;
-		isRetrySelected_ = true; // 常にリトライを選択したことにする
+		isFinished_ = true; // mainへ終了を伝える
+
+		// 現在カーソルが「リトライ」を指しているか、選択状態に応じて分岐させる
+		if (isRetrySelected_) {       // もしリトライが選ばれているなら
+			nextScene_ = Scene::Game; // ★追加：ゲームシーンへ
+		} else {
+			nextScene_ = Scene::Title; // ★追加：タイトルシーンへ
+		}
 		return;
 	}
+
 
 	// カーソルの位置を更新 (既存の処理)
 	Sprite* targetSprite = retrySprite_;

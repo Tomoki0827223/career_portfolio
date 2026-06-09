@@ -1,57 +1,63 @@
-#include "GameOverScene.h"
-#include "GameScene.h"
+#include "BaseScene.h"
+#include "GameOverScene.h" // 切り替え先をnewするために必要
+#include "GameScene.h"     // 切り替え先をnewするために必要
 #include "KamataEngine.h"
-#include "TitleScnce.h"
-#include "TutorialScene.h"
-#include <Windows.h>
+#include "TitleScnce.h"    // 最初のシーン用に必要
+#include "TutorialScene.h" // 切り替え先をnewするために必要
 
-using namespace KamataEngine;
-
-
-// Scene enumに Tutorial と GameOver を追加
-enum class Scene { Title, Tutorial, Game, GameOver };
-
-//Scene scene = Scene::Title;
-Scene scene = Scene::Title;
-
-// Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
-
-	// 初期化処理
 	KamataEngine::Initialize(L"LE3C_19_ムラタ_トモキ_Bike_Savaiver");
-
 	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
 
-	// 共通の親クラスのポインタだけを用意
-	BaseScene* currentScene = nullptr;
-
-	// 最初はタイトルシーンを生成して代入（実体は子クラス、持つポインタは親クラス）
-	currentScene = new TitleScnce();
+	// 現在のシーンを基底クラスのポインタで保持
+	BaseScene* currentScene = new TitleScnce();
 	currentScene->Initialize();
 
 	// メインループ
 	while (true) {
-
 		if (KamataEngine::Update()) {
 			break;
 		}
 
 		dxCommon->PreDraw();
 
-		// 今どのシーンであっても、分岐なしでただ呼び出すだけ！
-		// 内部で自動的に、Title、Game、GameOver などの正しい Update/Draw が駆動します。
-		if (currentScene) {
-			currentScene->Update();
-			currentScene->Draw();
+		// どのシーンであっても、呼び出し方は常に同じ
+		currentScene->Update();
+		currentScene->Draw();
+
+		// ★ シーン切り替えロジック
+		if (currentScene->IsFinished()) {
+			// 次にいきたいシーンの種類を取得
+			Scene nextType = currentScene->GetNextScene();
+
+			// 古いシーンを削除
+			delete currentScene;
+			currentScene = nullptr;
+
+			// 次のシーンのインスタンスを作成（ここでポリモーフィズムを活用）
+			if (nextType == Scene::Title) {
+				currentScene = new TitleScnce();
+			} else if (nextType == Scene::Tutorial) {
+				currentScene = new TutorialScene();
+			} else if (nextType == Scene::Game) {
+				currentScene = new GameScene();
+			} else if (nextType == Scene::GameOver) {
+				currentScene = new GameOverScene();
+			}
+
+			// 新しいシーンを初期化
+			if (currentScene != nullptr) {
+				currentScene->Initialize();
+			}
 		}
 
 		dxCommon->PostDraw();
 	}
 
 	// 終了処理
-
-
-	// 終了処理
+	if (currentScene != nullptr) {
+		delete currentScene;
+	}
 	KamataEngine::Finalize();
 	return 0;
 }

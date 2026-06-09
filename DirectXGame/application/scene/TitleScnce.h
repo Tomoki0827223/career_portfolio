@@ -39,7 +39,6 @@ public:
 	/// </summary>
 	void Draw() override;
 
-	bool IsSelectFinished() const { return isFinished_; }
 	bool IsGameFinished() const { return isGameFinished_; }
 
 	// 現在表示されているスプライトを管理する変数
@@ -74,7 +73,6 @@ private:
 	// タイマー
 	float Timer_ = 0.0f;
 
-	bool isFinished_ = false;
 	bool isGameFinished_ = false;
 	KamataEngine::DirectXCommon* dxCommon_ = nullptr;
 	KamataEngine::WorldTransform titleWorldTransform_;

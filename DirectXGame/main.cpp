@@ -34,7 +34,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			delete currentScene;
 			currentScene = nullptr;
 
-			// 次のシーンのインスタンスを作成（ここでポリモーフィズムを活用）
+			// --- ★ここから下が途切れている、または足りない部分です ---
+			// 次のシーンのインスタンスを作成
 			if (nextType == Scene::Title) {
 				currentScene = new TitleScnce();
 			} else if (nextType == Scene::Tutorial) {
@@ -46,7 +47,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			}
 
 			// 新しいシーンを初期化
-			if (currentScene != nullptr) {
+			if (currentScene) {
 				currentScene->Initialize();
 			}
 		}
@@ -55,9 +56,11 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	}
 
 	// 終了処理
-	if (currentScene != nullptr) {
+	if (currentScene) {
 		delete currentScene;
+		currentScene = nullptr;
 	}
+
 	KamataEngine::Finalize();
 	return 0;
 }

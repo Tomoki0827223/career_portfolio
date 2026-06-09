@@ -1,4 +1,5 @@
 #pragma once
+#include "BaseScene.h"
 #include "input/Input.h"
 #include <2d/Sprite.h>
 #include <3d/Camera.h>
@@ -18,25 +19,25 @@ inline float EaseOutQuint(float t) {
 /// <summary>
 /// タイトルシーン
 /// </summary>
-class TitleScnce {
+class TitleScnce : public BaseScene {
 
 public:
-	~TitleScnce();
+	~TitleScnce() override;
 
 	/// <summary>
 	/// 初期化
 	/// </summary>
-	void Initialize();
+	void Initialize() override;
 
 	/// <summary>
 	/// 毎フレーム処理
 	/// </summary>
-	void Update();
+	void Update() override;
 
 	/// <summary>
 	/// 描画
 	/// </summary>
-	void Draw();
+	void Draw() override;
 
 	bool IsSelectFinished() const { return isFinished_; }
 	bool IsGameFinished() const { return isGameFinished_; }

@@ -16,6 +16,10 @@ public:
 	void ResetShotTimer() override { shotTimer_ = 0; }
 	int GetType() override { return 1; } // 敵タイプ1
 
+	// 親の関数を上書き
+	float GetBulletSpeed() const override { return 1.2f; }
+	int GetBulletDamage() const override { return 30; }
+
 private:
 	// Enemy2 固有の変数だけ残す
 	int shotTimer_ = 0;

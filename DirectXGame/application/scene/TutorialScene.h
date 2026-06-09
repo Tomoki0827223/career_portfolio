@@ -1,4 +1,5 @@
 #pragma once
+#include "BaseScene.h"
 #include "TitleScnce.h"
 #include "input/Input.h"
 #include <2d/Sprite.h>
@@ -9,25 +10,25 @@
 /// <summary>
 /// ゲーム説明 (チュートリアル) シーン
 /// </summary>
-class TutorialScene {
+class TutorialScene : public BaseScene {
 
 public:
-	~TutorialScene();
+	~TutorialScene() override;
 
 	/// <summary>
 	/// 初期化
 	/// </summary>
-	void Initialize();
+	void Initialize() override;
 
 	/// <summary>
 	/// 毎フレーム処理
 	/// </summary>
-	void Update();
+	void Update() override;
 
 	/// <summary>
 	/// 描画
 	/// </summary>
-	void Draw();
+	void Draw() override;
 
 	// シーンが終了したか (ゲームシーンへ移行する準備ができたか)
 	bool IsFinished() const { return isFinished_; }

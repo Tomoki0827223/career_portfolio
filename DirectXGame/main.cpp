@@ -22,27 +22,12 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
 
-	// main関数の前に
-	TitleScnce* titleScnce = nullptr;
-	TutorialScene* tutorialScnce = nullptr;
-	GameScene* gameScnce = nullptr;
-	GameOverScene* gameOverScene = nullptr;
+	// 共通の親クラスのポインタだけを用意
+	BaseScene* currentScene = nullptr;
 
-	// タイトルシーンの初期化
-	titleScnce = new TitleScnce();
-	titleScnce->Initialize();
-
-	// ★ チュートリアルシーンの初期化
-	tutorialScnce = new TutorialScene();
-	tutorialScnce->Initialize();
-
-	// ゲームシーンの初期化
-	gameScnce = new GameScene();
-	gameScnce->Initialize();
-
-	// ★ ゲームオーバーシーンの初期化 (追加)
-	gameOverScene = new GameOverScene();
-	gameOverScene->Initialize();
+	// 最初はタイトルシーンを生成して代入（実体は子クラス、持つポインタは親クラス）
+	currentScene = new TitleScnce();
+	currentScene->Initialize();
 
 	// メインループ
 	while (true) {
@@ -53,86 +38,18 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 		dxCommon->PreDraw();
 
-		// シーンごとに処理を分岐
-		if (scene == Scene::Title) {
-			titleScnce->Update();
-			titleScnce->Draw();
-			if (titleScnce->IsSelectFinished()) {
-				// TitleSceneの終了 (Start選択)
-				scene = Scene::Tutorial;
-				// ※ ここではTutorialSceneのInitialize()は呼ばない（Tutorial::Update()内でリセットするため）
-			}
-		} else if (scene == Scene::Tutorial) {
-			tutorialScnce->Update();
-			tutorialScnce->Draw();
-
-			if (tutorialScnce->IsBackToTitle()) {
-				scene = Scene::Title;
-				titleScnce->Initialize();
-
-				// ★修正: フラグをリセットしてループを防ぐ
-				// TutorialSceneのInitialize()を呼び出し、フラグを確実にリセット
-				tutorialScnce->Initialize();
-			} else if (tutorialScnce->IsFinished()) {
-				scene = Scene::Game;
-				gameScnce->Initialize();
-
-				// ★修正: フラグをリセットしてループを防ぐ
-				// TutorialSceneのInitialize()を呼び出し、フラグを確実にリセット
-				tutorialScnce->Initialize();
-			}
-
-		} else if (scene == Scene::Game) {
-			gameScnce->Update();
-			gameScnce->Draw();
-
-			// ★修正: ゲームオーバー判定
-			if (gameScnce->IsGameOver()) {
-				// プレイヤーの死亡演出（タイマー）が終了したかチェックする
-				if (gameScnce->GetPlayer()->GetDeadTimer() >= gameScnce->GetPlayer()->GetMaxDeadTime()) {
-					int finalScore = gameScnce->GetScore();
-
-					scene = Scene::GameOver;
-					gameOverScene->Initialize();
-					gameOverScene->SetResultScore(finalScore);
-
-					gameScnce->ResetGameOverFlag();
-				}
-			}
-
-		} else if (scene == Scene::GameOver) {
-			gameOverScene->Update();
-			gameOverScene->Draw();
-
-			if (gameOverScene->IsFinished()) {
-				if (gameOverScene->IsRetrySelected()) {
-					
-					// リトライ: GameSceneを再初期化してGameSceneへ
-					scene = Scene::Game;
-					gameScnce->Initialize();
-
-				} else {
-					
-					// タイトルへ: TitleSceneへ
-					scene = Scene::Title;
-					titleScnce->Initialize();
-				}
-				// GameOverSceneのisFinished_はInitializeでリセットされている
-			}
+		// 今どのシーンであっても、分岐なしでただ呼び出すだけ！
+		// 内部で自動的に、Title、Game、GameOver などの正しい Update/Draw が駆動します。
+		if (currentScene) {
+			currentScene->Update();
+			currentScene->Draw();
 		}
 
 		dxCommon->PostDraw();
 	}
 
 	// 終了処理
-	delete gameOverScene;
-	gameOverScene = nullptr;
-	delete gameScnce;
-	gameScnce = nullptr;
-	delete tutorialScnce;
-	tutorialScnce = nullptr;
-	delete titleScnce;
-	titleScnce = nullptr;
+
 
 	// 終了処理
 	KamataEngine::Finalize();

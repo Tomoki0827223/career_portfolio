@@ -1,4 +1,5 @@
 #pragma once
+#include "BaseScene.h"
 #include "BIt_Map_Font.h"
 #include "GameLogic.h"     // GameLogicで敵などを管理しているのでこれがあればOK
 #include "GameOverScene.h" // main.cppで使っているが、ここでのincludeは不要かも（後述）
@@ -11,13 +12,13 @@
 
 using namespace KamataEngine;
 
-class GameScene {
+class GameScene : public BaseScene {
 public:
-	~GameScene();
+	~GameScene() override;
 
-	void Initialize();
-	void Update();
-	void Draw();
+	void Initialize() override;
+	void Update() override;
+	void Draw() override;
 
 	bool IsGameOver() const { return isGameOver_; }
 	// ゲームオーバーフラグをリセットするためのpublicメソッド

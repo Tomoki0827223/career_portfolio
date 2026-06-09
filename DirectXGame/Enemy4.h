@@ -13,6 +13,9 @@ public:
 	void ResetShotTimer() override { shotTimer_ = 0; }
 	int GetType() override { return 3; }
 
+	float GetBulletSpeed() const override { return 0.6f; }
+	int GetBulletDamage() const override { return 70; }
+
 private:
 	// 固有のタイマーだけ残す
 	int shotTimer_ = 0;

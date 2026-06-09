@@ -159,6 +159,7 @@
     <ClCompile Include="application\ui\BIt_Map_Font.cpp" />
     <ClCompile Include="application\3d\Experience.cpp" />
     <ClCompile Include="application\scene\GameScene.cpp" />
+    <ClCompile Include="BaseScene.cpp" />
     <ClCompile Include="Book.cpp" />
     <ClCompile Include="Boomerang.cpp" />
     <ClCompile Include="Bullet.cpp" />
@@ -286,6 +287,7 @@
     <ClInclude Include="application\3d\Stage.h" />
     <ClInclude Include="application\scene\TitleScnce.h" />
     <ClInclude Include="application\scene\TutorialScene.h" />
+    <ClInclude Include="BaseScene.h" />
     <ClInclude Include="Book.h" />
     <ClInclude Include="Boomerang.h" />
     <ClInclude Include="Bullet.h" />

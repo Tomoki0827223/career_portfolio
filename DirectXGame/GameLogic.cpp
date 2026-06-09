@@ -829,8 +829,10 @@ void GameLogic::UpdateWeapons(const Vector3& playerPos) {
 void GameLogic::SpawnEnemyBullet(Enemy* enemy, const Vector3& playerPos) {
 	enemy->ResetShotTimer();
 	Vector3 direction = Math::Normalize(playerPos - enemy->GetShotPosition());
-	float speed = (enemy->GetType() == 1) ? 1.2f : (enemy->GetType() == 3) ? 0.6f : 1.0f;
-	int damage = (enemy->GetType() == 1) ? 30 : (enemy->GetType() == 3) ? 70 : 10;
+
+	// ★★★ これがあなたの作ったポリモーフィズムの力を発揮するコードです！ ★★★
+	float speed = enemy->GetBulletSpeed(); // 実体に合わせて 1.2f や 0.6f が自動で入る
+	int damage = enemy->GetBulletDamage(); // 実体に合わせて 30 や 70 が自動で入る
 
 	EnemyBullet* nb = new EnemyBullet(enemy->GetShotPosition(), direction * speed);
 	nb->SetDamage(damage);

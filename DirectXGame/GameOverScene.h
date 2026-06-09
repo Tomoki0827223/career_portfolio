@@ -1,4 +1,5 @@
 #pragma once
+#include "BaseScene.h"
 #include "input/Input.h"
 #include <2d/Sprite.h>
 #include <3d/Camera.h>
@@ -10,25 +11,25 @@ using namespace KamataEngine;
 /// <summary>
 /// ゲームオーバーシーン
 /// </summary>
-class GameOverScene {
+class GameOverScene : public BaseScene {
 
 public:
-	~GameOverScene();
+	~GameOverScene() override;
 
 	/// <summary>
 	/// 初期化
 	/// </summary>
-	void Initialize();
+	void Initialize() override;
 
 	/// <summary>
 	/// 毎フレーム処理
 	/// </summary>
-	void Update();
+	void Update() override;
 
 	/// <summary>
 	/// 描画
 	/// </summary>
-	void Draw();
+	void Draw() override;
 
 	// リトライ or タイトルへ戻る選択が完了したか
 	bool IsFinished() const { return isFinished_; }

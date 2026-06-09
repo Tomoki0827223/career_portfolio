@@ -12,10 +12,14 @@ public:
     Enemy(const Vector3& position); 
     virtual ~Enemy(); // デストラクタも virtual にする
 
-    virtual void Initialize(); // virtual を追加
-    virtual void Update(const Vector3& playerPosition); // virtual を追加~Enemy();
+	// 仮想関数の定義（基本種のパラメータを返す）
+	virtual float GetBulletSpeed() const { return 1.0f; }
+	virtual int GetBulletDamage() const { return 10; }
 
-    void Draw(const Camera& camera);
+	virtual void Initialize();                          // virtual を追加
+	virtual void Update(const Vector3& playerPosition); // virtual を追加
+
+	void Draw(const Camera& camera);
     
     // ★追加: 敵の位置を取得するゲッター
 	const Vector3& GetPosition() const { return worldTransform.translation_; }

@@ -1,53 +1,55 @@
 #pragma once
-#include "3d/WorldTransform.h"
 #include "3d/Camera.h"
 #include "3d/Model.h"
-#include "math/MathUtility.h"
+#include "3d/WorldTransform.h"
 #include "KamataEngine.h"
+#include "math/MathUtility.h"
 
 using namespace KamataEngine;
 
+// 前方宣言
+class EnemyState;
+
 class Enemy {
 public:
-    Enemy(const Vector3& position); 
-    virtual ~Enemy(); // デストラクタも virtual にする
+	Enemy(const Vector3& position);
+	virtual ~Enemy();
 
-	// 仮想関数の定義（基本種のパラメータを返す）
 	virtual float GetBulletSpeed() const { return 1.0f; }
 	virtual int GetBulletDamage() const { return 10; }
 
-	virtual void Initialize();                          // virtual を追加
-	virtual void Update(const Vector3& playerPosition); // virtual を追加
+	virtual void Initialize();
+	virtual void Update(const Vector3& playerPosition);
 
 	void Draw(const Camera& camera);
-    
-    // ★追加: 敵の位置を取得するゲッター
+
 	const Vector3& GetPosition() const { return worldTransform.translation_; }
+	float GetRadius() const { return radius_; }
+	bool IsDead() const { return isDead_; }
+	void TakeDamage(int damage);
 
-    // 衝突判定/被弾判定用
-    //Vector3 GetPosition() const { return worldTransform.translation_; }
-    float GetRadius() const { return radius_; }
-    bool IsDead() const { return isDead_; }
-
-    // ダメージ処理
-    void TakeDamage(int damage);
-
-    // Enemy.h のクラス定義内に追加
-	virtual bool CanShoot() { return false; } // 基本は撃たない
-	virtual void ResetShotTimer() {}          // 派生クラスでオーバーライド
+	virtual bool CanShoot() { return false; }
+	virtual void ResetShotTimer() {}
 	virtual Vector3 GetShotPosition() { return worldTransform.translation_; }
-	virtual int GetType() { return 0; } // 敵のタイプ判別用
+	virtual int GetType() { return 0; }
 
-protected: // private から protected に変更
-	// 敵のステータス
+	// ★★★ State Pattern 用に追加する関数 ★自慢のコードになる部分 ★★★
+	void ChangeState(EnemyState* newState);
+	float GetMoveSpeed() const { return kMoveSpeed; }
+	void Move(const Vector3& velocity) { worldTransform.translation_ += velocity; }
+	void SetScale(const Vector3& scale) { worldTransform.scale_ = scale; }
+
+protected:
 	const float kMoveSpeed = 0.1f;
 	const float radius_ = 1.0f;
 	const int kMaxHp = 10;
 	int currentHp_ = kMaxHp;
 
-	// モデルとワールド変換
 	Model* model_ = nullptr;
 	WorldTransform worldTransform;
 
 	bool isDead_ = false;
+
+	// ★★★ 現在の状態を指すポインタ（条件3のポリモーフィズム用） ★★★
+	EnemyState* currentState_ = nullptr;
 };

@@ -220,23 +220,19 @@ void TitleScnce::Update() {
 	}
 }
 
-
 void TitleScnce::Draw() {
 	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
 
-	// ★追加: 最初にゲームシーンを描画する
+	// 🚨 【重要】 cmdList が nullptr になるクラッシュ・ライト未設定クラッシュを完全に防ぐため、
+	// タイトル画面の背景でのゲームシーン描画を一度完全に止めます。
+	/*
 	if (backgroundGameScene_) {
-		backgroundGameScene_->Draw();
+	    backgroundGameScene_->Draw();
 	}
-
-	// 3Dオブジェクト描画 (省略)
+	*/
 
 	// スプライト描画
 	KamataEngine::Sprite::PreDraw(commandList);
-
-	/// 1. 固定要素を描画
-	//sprite_->SetPosition({0, 0});
-	//sprite_->Draw();
 
 	// 2. タイトルロゴを描画
 	if (sprite2_) {
@@ -245,20 +241,18 @@ void TitleScnce::Draw() {
 
 	// 3. 「Hit Enter」を描画
 	if (state_ == State::TitleScreen) {
-		// TitleScreen時は点滅制御
 		if (sprite3_ && static_cast<int>(Timer_) % 60 < 30) {
 			sprite3_->SetPosition({0, 0});
 			sprite3_->Draw();
 		}
 	} else if (state_ == State::Transition) {
-		// Transition時はUpdateで設定された透明度で常に描画 (フェードアウト演出)
 		if (sprite3_) {
 			sprite3_->SetPosition({0, 0});
 			sprite3_->Draw();
 		}
 	}
 
-	// ★最前面に描画: Transition状態でのみスライドを描画する
+	// 最前面に描画: Transition状態でのみスライドを描画する
 	if (state_ == State::Transition) {
 		for (int i = 0; i < kSlideCount; ++i) {
 			if (slideSprites_[i]) {

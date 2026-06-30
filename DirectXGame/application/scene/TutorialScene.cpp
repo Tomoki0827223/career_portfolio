@@ -46,18 +46,15 @@ void TutorialScene::Initialize() {
 	loadingSprite_->SetColor({1.0f, 1.0f, 1.0f, 0.0f});
 
 	timer_ = 0.0f;
-	// ① チュートリアルが正常に終わってゲームへ行く時
-	isFinished_ = true;
-	nextScene_ = Scene::Game; // ★追加：次はゲームシーンへ行く
 
-	// ② もし「タイトルに戻る」操作がされた時
-	isFinished_ = true;        // ★修正：isBackToTitle_の代わりにisFinished_をtrueにする
-	nextScene_ = Scene::Title; // ★追加：次はタイトルシーンへ戻る
+	// 初期化の時点では、シーンはまだ終了していないので false にする
+	isFinished_ = false;
+	isBackToTitle_ = false;
+	nextScene_ = Scene::Game; // デフォルトの移行先をゲームにしておく
 
 	// 初期状態設定
 	state_ = State::FadeIn;
 	fadeInTimer_ = 0.0f;
-	// ★追加: ロードタイマーのリセット
 	fadeOutTimer_ = 0.0f;
 	loadingTimer_ = 0.0f;
 }
@@ -67,12 +64,14 @@ void TutorialScene::Update() {
 	XINPUT_STATE joyState;
 	bool hasJoy = input_->GetJoystickState(0, joyState);
 
-	// タイトルに戻る判定 (キーボード Q または コントローラー Bボタン)
+	// ★ 修正: タイトルに戻る操作がされた時
 	if (input_->TriggerKey(DIK_Q) || (hasJoy && (joyState.Gamepad.wButtons & XINPUT_GAMEPAD_B))) {
-		isBackToTitle_ = true;
+		isFinished_ = true;        // mainにシーン終了を伝える
+		nextScene_ = Scene::Title; // 移行先を「タイトル」に指定
+		return;
 	}
 
-	if (isBackToTitle_ || isFinished_) {
+	if (isFinished_) {
 		return;
 	}
 
@@ -86,7 +85,7 @@ void TutorialScene::Update() {
 		}
 		break;
 
-	case State::Active: { // ★波括弧を追加
+	case State::Active: {
 		// --- 決定操作 (Enterキー または Aボタン) ---
 		bool enterTrigger = input_->TriggerKey(DIK_RETURN);
 		if (hasJoy && (joyState.Gamepad.wButtons & XINPUT_GAMEPAD_A)) {
@@ -99,21 +98,24 @@ void TutorialScene::Update() {
 			loadingTimer_ = 0.0f;
 		}
 
+		// スペースキーでもタイトルに戻れるようにする場合
 		if (input_->TriggerKey(DIK_SPACE)) {
-			isBackToTitle_ = true;
+			isFinished_ = true;
+			nextScene_ = Scene::Title;
 		}
-	}
-		break;
+	} break;
 
 	case State::Transition:
-		// (既存のタイマー処理)
 		if (fadeOutTimer_ < kFadeOutDuration) {
 			fadeOutTimer_ += 1.0f;
 		} else {
 			loadingTimer_ += 1.0f;
 			if (loadingTimer_ >= kLoadingHoldDuration) {
 				state_ = State::Finished;
+
+				// ★ 修正: 暗転とロード演出が完全に終わったら、満を持してゲームシーンへ移行する
 				isFinished_ = true;
+				nextScene_ = Scene::Game; // 移行先を「ゲーム」に指定
 			}
 		}
 		break;
@@ -122,6 +124,7 @@ void TutorialScene::Update() {
 		break;
 	}
 }
+
 
 void TutorialScene::Draw() {
 	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();

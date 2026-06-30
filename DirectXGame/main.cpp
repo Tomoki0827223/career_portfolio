@@ -15,18 +15,15 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	// メインループ
 	while (true) {
+		// カマタエンジンのメッセージ処理・更新（×ボタンなどでループを抜ける）
 		if (KamataEngine::Update()) {
 			break;
 		}
 
-
-		dxCommon->PreDraw();
-
-		// どのシーンであっても、呼び出し方は常に同じ
+		// 1. シーンの更新（キー入力や状態の更新）
 		currentScene->Update();
-		currentScene->Draw();
 
-		// ★ シーン切り替えロジック
+		// ★ 2. シーン切り替えロジック（Updateの直後に判定するのが鉄則！）
 		if (currentScene->IsFinished()) {
 			// 次にいきたいシーンの種類を取得
 			Scene nextType = currentScene->GetNextScene();
@@ -35,7 +32,6 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			delete currentScene;
 			currentScene = nullptr;
 
-			// --- ★ここから下が途切れている、または足りない部分です ---
 			// 次のシーンのインスタンスを作成
 			if (nextType == Scene::Title) {
 				currentScene = new TitleScnce();
@@ -48,10 +44,19 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			}
 
 			// 新しいシーンを初期化
-			if (currentScene) {
+			if (currentScene != nullptr) {
 				currentScene->Initialize();
 			}
+
+			// シーンが切り替わったフレームは、古いシーンのDrawを呼ぶと危険なので、
+			// 描画をスキップして次のフレーム（ループの先頭）へ進む
+			continue;
 		}
+
+		// 3. 描画処理（切り替えが発生しなかった場合のみ、安全に現在のシーンを描画）
+		dxCommon->PreDraw();
+
+		currentScene->Draw();
 
 		dxCommon->PostDraw();
 	}

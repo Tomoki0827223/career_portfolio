@@ -161,6 +161,14 @@ void GameLogic::LoadEnemyPopData() {
 
 	std::ifstream file("Resources/enemyPop.csv");
 	if (!file.is_open()) {
+		// 【安全装置】CSVがどうしても見つからない場合、フリーズを防ぐために最低限の出現データをコード側で直に仕込む！
+		EnemySpawnData defaultSpawn;
+		defaultSpawn.enemyType = 0;  // 通常の敵
+		defaultSpawn.interval = 120; // 2秒間隔
+		defaultSpawn.minScore = 0;
+		defaultSpawn.maxScore = 9999;
+		defaultSpawn.timer = 0;
+		enemySpawnList_.push_back(defaultSpawn);
 		return;
 	}
 

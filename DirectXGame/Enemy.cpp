@@ -1,60 +1,64 @@
 #include "Enemy.h"
+#include "EnemyState.h" // ★追加
 
 Enemy::Enemy(const Vector3& position) { worldTransform.translation_ = position; }
 
-Enemy::~Enemy() { delete model_; }
+Enemy::~Enemy() {
+	delete model_;
+	if (currentState_)
+		delete currentState_; // ★追加：状態クラスの解放
+}
 
 void Enemy::Initialize() {
-	// 敵モデルとして"cube"を使用
 	model_ = Model::CreateFromOBJ("enemy");
 
 	worldTransform.Initialize();
-	worldTransform.scale_ = {2.0f, 2.0f, 2.0f}; // ★ 敵のサイズを2倍に ★
-
-	worldTransform.translation_.z = 0.0f; // Z座標を固定
+	worldTransform.scale_ = {2.0f, 2.0f, 2.0f};
+	worldTransform.translation_.z = 0.0f;
 	worldTransform.UpdateMatarix();
+
+	// ★初期状態として「出現状態」をセットする
+	ChangeState(new EnemyStateSpawn());
 }
 
-///**
-// * @brief 敵の更新。プレイヤーを追尾するロジックを実装。
-// * @param playerPosition プレイヤーの現在位置
-// */
-
-
 void Enemy::Update(const Vector3& playerPosition) {
-	if (isDead_) {
+	if (isDead_)
 		return;
+
+	// ★★★ スライドの条件3：ポリモーフィズムによる状態の関数呼び出し ★★★
+	if (currentState_) {
+		currentState_->Update(this, playerPosition);
 	}
 
+	// 行動（移動など）が適用された後にマトリクスを更新
+	worldTransform.UpdateMatarix();
+	worldTransform.TransferMatrix();
+}
 
-
-	// プレイヤーへの方向ベクトルを計算
-	Vector3 diff = playerPosition - worldTransform.translation_;
-
-	// 正規化して移動 (追尾)
-	Vector3 direction = Math::Normalize(diff);
-	worldTransform.translation_ += direction * kMoveSpeed;
-
-	// 移動を反映
-	worldTransform.UpdateMatarix();  // ★ 先に計算！
-	worldTransform.TransferMatrix(); // ★ 後で転送！
+// ★状態遷移のための関数
+void Enemy::ChangeState(EnemyState* newState) {
+	if (currentState_) {
+		delete currentState_; // 古い状態を削除
+	}
+	currentState_ = newState;
+	if (currentState_) {
+		currentState_->Enter(this); // 新しい状態の初期化
+	}
 }
 
 void Enemy::Draw(const Camera& camera) {
-	if (isDead_) {
+	if (isDead_)
 		return;
+
+	if (model_) {
+		model_->Draw(worldTransform, camera);
 	}
-
-	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
-	dxCommon->ClearDepthBuffer();
-	Model::PreDraw();
-
-	model_->Draw(worldTransform, camera);
-
-	Model::PostDraw();
 }
 
 void Enemy::TakeDamage(int damage) {
+	if (isDead_)
+		return;
+
 	currentHp_ -= damage;
 	if (currentHp_ <= 0) {
 		currentHp_ = 0;

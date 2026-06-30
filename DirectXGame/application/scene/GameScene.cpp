@@ -111,10 +111,10 @@ void GameScene::Initialize() {
 }
 
 void GameScene::Update() {
-	// 1. プレイヤーを更新（死亡演出もここに含まれる）
+	// 1. プレイヤーを更新
 	player_->Update();
 
-	// 2. カメラの更新（プレイヤーを追い続ける）
+	// 2. カメラの更新
 	Vector3 playerPos = player_->GetPosition();
 	camera_.translation_.x = playerPos.x;
 	camera_.translation_.y = playerPos.y;
@@ -122,33 +122,27 @@ void GameScene::Update() {
 	camera_.UpdateMatrix();
 	camera_.TransferMatrix();
 
-	// 3. ゲームロジックの更新（敵などの更新）
-	// ゲームオーバー時でも敵を動かし続けたい場合はそのまま、止めたい場合は if(!isGameOver_) で囲む
-	// ★追加：ゲームオーバーの判定とシーン終了の通知
+	// 3. ゲームオーバー時のシーン遷移処理
 	if (isGameOver_) {
-		// プレイヤーの死亡演出（タイマー）が終了したかチェック
 		if (player_->GetDeadTimer() >= player_->GetMaxDeadTime()) {
-
-			isFinished_ = true;           // mainへ終了を伝える
-			nextScene_ = Scene::GameOver; // 次はゲームオーバーシーンへ行く指示
-
-			// ※スコアの受け渡し（SetResultScore）は、後ほど共通データ（SharedData）を作った際に
-			// ここで sharedData_->score = GetScore(); のように書くことになります。
+			isFinished_ = true;
+			nextScene_ = Scene::GameOver;
 		}
+		return; // ゲームオーバー演出中はこれ以降の処理をスキップ
 	}
 
-	// --- ゲームオーバー判定 ---
+	// --- ゲームオーバー判定（HPが0になったらフラグを立てる） ---
 	int currentHp = player_->GetCurrentHp();
 	if (currentHp <= 0 && !isGameOver_) {
 		isGameOver_ = true;
-		player_->Die(); // プレイヤーの死亡フラグを立てる
-	}
-
-	// ★修正: ゲームオーバー演出中は、以下のゲーム進行処理をスキップする
-	if (isGameOver_) {
+		player_->Die();
 		return;
 	}
 
+	// ★★★ 【超重要】消えていたゲームメインロジックの更新をここに大復活させる！！！ ★★★
+	if (gameLogic_) {
+		gameLogic_->Update();
+	}
 
 	player_->SetIsSkillSelecting(gameLogic_->IsLevelUpPending());
 
@@ -158,7 +152,7 @@ void GameScene::Update() {
 		return;
 	}
 
-	// 敵の死亡パーティクル
+	// 敵の死亡パーティクル生成
 	std::list<Vector3> deadPositions = gameLogic_->GetDeadEnemyPositions();
 	for (const Vector3& position : deadPositions) {
 		ParticleBorn(position);
